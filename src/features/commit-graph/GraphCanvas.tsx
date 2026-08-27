@@ -14,6 +14,8 @@ interface GraphCanvasProps {
   selectedHash: string | null;
   /** True when the working-directory row should be drawn (uncommitted changes). */
   hasWorkingRow: boolean;
+  /** True when the working-directory row is selected (highlighted). */
+  workingSelected: boolean;
   /** Scroll container that owns vertical scrolling (set by parent). */
   scrollRef: React.RefObject<HTMLDivElement>;
 }
@@ -34,15 +36,18 @@ export function GraphCanvas({
   layout,
   selectedHash,
   hasWorkingRow,
+  workingSelected,
   scrollRef,
 }: GraphCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layoutRef = useRef(layout);
   const selectedRef = useRef(selectedHash);
   const workingRef = useRef(hasWorkingRow);
+  const workingSelectedRef = useRef(workingSelected);
   layoutRef.current = layout;
   selectedRef.current = selectedHash;
   workingRef.current = hasWorkingRow;
+  workingSelectedRef.current = workingSelected;
 
   /** Row offset for commits: 1 when the working row is shown, else 0. */
   const offsetRef = useRef(hasWorkingRow ? 1 : 0);
@@ -107,6 +112,14 @@ export function GraphCanvas({
         ctx.strokeStyle = "rgba(255,255,255,0.85)";
         ctx.lineWidth = 1.5;
         ctx.stroke();
+        // Selected ring, matching commit selection.
+        if (workingSelectedRef.current) {
+          ctx.beginPath();
+          ctx.arc(wx, wy, 8.5, 0, Math.PI * 2);
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
         ctx.globalAlpha = 1;
       }
 
@@ -213,10 +226,10 @@ export function GraphCanvas({
     return () => container.removeEventListener("scroll", onScroll);
   }, [scrollRef]);
 
-  // Redraw when the selected commit or working-row visibility changes.
+  // Redraw when the selected commit or working-row state changes.
   useEffect(() => {
     drawRef.current();
-  }, [selectedHash, hasWorkingRow]);
+  }, [selectedHash, hasWorkingRow, workingSelected]);
 
   return (
     <canvas

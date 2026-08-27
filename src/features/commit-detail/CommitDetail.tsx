@@ -19,7 +19,7 @@ function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
 }
 
 export function CommitDetail() {
-  const { commits, selectedHash, filesByCommit, loadCommitFiles } =
+  const { commits, selectedHash, filesByCommit, loadCommitFiles, openDiff } =
     useRepoStore();
 
   const commit = commits.find((c) => c.hash === selectedHash);
@@ -100,7 +100,10 @@ export function CommitDetail() {
                 ))}
             </div>
             {tree && tree.children.length > 0 ? (
-              <FileTree root={tree} />
+              <FileTree
+                root={tree}
+                onFileOpen={(n) => void openDiff(commit.hash, n.path)}
+              />
             ) : (
               <p className="muted">No files changed.</p>
             )}

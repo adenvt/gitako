@@ -1,4 +1,4 @@
-# gitui — Project Memory
+# GitCanoe — Project Memory
 
 ## Project Overview
 

@@ -6,6 +6,7 @@ import { FileTree } from "@/shared/components/FileTree";
 import type { StatusEntry } from "@/shared/utils/status";
 
 function toTreeEntry(e: StatusEntry) {
+  // Parser normalizes spaces to "." and untracked "?" to "A".
   const status = e.index !== "." ? e.index : e.worktree;
   return { path: e.oldPath ? `${e.oldPath} → ${e.path}` : e.path, status };
 }
@@ -21,6 +22,7 @@ export function CommitComposer() {
     stageAll,
     unstageAll,
     commit,
+    openDiff,
   } = useRepoStore();
 
   const [subject, setSubject] = useState("");
@@ -80,6 +82,7 @@ export function CommitComposer() {
           root={unstagedTree}
           onFileAction={(n) => void toggleStage(n.path, true)}
           actionLabel="Stage"
+          onFileOpen={(n) => void openDiff("", n.path)}
         />
       </div>
 
@@ -96,6 +99,7 @@ export function CommitComposer() {
           root={stagedTree}
           onFileAction={(n) => void toggleStage(n.path, false)}
           actionLabel="Unstage"
+          onFileOpen={(n) => void openDiff("", n.path, true)}
         />
       </div>
 

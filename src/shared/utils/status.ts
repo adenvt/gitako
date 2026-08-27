@@ -28,9 +28,19 @@ export interface StatusEntry {
   oldPath: string | null;
 }
 
+/** Normalize a porcelain status char: space = unchanged, ? = untracked (added). */
+function norm(c: string): string {
+  if (c === " " || c === ".") return ".";
+  if (c === "?") return "A";
+  return c;
+}
+
 /**
  * Parse `git status --porcelain=v1` output. Format per line:
  * `<XY> <path>` or `<XY> <old> -> <new>` for renames.
+ *
+ * Spaces (unchanged) are normalized to ".", and untracked `?` to "A", so
+ * callers can rely on `.` meaning unchanged and a real letter otherwise.
  */
 export function parsePorcelain(stdout: string): StatusEntry[] {
   const entries: StatusEntry[] = [];
@@ -42,9 +52,19 @@ export function parsePorcelain(stdout: string): StatusEntry[] {
     if (arrow !== -1) {
       const oldPath = rest.slice(0, arrow);
       const path = rest.slice(arrow + 4);
-      entries.push({ index: xy[0], worktree: xy[1], path, oldPath });
+      entries.push({
+        index: norm(xy[0]),
+        worktree: norm(xy[1]),
+        path,
+        oldPath,
+      });
     } else {
-      entries.push({ index: xy[0], worktree: xy[1], path: rest, oldPath: null });
+      entries.push({
+        index: norm(xy[0]),
+        worktree: norm(xy[1]),
+        path: rest,
+        oldPath: null,
+      });
     }
   }
   return entries;

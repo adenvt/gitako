@@ -1,12 +1,13 @@
 import { CommitList } from "@/features/commit-graph/CommitList";
 import { CommitDetail } from "@/features/commit-detail/CommitDetail";
 import { CommitComposer } from "@/features/commit/CommitComposer";
+import { DiffView } from "@/features/diff/DiffView";
 import { StatusBar } from "@/features/status-bar/StatusBar";
 import { OpenRepo } from "@/features/repo/OpenRepo";
 import { useRepoStore } from "@/state/store";
 
 export default function App() {
-  const { repoPath, composerOpen } = useRepoStore();
+  const { repoPath, composerOpen, activeDiff } = useRepoStore();
 
   return (
     <div className="app">
@@ -16,7 +17,7 @@ export default function App() {
         <div className="workspace">
           <StatusBar />
           <div className="main">
-            <CommitList />
+            {activeDiff ? <DiffView /> : <CommitList />}
             {composerOpen ? <CommitComposer /> : <CommitDetail />}
           </div>
         </div>

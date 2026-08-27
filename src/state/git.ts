@@ -1,5 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { ChangedFile, Commit, RefInfo } from "@/shared/types/git";
+import type {
+  ChangedFile,
+  Commit,
+  DiffFile,
+  RefInfo,
+} from "@/shared/types/git";
 import { toGitError } from "@/shared/utils/error";
 
 /** Typed wrapper around the Tauri invoke layer. All backend calls go through here. */
@@ -80,6 +85,20 @@ export async function commitChanges(
       subject,
       description,
     });
+  } catch (e) {
+    throw toGitError(e);
+  }
+}
+
+/** Fetch a full-file diff. `rev` empty means the working tree (staged = index vs HEAD). */
+export async function fetchDiff(
+  repoPath: string,
+  rev: string,
+  path: string,
+  staged = false,
+): Promise<DiffFile> {
+  try {
+    return await invoke<DiffFile>("git_diff", { repoPath, rev, path, staged });
   } catch (e) {
     throw toGitError(e);
   }

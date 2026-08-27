@@ -487,7 +487,9 @@ body {
 
 .file-status-m,
 .file-status-r,
-.file-status-c {
+.file-status-c,
+.file-status-t,
+.file-status-u {
   color: var(--accent, #58a6ff);
 }
 
@@ -742,4 +744,174 @@ body {
 .composer-commit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ---------- diff view ---------- */
+.diff-view {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.diff-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.diff-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.diff-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.diff-close:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.diff-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 24px;
+}
+
+.diff-table {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.diff-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  min-height: 100%;
+}
+
+.diff-col {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Always-visible horizontal scrollbar pinned under the diff table. */
+.diff-scrollbar {
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.diff-scrollbar::-webkit-scrollbar {
+  height: 12px;
+}
+
+.diff-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--text-dim);
+  border-radius: 6px;
+}
+
+.diff-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-elev);
+}
+
+.diff-col + .diff-col {
+  border-left: 1px solid var(--border);
+}
+
+.diff-line {
+  display: flex;
+  align-items: stretch;
+  white-space: pre;
+}
+
+.diff-line:hover {
+  background: var(--bg-hover);
+}
+
+.diff-gutter {
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  padding: 0 6px;
+  min-width: 40px;
+  text-align: right;
+  color: var(--text-dim);
+  user-select: none;
+  white-space: pre;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+}
+
+.diff-cell {
+  padding: 0 8px;
+  white-space: pre;
+}
+
+.diff-add .diff-cell {
+  background: rgba(63, 185, 80, 0.12);
+}
+
+.diff-remove .diff-cell {
+  background: rgba(248, 81, 73, 0.12);
+}
+
+/* The side with no counterpart (added/removed lines). */
+.diff-empty {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(255, 255, 255, 0.03) 4px,
+    rgba(255, 255, 255, 0.03) 8px
+  );
+}
+
+.diff-hunk {
+  margin-bottom: 8px;
+}
+
+.diff-hunk-header {
+  padding: 4px 12px;
+  color: var(--accent, #58a6ff);
+  background: var(--bg-elev);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+
+/* File rows that open a diff show a pointer cursor. */
+.tree-file.clickable {
+  cursor: pointer;
 }

@@ -32,3 +32,32 @@ export interface GitErrorPayload {
   message: string;
   code: number | null;
 }
+
+/** Mirrors the Rust git::diff structs. */
+export type DiffLineKind = "context" | "add" | "remove";
+
+export interface DiffLine {
+  kind: DiffLineKind;
+  text: string;
+}
+
+export interface DiffHunk {
+  oldStart: number;
+  oldLines: number;
+  newStart: number;
+  newLines: number;
+  lines: DiffLine[];
+}
+
+export interface DiffFile {
+  oldPath: string;
+  newPath: string;
+  status: string;
+  binary: boolean;
+  tooLarge: boolean;
+  oldLines: string[];
+  newLines: string[];
+  hunks: DiffHunk[];
+  /** Present only when the diff command failed. */
+  error?: string;
+}

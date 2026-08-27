@@ -11,6 +11,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::commit::git_stage,
             commands::commit::git_commit,
+            commands::diff::git_diff,
             commands::log::git_log,
             commands::refs::git_refs,
             commands::repo::git_rev_parse,

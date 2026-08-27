@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import clsx from "clsx";
 import {
   ChevronRight,
   Folder,
@@ -19,6 +20,8 @@ interface FileTreeProps {
   onFileAction?: (node: FileTreeNode) => void;
   /** Label for the hover action button. */
   actionLabel?: string;
+  /** Optional click-to-open (e.g. open the diff for a file). */
+  onFileOpen?: (node: FileTreeNode) => void;
 }
 
 interface TreeRowProps {
@@ -29,6 +32,7 @@ interface TreeRowProps {
   onToggle: (path: string) => void;
   onFileAction?: (node: FileTreeNode) => void;
   actionLabel?: string;
+  onFileOpen?: (node: FileTreeNode) => void;
 }
 
 function TreeRow({
@@ -39,6 +43,7 @@ function TreeRow({
   onToggle,
   onFileAction,
   actionLabel,
+  onFileOpen,
 }: TreeRowProps) {
   if (!node.isFile) {
     return (
@@ -51,7 +56,7 @@ function TreeRow({
         >
           <ChevronRight
             size={14}
-            className={`tree-arrow${open ? " open" : ""}`}
+            className={clsx("tree-arrow", open && "open")}
             aria-hidden
           />
           {open ? (
@@ -73,6 +78,7 @@ function TreeRow({
                 onToggle={onToggle}
                 onFileAction={onFileAction}
                 actionLabel={actionLabel}
+                onFileOpen={onFileOpen}
               />
             ))}
           </div>
@@ -83,9 +89,10 @@ function TreeRow({
 
   return (
     <div
-      className="tree-row tree-file"
+      className={clsx("tree-row tree-file", onFileOpen && "clickable")}
       style={{ paddingLeft: 6 + depth * 14 }}
       title={`${statusLabel(node.status)}: ${node.path}`}
+      onClick={onFileOpen ? () => onFileOpen(node) : undefined}
     >
       <span className="tree-spacer" aria-hidden />
       <StatusIcon status={node.status} />
@@ -93,7 +100,10 @@ function TreeRow({
       {onFileAction && actionLabel && (
         <button
           className="tree-file-action"
-          onClick={() => onFileAction(node)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onFileAction(node);
+          }}
         >
           {actionLabel}
         </button>
@@ -102,7 +112,7 @@ function TreeRow({
   );
 }
 
-export function FileTree({ root, onFileAction, actionLabel }: FileTreeProps) {
+export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTreeProps) {
   const dirPaths = useMemo(() => collectDirPaths(root), [root]);
 
   // Top-level directories start expanded; deeper ones collapsed.
@@ -159,6 +169,7 @@ export function FileTree({ root, onFileAction, actionLabel }: FileTreeProps) {
             onToggle={toggle}
             onFileAction={onFileAction}
             actionLabel={actionLabel}
+            onFileOpen={onFileOpen}
           />
         ))}
       </div>

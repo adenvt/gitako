@@ -10,6 +10,7 @@ use std::process::{Command, Stdio};
 use crate::error::{GitError, GitErrorKind};
 
 pub mod changed;
+pub mod diff;
 pub mod log;
 pub mod refs;
 

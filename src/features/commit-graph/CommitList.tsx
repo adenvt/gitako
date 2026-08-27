@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import { FilePenLine, FilePlus, FileX } from "lucide-react";
 import { GraphCanvas, ROW_HEIGHT, WORKING_ROW } from "./GraphCanvas";
 import { useRepoStore } from "@/state/store";
@@ -9,8 +10,16 @@ const OVERSCAN = 8;
 
 /** Virtualized commit list: canvas graph + DOM text labels, one scroll container. */
 export function CommitList() {
-  const { commits, layout, selectedHash, select, statusEntries, openComposer } =
-    useRepoStore();
+  const {
+    commits,
+    layout,
+    selectedHash,
+    select,
+    statusEntries,
+    openComposer,
+    workingSelected,
+    setWorkingSelected,
+  } = useRepoStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 50 });
 
@@ -58,6 +67,7 @@ export function CommitList() {
         layout={layout}
         selectedHash={selectedHash}
         hasWorkingRow={hasWorkingRow}
+        workingSelected={workingSelected}
         scrollRef={scrollRef}
       />
       <div className="commit-scroll" ref={scrollRef}>
@@ -66,9 +76,16 @@ export function CommitList() {
             {/* Working-directory row (row 0), only when there are changes. */}
             {hasWorkingRow && (
               <div
-                className="commit-row working-row"
+                className={clsx(
+                  "commit-row working-row",
+                  workingSelected && "selected",
+                )}
                 style={{ top: WORKING_ROW * ROW_HEIGHT, height: ROW_HEIGHT }}
-                onClick={() => openComposer()}
+                onClick={() => {
+                  // Select the WIP row (deselects any commit) + open composer.
+                  setWorkingSelected(true);
+                  openComposer();
+                }}
                 title="Open commit composer"
               >
                 <span className="commit-subject wip-label">
@@ -102,7 +119,7 @@ export function CommitList() {
               return (
                 <div
                   key={c.hash}
-                  className={`commit-row${isSelected ? " selected" : ""}`}
+                  className={clsx("commit-row", isSelected && "selected")}
                   style={{
                     top: (i + offset) * ROW_HEIGHT,
                     height: ROW_HEIGHT,

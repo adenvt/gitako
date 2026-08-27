@@ -1,11 +1,12 @@
 import { create } from "zustand";
-import type { ChangedFile, Commit, RefInfo } from "@/shared/types/git";
+import type { ChangedFile, Commit, DiffFile, RefInfo } from "@/shared/types/git";
 import { layout, type LayoutResult } from "@/features/commit-graph/layout";
 import {
   fetchLog,
   fetchRefs,
   fetchShowFiles,
   fetchStatus,
+  fetchDiff,
   stageFiles,
   commitChanges,
 } from "./git";
@@ -32,6 +33,12 @@ interface RepoState {
   stagedPaths: Set<string>;
   /** Error from a failed stage/commit, shown in the composer. */
   composerError: string | null;
+  /** Currently open diff (replaces the graph panel). */
+  activeDiff: { hash: string; path: string; staged: boolean } | null;
+  /** True when the working-directory (WIP) row is selected. */
+  workingSelected: boolean;
+  /** Cached diffs, keyed by `${hash}|${path}`. */
+  diffCache: Record<string, DiffFile>;
   /** True while a refresh is in flight. */
   loading: boolean;
   error: string | null;
@@ -42,10 +49,13 @@ interface RepoState {
   loadCommitFiles: (hash: string) => Promise<void>;
   openComposer: () => void;
   closeComposer: () => void;
+  setWorkingSelected: (v: boolean) => void;
   toggleStage: (path: string, staged: boolean) => Promise<void>;
   stageAll: () => Promise<void>;
   unstageAll: () => Promise<void>;
   commit: (subject: string, description: string) => Promise<void>;
+  openDiff: (hash: string, path: string, staged?: boolean) => Promise<void>;
+  closeDiff: () => void;
 }
 
 function computeLayout(commits: Commit[]): LayoutResult {
@@ -65,6 +75,9 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   composerOpen: false,
   stagedPaths: new Set(),
   composerError: null,
+  activeDiff: null,
+  workingSelected: false,
+  diffCache: {},
   loading: false,
   error: null,
 
@@ -113,8 +126,13 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   },
 
   select(hash) {
-    // Selecting a commit closes the composer (back to detail view).
-    set({ selectedHash: hash, composerOpen: false });
+    // Selecting a commit closes the composer and deselects the WIP row.
+    set({
+      selectedHash: hash,
+      composerOpen: false,
+      activeDiff: null,
+      workingSelected: false,
+    });
   },
 
   async loadCommitFiles(hash) {
@@ -133,11 +151,19 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   },
 
   openComposer() {
-    set({ composerOpen: true, composerError: null });
+    set({ composerOpen: true, composerError: null, activeDiff: null });
   },
 
   closeComposer() {
-    set({ composerOpen: false });
+    set({ composerOpen: false, activeDiff: null });
+  },
+
+  setWorkingSelected(v) {
+    // Selecting the WIP row deselects any commit.
+    set({
+      workingSelected: v,
+      ...(v ? { selectedHash: null } : {}),
+    });
   },
 
   async toggleStage(path, staged) {
@@ -197,11 +223,47 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     set({ composerError: null });
     try {
       await commitChanges(repoPath, subject.trim(), description);
-      set({ composerOpen: false, stagedPaths: new Set() });
+      set({ composerOpen: false, stagedPaths: new Set(), activeDiff: null });
       await get().refresh();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       set({ composerError: message });
     }
+  },
+
+  async openDiff(hash, path, staged = false) {
+    const { repoPath, diffCache } = get();
+    if (!repoPath) return;
+    const key = `${hash}|${path}|${staged ? "s" : "w"}`;
+    set({ activeDiff: { hash, path, staged } });
+    if (diffCache[key]) return;
+    try {
+      const diff = await fetchDiff(repoPath, hash, path, staged);
+      set({ diffCache: { ...diffCache, [key]: diff } });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      console.error("openDiff failed:", { hash, path, staged, message });
+      // Surface the error in the diff view instead of silent failure.
+      set({
+        diffCache: {
+          ...diffCache,
+          [key]: {
+            oldPath: path,
+            newPath: path,
+            status: "M",
+            binary: false,
+            tooLarge: false,
+            oldLines: [],
+            newLines: [],
+            hunks: [],
+            error: message,
+          } as DiffFile & { error: string },
+        },
+      });
+    }
+  },
+
+  closeDiff() {
+    set({ activeDiff: null });
   },
 }));

@@ -6,7 +6,7 @@ export interface RecentRepo {
   lastOpened: number;
 }
 
-const STORAGE_KEY = "gitui.recentRepos";
+const STORAGE_KEY = "gitcanoe.recentRepos";
 const MAX_RECENT = 20;
 
 export function loadRecentRepos(): RecentRepo[] {

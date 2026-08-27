@@ -5,6 +5,7 @@
 //! emits hidden symbols in the defining module, so re-exports don't work).
 
 pub mod commit;
+pub mod diff;
 pub mod log;
 pub mod refs;
 pub mod repo;
