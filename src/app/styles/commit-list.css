@@ -1,0 +1,126 @@
+/* ---------- commit list ---------- */
+.commit-list {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+
+/* Canvas pinned to the viewport, behind the scroll content. */
+.graph-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.commit-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
+}
+
+.commit-rows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.commit-row {
+  position: absolute;
+  left: 110px; /* graph gutter */
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.commit-row:hover {
+  background: var(--bg-hover);
+}
+
+.commit-row.selected {
+  background: var(--selected);
+}
+
+/* Working-directory row above the newest commit. */
+.working-row {
+  cursor: pointer;
+}
+
+.working-row:hover {
+  background: var(--bg-hover);
+}
+
+.wip-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.wip-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.wip-icon.added {
+  color: var(--ok, #3fb950);
+}
+
+.wip-icon.deleted {
+  color: var(--err, #f85149);
+}
+
+.wip-icon.modified {
+  color: var(--accent, #58a6ff);
+}
+
+.commit-subject {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.commit-meta {
+  display: flex;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.commit-refs {
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.commit-ref-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  background: #3b82f6;
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+

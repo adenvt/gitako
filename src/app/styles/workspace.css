@@ -1,0 +1,41 @@
+/* ---------- workspace ---------- */
+.workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.status-branch {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.status-path {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40%;
+}
+
+.status-loading {
+  color: var(--accent);
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
