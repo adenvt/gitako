@@ -16,7 +16,8 @@
       "Shell(npx tsc --noEmit 2 >& 1)",
       "Shell(npx vite-node src/graph/preview-render.mjs 2 >& 1)",
       "Shell(node --experimental-strip-types src/graph/preview-render.mjs 2 >& 1)",
-      "Shell(NODE_ENV=development npx tsc --noEmit 2 >& 1)"
+      "Shell(NODE_ENV=development npx tsc --noEmit 2 >& 1)",
+      "Shell(NODE_ENV=development npx vitest run 2 >& 1)"
     ],
     "deny": [],
     "defaultMode": "default"

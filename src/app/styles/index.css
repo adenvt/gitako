@@ -624,6 +624,7 @@ body {
 /* ---------- commit composer ---------- */
 .composer {
   gap: 12px;
+  min-height: 0;
 }
 
 .composer-head {
@@ -655,6 +656,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-height: 0;
 }
 
 .staging-header {
