@@ -1,4 +1,4 @@
-import type { GitErrorPayload } from "../types/git";
+import type { GitErrorPayload } from "@/shared/types/git";
 
 /** Coerce a thrown invoke error into the typed GitErrorPayload. */
 export function toGitError(e: unknown): GitErrorPayload {

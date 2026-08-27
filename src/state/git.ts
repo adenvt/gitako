@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { ChangedFile, Commit, RefInfo } from "../types/git";
-import { toGitError } from "../utils/error";
+import type { ChangedFile, Commit, RefInfo } from "@/shared/types/git";
+import { toGitError } from "@/shared/utils/error";
 
 /** Typed wrapper around the Tauri invoke layer. All backend calls go through here. */
 

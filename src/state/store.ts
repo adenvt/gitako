@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import type { ChangedFile, Commit, RefInfo } from "../types/git";
-import { layout, type LayoutResult } from "../graph/layout";
+import type { ChangedFile, Commit, RefInfo } from "@/shared/types/git";
+import { layout, type LayoutResult } from "@/features/commit-graph/layout";
 import { fetchLog, fetchRefs, fetchShowFiles } from "./git";
 
 interface RepoState {

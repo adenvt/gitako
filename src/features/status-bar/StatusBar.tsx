@@ -1,4 +1,4 @@
-import { useRepoStore } from "../state/store";
+import { useRepoStore } from "@/state/store";
 
 export function StatusBar() {
   const { repoPath, commits, loading } = useRepoStore();

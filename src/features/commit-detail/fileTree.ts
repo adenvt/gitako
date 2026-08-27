@@ -1,4 +1,4 @@
-import type { ChangedFile } from "../types/git";
+import type { ChangedFile } from "@/shared/types/git";
 
 /** Prefix shown in the tree root row for files at the repo root. */
 const ROOT_LABEL = "…";

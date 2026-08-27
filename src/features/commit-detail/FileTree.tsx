@@ -10,8 +10,8 @@ import {
   ListCollapse,
   ListTree,
 } from "lucide-react";
-import { collectDirPaths, type FileTreeNode } from "../utils/fileTree";
-import { statusLabel } from "../utils/status";
+import { collectDirPaths, type FileTreeNode } from "./fileTree";
+import { statusLabel } from "@/shared/utils/status";
 
 interface FileTreeProps {
   root: FileTreeNode;

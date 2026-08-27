@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from "react";
-import { useRepoStore } from "../state/store";
-import { formatDate } from "../utils/time";
-import { shortHash } from "../utils/hash";
-import { statusLabel } from "../utils/status";
-import { buildFileTree, fileStatusCounts } from "../utils/fileTree";
+import { useRepoStore } from "@/state/store";
+import { formatDate } from "@/shared/utils/time";
+import { shortHash } from "@/shared/utils/hash";
+import { statusLabel } from "@/shared/utils/status";
+import { buildFileTree, fileStatusCounts } from "./fileTree";
 import { FileTree, StatusIcon } from "./FileTree";
 
 export function CommitDetail() {

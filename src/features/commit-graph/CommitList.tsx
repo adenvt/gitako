@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { GraphCanvas, ROW_HEIGHT } from "../graph/GraphCanvas";
-import { useRepoStore } from "../state/store";
-import { timeAgo } from "../utils/time";
+import { GraphCanvas, ROW_HEIGHT } from "./GraphCanvas";
+import { useRepoStore } from "@/state/store";
+import { timeAgo } from "@/shared/utils/time";
 
 const OVERSCAN = 8;
 
