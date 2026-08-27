@@ -1,7 +1,15 @@
 import { create } from "zustand";
 import type { ChangedFile, Commit, RefInfo } from "@/shared/types/git";
 import { layout, type LayoutResult } from "@/features/commit-graph/layout";
-import { fetchLog, fetchRefs, fetchShowFiles } from "./git";
+import {
+  fetchLog,
+  fetchRefs,
+  fetchShowFiles,
+  fetchStatus,
+  stageFiles,
+  commitChanges,
+} from "./git";
+import { parsePorcelain, type StatusEntry } from "@/shared/utils/status";
 
 interface RepoState {
   /** Root path of the open repository. */
@@ -16,6 +24,14 @@ interface RepoState {
   selectedHash: string | null;
   /** Changed files per commit hash, lazily fetched. */
   filesByCommit: Record<string, ChangedFile[]>;
+  /** Parsed working-tree status (uncommitted changes). */
+  statusEntries: StatusEntry[];
+  /** True while the commit composer is open (right pane). */
+  composerOpen: boolean;
+  /** Paths the user has staged in the composer. */
+  stagedPaths: Set<string>;
+  /** Error from a failed stage/commit, shown in the composer. */
+  composerError: string | null;
   /** True while a refresh is in flight. */
   loading: boolean;
   error: string | null;
@@ -24,6 +40,12 @@ interface RepoState {
   refresh: () => Promise<void>;
   select: (hash: string | null) => void;
   loadCommitFiles: (hash: string) => Promise<void>;
+  openComposer: () => void;
+  closeComposer: () => void;
+  toggleStage: (path: string, staged: boolean) => Promise<void>;
+  stageAll: () => Promise<void>;
+  unstageAll: () => Promise<void>;
+  commit: (subject: string, description: string) => Promise<void>;
 }
 
 function computeLayout(commits: Commit[]): LayoutResult {
@@ -39,6 +61,10 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   layout: null,
   selectedHash: null,
   filesByCommit: {},
+  statusEntries: [],
+  composerOpen: false,
+  stagedPaths: new Set(),
+  composerError: null,
   loading: false,
   error: null,
 
@@ -56,9 +82,10 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     if (!repoPath) return;
     set({ loading: true, error: null });
     try {
-      const [commits, refs] = await Promise.all([
+      const [commits, refs, status] = await Promise.all([
         fetchLog(repoPath),
         fetchRefs(repoPath),
+        fetchStatus(repoPath).catch(() => ""),
       ]);
       // Join refs onto commits for badge display.
       const refByCommit = new Map<string, RefInfo[]>();
@@ -75,6 +102,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
         commits: withRefs,
         refs,
         layout: computeLayout(withRefs),
+        statusEntries: parsePorcelain(status),
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -85,7 +113,8 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   },
 
   select(hash) {
-    set({ selectedHash: hash });
+    // Selecting a commit closes the composer (back to detail view).
+    set({ selectedHash: hash, composerOpen: false });
   },
 
   async loadCommitFiles(hash) {
@@ -100,6 +129,79 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       // File list is a nice-to-have; don't fail the whole selection.
       const message = e instanceof Error ? e.message : String(e);
       console.error("loadCommitFiles", message);
+    }
+  },
+
+  openComposer() {
+    set({ composerOpen: true, composerError: null });
+  },
+
+  closeComposer() {
+    set({ composerOpen: false });
+  },
+
+  async toggleStage(path, staged) {
+    const { repoPath, stagedPaths } = get();
+    if (!repoPath) return;
+    // Optimistic update.
+    const next = new Set(stagedPaths);
+    if (staged) next.add(path);
+    else next.delete(path);
+    set({ stagedPaths: next, composerError: null });
+    try {
+      await stageFiles(repoPath, [path], staged);
+    } catch (e) {
+      // Revert on failure.
+      const rollback = new Set(get().stagedPaths);
+      if (staged) rollback.delete(path);
+      else rollback.add(path);
+      const message = e instanceof Error ? e.message : String(e);
+      set({ stagedPaths: rollback, composerError: message });
+    }
+  },
+
+  async stageAll() {
+    const { repoPath, statusEntries, stagedPaths } = get();
+    if (!repoPath) return;
+    const unstaged = statusEntries
+      .filter((s) => !stagedPaths.has(s.path))
+      .map((s) => s.path);
+    if (unstaged.length === 0) return;
+    const next = new Set(stagedPaths);
+    unstaged.forEach((p) => next.add(p));
+    set({ stagedPaths: next, composerError: null });
+    try {
+      await stageFiles(repoPath, unstaged, true);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      set({ stagedPaths: get().stagedPaths, composerError: message });
+    }
+  },
+
+  async unstageAll() {
+    const { repoPath, stagedPaths } = get();
+    if (!repoPath || stagedPaths.size === 0) return;
+    const paths = [...stagedPaths];
+    set({ stagedPaths: new Set(), composerError: null });
+    try {
+      await stageFiles(repoPath, paths, false);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      set({ stagedPaths: new Set(paths), composerError: message });
+    }
+  },
+
+  async commit(subject, description) {
+    const { repoPath, stagedPaths } = get();
+    if (!repoPath || stagedPaths.size === 0) return;
+    set({ composerError: null });
+    try {
+      await commitChanges(repoPath, subject.trim(), description);
+      set({ composerOpen: false, stagedPaths: new Set() });
+      await get().refresh();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      set({ composerError: message });
     }
   },
 }));

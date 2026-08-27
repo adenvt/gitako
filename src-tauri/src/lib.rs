@@ -9,6 +9,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            commands::commit::git_stage,
+            commands::commit::git_commit,
             commands::log::git_log,
             commands::refs::git_refs,
             commands::repo::git_rev_parse,

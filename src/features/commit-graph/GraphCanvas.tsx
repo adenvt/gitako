@@ -6,9 +6,14 @@ export const ROW_HEIGHT = 36;
 export const LANE_WIDTH = 18;
 export const LANE_PAD = 12; // left padding before lane 0
 
+/** Visual rows above the first commit: the working-directory row. */
+export const WORKING_ROW = 0;
+
 interface GraphCanvasProps {
   layout: LayoutResult;
   selectedHash: string | null;
+  /** True when the working-directory row should be drawn (uncommitted changes). */
+  hasWorkingRow: boolean;
   /** Scroll container that owns vertical scrolling (set by parent). */
   scrollRef: React.RefObject<HTMLDivElement>;
 }
@@ -25,12 +30,23 @@ interface GraphCanvasProps {
  *  - edges: horizontal connector at the CHILD's row from child lane to parent
  *    lane, when the lanes differ
  */
-export function GraphCanvas({ layout, selectedHash, scrollRef }: GraphCanvasProps) {
+export function GraphCanvas({
+  layout,
+  selectedHash,
+  hasWorkingRow,
+  scrollRef,
+}: GraphCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layoutRef = useRef(layout);
   const selectedRef = useRef(selectedHash);
+  const workingRef = useRef(hasWorkingRow);
   layoutRef.current = layout;
   selectedRef.current = selectedHash;
+  workingRef.current = hasWorkingRow;
+
+  /** Row offset for commits: 1 when the working row is shown, else 0. */
+  const offsetRef = useRef(hasWorkingRow ? 1 : 0);
+  offsetRef.current = hasWorkingRow ? 1 : 0;
 
   const drawRef = useRef<() => void>(() => {});
   useEffect(() => {
@@ -55,7 +71,8 @@ export function GraphCanvas({ layout, selectedHash, scrollRef }: GraphCanvasProp
       const cur = layoutRef.current;
       ctx.clearRect(0, 0, width, height);
 
-      const totalRows = cur.commits.length;
+      const offset = offsetRef.current;
+      const totalRows = cur.commits.length + offset;
       const scrollTop = container.scrollTop;
       const firstRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 5);
       const lastRow = Math.min(
@@ -67,6 +84,32 @@ export function GraphCanvas({ layout, selectedHash, scrollRef }: GraphCanvasProp
       const screenYOf = (row: number) =>
         row * ROW_HEIGHT + ROW_HEIGHT / 2 - scrollTop;
 
+      // ---- working directory: dashed connector from row 0 down to HEAD ----
+      const headCommit = cur.commits[0];
+      if (workingRef.current && headCommit) {
+        const wx = xOf(headCommit.lane);
+        const wy = screenYOf(WORKING_ROW);
+        const hy = screenYOf(offset);
+        ctx.strokeStyle = "#888";
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(wx, wy);
+        ctx.lineTo(wx, hy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Working-directory dot.
+        ctx.beginPath();
+        ctx.arc(wx, wy, 5, 0, Math.PI * 2);
+        ctx.fillStyle = "#888";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.85)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
       // ---- edges: vertical lines + curved connectors ----
       // Each edge connects a child (higher row) to a parent (lower row).
       // Same-lane edges draw a straight vertical line between dot centers.
@@ -77,8 +120,8 @@ export function GraphCanvas({ layout, selectedHash, scrollRef }: GraphCanvasProp
       const R = 6; // corner radius
 
       for (const edge of cur.edges) {
-        const cy = screenYOf(edge.childIndex);
-        const py = screenYOf(edge.parentIndex);
+        const cy = screenYOf(edge.childIndex + offset);
+        const py = screenYOf(edge.parentIndex + offset);
         // Skip edges entirely outside the viewport (both endpoints off-screen).
         if ((cy < 0 && py < 0) || (cy > height && py > height)) continue;
 
@@ -117,7 +160,8 @@ export function GraphCanvas({ layout, selectedHash, scrollRef }: GraphCanvasProp
 
       // ---- commits ----
       for (let i = firstRow; i <= lastRow; i++) {
-        const c = cur.commits[i];
+        const commitIdx = i - offset;
+        const c = cur.commits[commitIdx];
         if (!c) continue;
         const x = xOf(c.lane);
         const y = screenYOf(i);
@@ -169,10 +213,10 @@ export function GraphCanvas({ layout, selectedHash, scrollRef }: GraphCanvasProp
     return () => container.removeEventListener("scroll", onScroll);
   }, [scrollRef]);
 
-  // Redraw when the selected commit changes.
+  // Redraw when the selected commit or working-row visibility changes.
   useEffect(() => {
     drawRef.current();
-  }, [selectedHash]);
+  }, [selectedHash, hasWorkingRow]);
 
   return (
     <canvas

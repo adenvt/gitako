@@ -4,7 +4,8 @@ import { formatDate } from "@/shared/utils/time";
 import { shortHash } from "@/shared/utils/hash";
 import { statusLabel } from "@/shared/utils/status";
 import { buildFileTree, fileStatusCounts } from "./fileTree";
-import { FileTree, StatusIcon } from "./FileTree";
+import { FileTree } from "./FileTree";
+import { StatusIcon } from "@/shared/components/StatusIcon";
 
 export function CommitDetail() {
   const { commits, selectedHash, filesByCommit, loadCommitFiles } =

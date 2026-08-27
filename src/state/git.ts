@@ -54,3 +54,33 @@ export async function fetchShowFiles(
     throw toGitError(e);
   }
 }
+
+/** Stage (`staged: true`) or unstage (`staged: false`) the given paths. */
+export async function stageFiles(
+  repoPath: string,
+  paths: string[],
+  staged: boolean,
+): Promise<void> {
+  try {
+    await invoke("git_stage", { repoPath, paths, staged });
+  } catch (e) {
+    throw toGitError(e);
+  }
+}
+
+/** Commit the staged changes; resolves to the new HEAD hash. */
+export async function commitChanges(
+  repoPath: string,
+  subject: string,
+  description: string,
+): Promise<string> {
+  try {
+    return await invoke<string>("git_commit", {
+      repoPath,
+      subject,
+      description,
+    });
+  } catch (e) {
+    throw toGitError(e);
+  }
+}

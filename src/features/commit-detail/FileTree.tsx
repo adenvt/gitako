@@ -1,10 +1,6 @@
 import { useMemo, useState } from "react";
 import {
   ChevronRight,
-  FilePenLine,
-  FilePlus,
-  FileSymlink,
-  FileX,
   Folder,
   FolderOpen,
   ListCollapse,
@@ -12,30 +8,10 @@ import {
 } from "lucide-react";
 import { collectDirPaths, type FileTreeNode } from "./fileTree";
 import { statusLabel } from "@/shared/utils/status";
+import { StatusIcon } from "@/shared/components/StatusIcon";
 
 interface FileTreeProps {
   root: FileTreeNode;
-}
-
-/** Icon for a file's git status, matching the reference UI's pencil/plus style. */
-export function StatusIcon({ status }: { status: string }) {
-  const props = {
-    size: 14,
-    strokeWidth: 2.2,
-    className: `tree-status-icon file-status-${status.toLowerCase()}`,
-    "aria-hidden": true,
-  } as const;
-  switch (status) {
-    case "A":
-      return <FilePlus {...props} />;
-    case "D":
-      return <FileX {...props} />;
-    case "R":
-    case "C":
-      return <FileSymlink {...props} />;
-    default:
-      return <FilePenLine {...props} />;
-  }
 }
 
 interface TreeRowProps {
