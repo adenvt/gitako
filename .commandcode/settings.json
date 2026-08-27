@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(node --version)",
+      "Shell(npm:*)",
+      "Shell(cargo:*)",
+      "Shell(rustc:*)",
+      "Shell(git:*)",
+      "Shell(pkg-config:*)",
+      "Shell(npx vitest run 2 >& 1)",
+      "Shell(.:*)",
+      "Shell(./target/debug/gitui:*)",
+      "Shell(grep:*)",
+      "Shell(ss:*)",
+      "Shell(fuser:*)",
+      "Shell(npx tsc --noEmit 2 >& 1)",
+      "Shell(npx vite-node src/graph/preview-render.mjs 2 >& 1)",
+      "Shell(node --experimental-strip-types src/graph/preview-render.mjs 2 >& 1)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}
