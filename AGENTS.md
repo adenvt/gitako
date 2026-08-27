@@ -27,11 +27,13 @@ src/
   app/                  # app shell: App.tsx, main.tsx, styles/index.css
   features/
     commit-graph/       # graph + commit list (canvas, layout, colors)
-    commit-detail/      # detail panel (CommitDetail, FileTree, fileTree.ts)
+    commit-detail/      # detail panel (CommitDetail)
+    commit/             # commit composer (CommitComposer)
     repo/               # open-repo flow
     status-bar/         # StatusBar
   shared/
-    utils/              # time, hash, status, error
+    components/         # FileTree, StatusIcon (used by 2+ features)
+    utils/              # time, hash, status, error, fileTree
     types/              # git.ts
   state/                # zustand store + tauri invoke wrappers
 ```
@@ -39,8 +41,10 @@ src/
 Rules:
 
 - New feature code goes in `src/features/<feature-name>/` (component + any logic that
-  only it uses — e.g. the file-tree builder lives with FileTree).
-- Code reused by 2+ features goes in `src/shared/` (`utils/` or `types/`).
+  only it uses).
+- Code reused by 2+ features goes in `src/shared/` (`components/`, `utils/`, or
+  `types/`) — e.g. the file tree builder + FileTree component are shared by the
+  commit-detail and commit composer features.
 - App shell / entry points / global styles stay in `src/app/`.
 - Stores and Tauri invoke wrappers go in `src/state/`.
 - All imports use the `@/` alias: `@/features/...`, `@/shared/...`, `@/state/...`.

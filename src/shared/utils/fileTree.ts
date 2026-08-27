@@ -1,4 +1,8 @@
-import type { ChangedFile } from "@/shared/types/git";
+/** A path + git status letter pair, the input shape for tree building. */
+export interface TreeEntry {
+  path: string;
+  status: string;
+}
 
 /** Prefix shown in the tree root row for files at the repo root. */
 const ROOT_LABEL = "…";
@@ -24,11 +28,11 @@ export interface FileTreeNode {
   children: FileTreeNode[];
 }
 
-function statusOf(f: ChangedFile): string {
-  return f.status[0] ?? f.status;
+function statusOf(e: TreeEntry): string {
+  return e.status[0] ?? e.status;
 }
 
-export function buildFileTree(files: ChangedFile[]): FileTreeNode {
+export function buildFileTree(entries: TreeEntry[]): FileTreeNode {
   const root: FileTreeNode = {
     name: ROOT_LABEL,
     path: "",
@@ -37,8 +41,8 @@ export function buildFileTree(files: ChangedFile[]): FileTreeNode {
     children: [],
   };
 
-  for (const f of files) {
-    const parts = f.path.split("/");
+  for (const e of entries) {
+    const parts = e.path.split("/");
     let node = root;
     let acc = "";
     for (let i = 0; i < parts.length; i++) {
@@ -60,7 +64,7 @@ export function buildFileTree(files: ChangedFile[]): FileTreeNode {
     }
     // Leaf: attach the git status.
     if (node.isFile) {
-      node.status = statusOf(f);
+      node.status = statusOf(e);
     }
   }
 
@@ -75,16 +79,6 @@ export function buildFileTree(files: ChangedFile[]): FileTreeNode {
   sort(root);
 
   return root;
-}
-
-/** Number of changed files per status letter, e.g. { M: 3, A: 2 }. */
-export function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const f of files) {
-    const s = statusOf(f);
-    counts[s] = (counts[s] ?? 0) + 1;
-  }
-  return counts;
 }
 
 /** All directory node paths, for "expand all" / "collapse all". */

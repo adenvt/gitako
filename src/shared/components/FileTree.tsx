@@ -6,12 +6,19 @@ import {
   ListCollapse,
   ListTree,
 } from "lucide-react";
-import { collectDirPaths, type FileTreeNode } from "./fileTree";
+import {
+  collectDirPaths,
+  type FileTreeNode,
+} from "@/shared/utils/fileTree";
 import { statusLabel } from "@/shared/utils/status";
 import { StatusIcon } from "@/shared/components/StatusIcon";
 
 interface FileTreeProps {
   root: FileTreeNode;
+  /** Optional per-file action (e.g. Stage/Unstage) revealed on hover. */
+  onFileAction?: (node: FileTreeNode) => void;
+  /** Label for the hover action button. */
+  actionLabel?: string;
 }
 
 interface TreeRowProps {
@@ -20,9 +27,19 @@ interface TreeRowProps {
   open: boolean;
   expanded: Set<string>;
   onToggle: (path: string) => void;
+  onFileAction?: (node: FileTreeNode) => void;
+  actionLabel?: string;
 }
 
-function TreeRow({ node, depth, open, expanded, onToggle }: TreeRowProps) {
+function TreeRow({
+  node,
+  depth,
+  open,
+  expanded,
+  onToggle,
+  onFileAction,
+  actionLabel,
+}: TreeRowProps) {
   if (!node.isFile) {
     return (
       <>
@@ -54,6 +71,8 @@ function TreeRow({ node, depth, open, expanded, onToggle }: TreeRowProps) {
                 open={expanded.has(c.path)}
                 expanded={expanded}
                 onToggle={onToggle}
+                onFileAction={onFileAction}
+                actionLabel={actionLabel}
               />
             ))}
           </div>
@@ -71,11 +90,19 @@ function TreeRow({ node, depth, open, expanded, onToggle }: TreeRowProps) {
       <span className="tree-spacer" aria-hidden />
       <StatusIcon status={node.status} />
       <span className="tree-name mono">{node.name}</span>
+      {onFileAction && actionLabel && (
+        <button
+          className="tree-file-action"
+          onClick={() => onFileAction(node)}
+        >
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }
 
-export function FileTree({ root }: FileTreeProps) {
+export function FileTree({ root, onFileAction, actionLabel }: FileTreeProps) {
   const dirPaths = useMemo(() => collectDirPaths(root), [root]);
 
   // Top-level directories start expanded; deeper ones collapsed.
@@ -130,6 +157,8 @@ export function FileTree({ root }: FileTreeProps) {
             open={expanded.has(c.path)}
             expanded={expanded}
             onToggle={toggle}
+            onFileAction={onFileAction}
+            actionLabel={actionLabel}
           />
         ))}
       </div>

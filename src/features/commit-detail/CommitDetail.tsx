@@ -3,9 +3,20 @@ import { useRepoStore } from "@/state/store";
 import { formatDate } from "@/shared/utils/time";
 import { shortHash } from "@/shared/utils/hash";
 import { statusLabel } from "@/shared/utils/status";
-import { buildFileTree, fileStatusCounts } from "./fileTree";
-import { FileTree } from "./FileTree";
+import { buildFileTree } from "@/shared/utils/fileTree";
+import { FileTree } from "@/shared/components/FileTree";
 import { StatusIcon } from "@/shared/components/StatusIcon";
+import type { ChangedFile } from "@/shared/types/git";
+
+/** Number of changed files per status letter, e.g. { M: 3, A: 2 }. */
+function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const f of files) {
+    const s = f.status[0] ?? f.status;
+    counts[s] = (counts[s] ?? 0) + 1;
+  }
+  return counts;
+}
 
 export function CommitDetail() {
   const { commits, selectedHash, filesByCommit, loadCommitFiles } =

@@ -1,10 +1,16 @@
 import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useRepoStore } from "@/state/store";
+import { buildFileTree } from "@/shared/utils/fileTree";
+import { FileTree } from "@/shared/components/FileTree";
 import type { StatusEntry } from "@/shared/utils/status";
-import { StagingList } from "./StagingList";
 
-/** Right-pane commit composer: two staging lists + subject/description + commit. */
+function toTreeEntry(e: StatusEntry) {
+  const status = e.index !== "." ? e.index : e.worktree;
+  return { path: e.oldPath ? `${e.oldPath} → ${e.path}` : e.path, status };
+}
+
+/** Right-pane commit composer: two staging trees + subject/description + commit. */
 export function CommitComposer() {
   const {
     statusEntries,
@@ -21,17 +27,22 @@ export function CommitComposer() {
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const { unstaged, staged } = useMemo(() => {
-    const u: StatusEntry[] = [];
-    const s: StatusEntry[] = [];
+  const { unstagedTree, stagedTree, unstagedCount, stagedCount } = useMemo(() => {
+    const unstaged: StatusEntry[] = [];
+    const staged: StatusEntry[] = [];
     for (const e of statusEntries) {
-      if (stagedPaths.has(e.path)) s.push(e);
-      else u.push(e);
+      if (stagedPaths.has(e.path)) staged.push(e);
+      else unstaged.push(e);
     }
-    return { unstaged: u, staged: s };
+    return {
+      unstagedTree: buildFileTree(unstaged.map(toTreeEntry)),
+      stagedTree: buildFileTree(staged.map(toTreeEntry)),
+      unstagedCount: unstaged.length,
+      stagedCount: staged.length,
+    };
   }, [statusEntries, stagedPaths]);
 
-  const canCommit = staged.length > 0 && subject.trim().length > 0 && !busy;
+  const canCommit = stagedCount > 0 && subject.trim().length > 0 && !busy;
 
   const handleCommit = async () => {
     if (!canCommit) return;
@@ -56,23 +67,37 @@ export function CommitComposer() {
         </button>
       </div>
 
-      <StagingList
-        title="Unstaged"
-        entries={unstaged}
-        onBulk={() => void stageAll()}
-        bulkLabel="Stage all"
-        onRowAction={(e) => void toggleStage(e.path, true)}
-        actionLabel="Stage"
-      />
+      <div className="staging-section">
+        <div className="staging-header">
+          <span className="staging-title">Unstaged ({unstagedCount})</span>
+          {unstagedCount > 0 && (
+            <button className="staging-bulk" onClick={() => void stageAll()}>
+              Stage all
+            </button>
+          )}
+        </div>
+        <FileTree
+          root={unstagedTree}
+          onFileAction={(n) => void toggleStage(n.path, true)}
+          actionLabel="Stage"
+        />
+      </div>
 
-      <StagingList
-        title="Staged"
-        entries={staged}
-        onBulk={() => void unstageAll()}
-        bulkLabel="Unstage all"
-        onRowAction={(e) => void toggleStage(e.path, false)}
-        actionLabel="Unstage"
-      />
+      <div className="staging-section">
+        <div className="staging-header">
+          <span className="staging-title">Staged ({stagedCount})</span>
+          {stagedCount > 0 && (
+            <button className="staging-bulk" onClick={() => void unstageAll()}>
+              Unstage all
+            </button>
+          )}
+        </div>
+        <FileTree
+          root={stagedTree}
+          onFileAction={(n) => void toggleStage(n.path, false)}
+          actionLabel="Unstage"
+        />
+      </div>
 
       <div className="composer-form">
         <input
