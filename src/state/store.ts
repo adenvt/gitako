@@ -19,6 +19,8 @@ interface RepoState {
   commits: Commit[];
   /** Refs joined to commits for badge display. */
   refs: RefInfo[];
+  /** Full ref info per commit hash (for badge icons/kinds). */
+  refsByCommit: Record<string, RefInfo[]>;
   /** Layout computed from commits. */
   layout: LayoutResult | null;
   /** Hash of the selected commit. */
@@ -37,6 +39,8 @@ interface RepoState {
   activeDiff: { hash: string; path: string; staged: boolean } | null;
   /** True when the working-directory (WIP) row is selected. */
   workingSelected: boolean;
+  /** User-resizable width of the graph band (0 = auto from lane count). */
+  graphWidth: number;
   /** Cached diffs, keyed by `${hash}|${path}`. */
   diffCache: Record<string, DiffFile>;
   /** True while a refresh is in flight. */
@@ -56,6 +60,7 @@ interface RepoState {
   commit: (subject: string, description: string) => Promise<void>;
   openDiff: (hash: string, path: string, staged?: boolean) => Promise<void>;
   closeDiff: () => void;
+  setGraphWidth: (w: number) => void;
 }
 
 function computeLayout(commits: Commit[]): LayoutResult {
@@ -66,6 +71,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   repoPath: null,
   commits: [],
   refs: [],
+  refsByCommit: {},
   layout: null,
   selectedHash: null,
   filesByCommit: {},
@@ -75,6 +81,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   composerError: null,
   activeDiff: null,
   workingSelected: false,
+  graphWidth: 0, // 0 = auto (fits lane count)
   diffCache: {},
   loading: false,
   error: null,
@@ -105,6 +112,8 @@ export const useRepoStore = create<RepoState>((set, get) => ({
         list.push(r);
         refByCommit.set(r.commit, list);
       }
+      const refsByCommit: Record<string, RefInfo[]> = {};
+      for (const [hash, list] of refByCommit) refsByCommit[hash] = list;
       const withRefs = commits.map((c) => ({
         ...c,
         refs: (refByCommit.get(c.hash) ?? []).map((r) => r.name),
@@ -112,6 +121,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       set({
         commits: withRefs,
         refs,
+        refsByCommit,
         layout: computeLayout(withRefs),
         statusEntries: parsePorcelain(status),
       });
@@ -261,5 +271,9 @@ export const useRepoStore = create<RepoState>((set, get) => ({
 
   closeDiff() {
     set({ activeDiff: null });
+  },
+
+  setGraphWidth(w) {
+    set({ graphWidth: w });
   },
 }));

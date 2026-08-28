@@ -5,6 +5,14 @@ import { laneColor } from "./colors";
 export const ROW_HEIGHT = 36;
 export const LANE_WIDTH = 18;
 export const LANE_PAD = 12; // left padding before lane 0
+/** Width of the tag/refs column to the left of the graph. */
+export const TAG_WIDTH = 140;
+/** Extra padding after the last lane before the commit text starts. */
+export const GRAPH_PAD = 16;
+
+/** Horizontal band reserved for the graph lanes for a given layout. */
+export const graphGutter = (maxLane: number) =>
+  LANE_PAD + (maxLane + 1) * LANE_WIDTH + GRAPH_PAD;
 
 /** Visual rows above the first commit: the working-directory row. */
 export const WORKING_ROW = 0;
@@ -18,6 +26,8 @@ interface GraphCanvasProps {
   workingSelected: boolean;
   /** Scroll container that owns vertical scrolling (set by parent). */
   scrollRef: React.RefObject<HTMLDivElement>;
+  /** Width of the graph band (tag column excluded). Lanes scale to fit it. */
+  graphBand: number;
 }
 
 /**
@@ -38,16 +48,19 @@ export function GraphCanvas({
   hasWorkingRow,
   workingSelected,
   scrollRef,
+  graphBand,
 }: GraphCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layoutRef = useRef(layout);
   const selectedRef = useRef(selectedHash);
   const workingRef = useRef(hasWorkingRow);
   const workingSelectedRef = useRef(workingSelected);
+  const graphBandRef = useRef(graphBand);
   layoutRef.current = layout;
   selectedRef.current = selectedHash;
   workingRef.current = hasWorkingRow;
   workingSelectedRef.current = workingSelected;
+  graphBandRef.current = graphBand;
 
   /** Row offset for commits: 1 when the working row is shown, else 0. */
   const offsetRef = useRef(hasWorkingRow ? 1 : 0);
@@ -82,7 +95,13 @@ export function GraphCanvas({
       const firstRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 5);
       const lastRow = Math.min(totalRows - 1, Math.ceil((scrollTop + height) / ROW_HEIGHT) + 5);
 
-      const xOf = (lane: number) => LANE_PAD + lane * LANE_WIDTH + LANE_WIDTH / 2;
+      const xOf = (lane: number) => {
+        // Lanes keep a static spacing; if a lane falls outside the resized
+        // graph band, clamp (sticky) it to the band's right edge.
+        const bandRight = TAG_WIDTH + graphBandRef.current - GRAPH_PAD;
+        const dotX = TAG_WIDTH + LANE_PAD + lane * LANE_WIDTH + LANE_WIDTH / 2;
+        return Math.min(dotX, bandRight);
+      };
       const screenYOf = (row: number) => row * ROW_HEIGHT + ROW_HEIGHT / 2 - scrollTop;
 
       // ---- working directory: dashed connector from row 0 down to HEAD ----
@@ -225,7 +244,7 @@ export function GraphCanvas({
     const container = scrollRef.current;
     if (container) ro.observe(container);
     return () => ro.disconnect();
-  }, [layout, scrollRef]);
+  }, [layout, scrollRef, graphBand]);
 
   // Redraw on scroll.
   useEffect(() => {

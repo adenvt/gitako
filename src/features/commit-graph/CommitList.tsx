@@ -1,12 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { FilePenLine, FilePlus, FileX } from "lucide-react";
-import { GraphCanvas, ROW_HEIGHT, WORKING_ROW } from "./GraphCanvas";
+import { GraphCanvas, ROW_HEIGHT, WORKING_ROW, graphGutter, TAG_WIDTH, LANE_PAD, GRAPH_PAD, LANE_WIDTH } from "./GraphCanvas";
+import { RefBadge, RefBadgeGroup } from "./refBadge";
 import { useRepoStore } from "@/state/store";
 import { timeAgo } from "@/shared/utils/time";
 import { countByKind } from "@/shared/utils/status";
 
 const OVERSCAN = 8;
+/** Drag handle hit width around the boundary between graph and text. */
+const HANDLE_HIT = 5;
+/** Smallest graph band: left pad + right pad (dots clamp to the right edge). */
+const MIN_GRAPH_BAND = LANE_PAD + (LANE_WIDTH / 2) + GRAPH_PAD;
 
 /** Virtualized commit list: canvas graph + DOM text labels, one scroll container. */
 export function CommitList() {
@@ -19,9 +24,48 @@ export function CommitList() {
     openComposer,
     workingSelected,
     setWorkingSelected,
+    refsByCommit,
+    graphWidth,
+    setGraphWidth,
   } = useRepoStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 50 });
+  /** True while the graph-band resize drag is in progress. */
+  const draggingRef = useRef(false);
+  /** Maximum graph band width: the auto gutter that fits all lanes statically. */
+  const maxGraphBandRef = useRef(0);
+
+  // Drag the boundary between the graph band and the message column. Dragging
+  // left shrinks the graph band (message grows); dragging right grows the graph
+  // band (message shrinks). The boundary is always anchored inside the container.
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      draggingRef.current = true;
+      const container = scrollRef.current;
+      if (!container) {
+        draggingRef.current = false;
+        return;
+      }
+      const left = container.getBoundingClientRect().left;
+      const maxBand = maxGraphBandRef.current;
+      const onMove = (ev: PointerEvent) => {
+        if (!draggingRef.current) return;
+        const raw = ev.clientX - left - TAG_WIDTH;
+        // Clamp to [min, max]. Max is the auto gutter (all lanes fit statically).
+        const next = Math.min(maxBand, Math.max(MIN_GRAPH_BAND, raw));
+        setGraphWidth(next);
+      };
+      const onUp = () => {
+        draggingRef.current = false;
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [setGraphWidth],
+  );
 
   const counts = countByKind(statusEntries);
   const hasWorkingRow = counts.added + counts.deleted + counts.modified > 0;
@@ -56,6 +100,13 @@ export function CommitList() {
   }
 
   const totalHeight = (layout.commits.length + offset) * ROW_HEIGHT;
+  // The graph band is resizable: use the user-set width, else the auto gutter.
+  const gutter = graphGutter(layout.maxLane);
+  maxGraphBandRef.current = gutter;
+  const graphBand = Math.min(Math.max(graphWidth > 0 ? graphWidth : gutter, MIN_GRAPH_BAND), gutter);
+  const textLeft = TAG_WIDTH + graphBand;
+  // Handle sits at the boundary between graph band and message column.
+  const handleLeft = textLeft - HANDLE_HIT;
 
   return (
     <div className="commit-list">
@@ -66,6 +117,14 @@ export function CommitList() {
         hasWorkingRow={hasWorkingRow}
         workingSelected={workingSelected}
         scrollRef={scrollRef}
+        graphBand={graphBand}
+      />
+      {/* Drag handle at the boundary between graph band and message column. */}
+      <div
+        className="graph-resize-handle"
+        style={{ left: handleLeft }}
+        onPointerDown={onPointerDown}
+        title="Drag to resize the graph column"
       />
       <div className="commit-scroll" ref={scrollRef}>
         <div style={{ height: totalHeight, position: "relative" }}>
@@ -74,7 +133,11 @@ export function CommitList() {
             {hasWorkingRow && (
               <div
                 className={clsx("commit-row working-row", workingSelected && "selected")}
-                style={{ top: WORKING_ROW * ROW_HEIGHT, height: ROW_HEIGHT }}
+                style={{
+                  top: WORKING_ROW * ROW_HEIGHT,
+                  height: ROW_HEIGHT,
+                  left: textLeft,
+                }}
                 onClick={() => {
                   // Select the WIP row (deselects any commit) + open composer.
                   setWorkingSelected(true);
@@ -110,30 +173,52 @@ export function CommitList() {
               const c = commits[i];
               if (!c) return null;
               const isSelected = c.hash === selectedHash;
+              // Hide remote convenience pointers like origin/HEAD.
+              const refInfos = (refsByCommit[c.hash] ?? []).filter(
+                (r) => !(r.kind === "remoteBranch" && r.name === "HEAD"),
+              );
+              // Group refs by base name so `main` + `origin/main` share one badge.
+              const groups = new Map<string, typeof refInfos>();
+              for (const r of refInfos) {
+                const list = groups.get(r.name) ?? [];
+                list.push(r);
+                groups.set(r.name, list);
+              }
+              const top = (i + offset) * ROW_HEIGHT;
               return (
-                <div
-                  key={c.hash}
-                  className={clsx("commit-row", isSelected && "selected")}
-                  style={{
-                    top: (i + offset) * ROW_HEIGHT,
-                    height: ROW_HEIGHT,
-                  }}
-                  onClick={() => select(c.hash)}
-                >
-                  <span className="commit-subject" title={c.subject}>
-                    {c.subject}
-                  </span>
-                  <span className="commit-meta">
-                    <span className="commit-author">{c.authorName}</span>
-                    <span className="commit-time">{timeAgo(c.authorTime)}</span>
-                  </span>
-                  <span className="commit-refs">
-                    {c.refs.map((r) => (
-                      <span key={r} className="commit-ref-badge">
-                        {r}
-                      </span>
-                    ))}
-                  </span>
+                <div key={c.hash}>
+                  {refInfos.length > 0 && (
+                    <div
+                      className="commit-tag-cell"
+                      style={{ top, height: ROW_HEIGHT, width: TAG_WIDTH }}
+                      onClick={() => select(c.hash)}
+                    >
+                      {[...groups.values()].map((group) =>
+                        group.length > 1 ? (
+                          <RefBadgeGroup key={group[0].fullName} refs={group} />
+                        ) : (
+                          <RefBadge key={group[0].fullName} refInfo={group[0]} />
+                        ),
+                      )}
+                    </div>
+                  )}
+                  <div
+                    className={clsx("commit-row", isSelected && "selected")}
+                    style={{
+                      top,
+                      height: ROW_HEIGHT,
+                      left: textLeft,
+                    }}
+                    onClick={() => select(c.hash)}
+                  >
+                    <span className="commit-subject" title={c.subject}>
+                      {c.subject}
+                    </span>
+                    <span className="commit-meta">
+                      <span className="commit-author">{c.authorName}</span>
+                      <span className="commit-time">{timeAgo(c.authorTime)}</span>
+                    </span>
+                  </div>
                 </div>
               );
             })}

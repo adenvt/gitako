@@ -10,6 +10,10 @@ pub struct RefInfo {
     pub target: String,
     /// Commit the ref points at (or the peeled commit for tags).
     pub commit: String,
+    /// Remote name for remote branches (`origin/main` -> `origin`); None otherwise.
+    pub remote: Option<String>,
+    /// First remote URL (from `git remote get-url`); filled in by the command layer.
+    pub remote_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -50,7 +54,7 @@ pub fn parse_refs(stdout: &str) -> Vec<RefInfo> {
         let is_head = fields[3] == "*";
         let peeled = fields[4];
 
-        let (name, kind) = classify(&full_name);
+        let (name, kind, remote) = classify(&full_name);
         let commit = if object_type == "tag" && !peeled.is_empty() {
             peeled.to_string()
         } else {
@@ -63,6 +67,8 @@ pub fn parse_refs(stdout: &str) -> Vec<RefInfo> {
             kind,
             target: object,
             commit,
+            remote,
+            remote_url: None,
         });
 
         // Mark the current branch as Head kind when git says so.
@@ -75,15 +81,20 @@ pub fn parse_refs(stdout: &str) -> Vec<RefInfo> {
     refs
 }
 
-fn classify(full_name: &str) -> (String, RefKind) {
+fn classify(full_name: &str) -> (String, RefKind, Option<String>) {
     if let Some(name) = full_name.strip_prefix("refs/heads/") {
-        (name.to_string(), RefKind::Branch)
+        (name.to_string(), RefKind::Branch, None)
     } else if let Some(name) = full_name.strip_prefix("refs/remotes/") {
-        (name.to_string(), RefKind::RemoteBranch)
+        // `refs/remotes/<remote>/<branch>` — split the remote name off.
+        let (remote, branch) = name
+            .split_once('/')
+            .map(|(r, b)| (Some(r.to_string()), b.to_string()))
+            .unwrap_or((None, name.to_string()));
+        (branch, RefKind::RemoteBranch, remote)
     } else if let Some(name) = full_name.strip_prefix("refs/tags/") {
-        (name.to_string(), RefKind::Tag)
+        (name.to_string(), RefKind::Tag, None)
     } else {
-        (full_name.to_string(), RefKind::Other)
+        (full_name.to_string(), RefKind::Other, None)
     }
 }
 
@@ -108,19 +119,33 @@ mod tests {
         assert_eq!(main.name, "main");
         assert_eq!(main.kind, RefKind::Head);
         assert_eq!(main.commit, "abc123");
+        assert_eq!(main.remote, None);
 
         let feature = &refs[1];
         assert_eq!(feature.name, "feature");
         assert_eq!(feature.kind, RefKind::Branch);
+        assert_eq!(feature.remote, None);
 
         let remote = &refs[2];
         assert_eq!(remote.kind, RefKind::RemoteBranch);
+        assert_eq!(remote.name, "main");
+        assert_eq!(remote.remote, Some("origin".to_string()));
 
         let tag = &refs[3];
         assert_eq!(tag.name, "v1.0");
         assert_eq!(tag.kind, RefKind::Tag);
+        assert_eq!(tag.remote, None);
         // Annotated tag peeled to the commit it points at.
         assert_eq!(tag.commit, "abc123");
+    }
+
+    #[test]
+    fn parses_nested_remote_branches() {
+        let out = "refs/remotes/upstream/feature/foo\0abc123\0commit\0 \0\0\n";
+        let refs = parse_refs(out);
+        assert_eq!(refs.len(), 1);
+        assert_eq!(refs[0].name, "feature/foo");
+        assert_eq!(refs[0].remote, Some("upstream".to_string()));
     }
 
     #[test]

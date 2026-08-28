@@ -13,6 +13,32 @@
   z-index: 0;
 }
 
+/* Vertical drag handle at the boundary between graph band and commit text. */
+.graph-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  z-index: 5;
+  cursor: col-resize;
+}
+
+.graph-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 2px;
+  background: transparent;
+  transition: background 120ms ease;
+}
+
+.graph-resize-handle:hover::after,
+.graph-resize-handle:active::after {
+  background: var(--accent, #58a6ff);
+}
+
 .commit-scroll {
   position: absolute;
   inset: 0;
@@ -29,7 +55,6 @@
 
 .commit-row {
   position: absolute;
-  left: 110px; /* graph gutter */
   right: 8px;
   display: flex;
   align-items: center;
@@ -39,6 +64,8 @@
   cursor: pointer;
   pointer-events: auto;
   overflow: hidden;
+  /* Solid background so graph lines don't show through the message column. */
+  background: var(--bg);
 }
 
 .commit-row:hover {
@@ -108,13 +135,27 @@
   white-space: nowrap;
 }
 
-.commit-refs {
+/* Tag/branch column: badges shown to the left of the graph. */
+.commit-tag-cell {
+  position: absolute;
+  left: 0;
   display: flex;
+  align-items: center;
   gap: 4px;
+  padding: 0 8px;
   overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.commit-tag-cell:hover {
+  background: var(--bg-hover);
 }
 
 .commit-ref-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   font-weight: 600;
   color: #fff;
@@ -122,4 +163,67 @@
   border-radius: 4px;
   padding: 2px 6px;
   white-space: nowrap;
+  max-width: 100%;
+}
+
+.ref-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 96px;
+}
+
+/* Grouped badge: shared name + multiple icons, dropdown on hover. */
+.ref-badge-group {
+  position: relative;
+  cursor: default;
+}
+
+.ref-group-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ref-group-icons svg {
+  display: block;
+}
+
+.ref-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 140px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.ref-badge-group:hover .ref-dropdown {
+  display: block;
+}
+
+.ref-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ref-dropdown-item:hover {
+  background: var(--bg-hover);
+}
+
+.ref-dropdown-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

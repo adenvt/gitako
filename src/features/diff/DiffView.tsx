@@ -19,9 +19,11 @@ interface DiffRow {
 /**
  * Build aligned (old,new) rows from the full file contents + parsed hunks.
  *
- * Walk each hunk: context lines pair up on both sides; a remove line occupies
- * the left alone (right blank), an add line the right alone (left blank). Rows
- * before the first hunk / between hunks are untouched context.
+ * Walk each hunk. Context lines pair up on both sides. Runs of removals are
+ * buffered and then paired with the following additions one-to-one, so an
+ * edit (`-foo` / `+bar`) renders as a single side-by-side row with the old
+ * line on the left and the new line on the right. Leftover removals become
+ * left-only rows; leftover additions become right-only rows.
  */
 function buildRows(diff: DiffFile): DiffRow[] {
   const oldLines = diff.oldLines;
@@ -46,68 +48,74 @@ function buildRows(diff: DiffFile): DiffRow[] {
     }
   };
 
+  // Removed lines seen so far, held back to pair with following additions.
+  let pendingRemoves: { line: string; num: number }[] = [];
+
+  const flushRemoves = () => {
+    for (const r of pendingRemoves) {
+      rows.push({
+        oldKind: "remove",
+        oldLine: r.line,
+        oldNum: r.num,
+        newKind: null,
+        newLine: null,
+        newNum: null,
+      });
+    }
+    pendingRemoves = [];
+  };
+
+  const pushRemove = () => {
+    pendingRemoves.push({ line: oldLines[oldIdx] ?? "", num: oldIdx + 1 });
+    oldIdx++;
+  };
+
+  const pushStandaloneAdd = () => {
+    rows.push({
+      oldKind: null,
+      oldLine: null,
+      oldNum: null,
+      newKind: "add",
+      newLine: newLines[newIdx] ?? "",
+      newNum: newIdx + 1,
+    });
+    newIdx++;
+  };
+
+  const pushPairedEdit = () => {
+    const r = pendingRemoves.shift()!;
+    rows.push({
+      oldKind: "remove",
+      oldLine: r.line,
+      oldNum: r.num,
+      newKind: "add",
+      newLine: newLines[newIdx] ?? "",
+      newNum: newIdx + 1,
+    });
+    newIdx++;
+  };
+
   for (const hunk of diff.hunks) {
     // Context before this hunk (gap since the last hunk ended).
     const gapOld = hunk.oldStart - 1 - oldIdx;
     const gapNew = hunk.newStart - 1 - newIdx;
     pushContext(Math.max(0, Math.min(gapOld, gapNew)));
 
-    let contextOld = 0;
-    let contextNew = 0;
-    const lines = hunk.lines;
-
-    // First pass: count context lines so we can flush them in order.
-    const flushContext = () => {
-      const n = Math.max(contextOld, contextNew);
-      for (let i = 0; i < n; i++) {
-        const hasOld = i < contextOld;
-        const hasNew = i < contextNew;
-        rows.push({
-          oldKind: null,
-          oldLine: hasOld ? (oldLines[oldIdx] ?? "") : "",
-          oldNum: hasOld ? oldIdx + 1 : null,
-          newKind: null,
-          newLine: hasNew ? (newLines[newIdx] ?? "") : "",
-          newNum: hasNew ? newIdx + 1 : null,
-        });
-        if (hasOld) oldIdx++;
-        if (hasNew) newIdx++;
-      }
-      contextOld = 0;
-      contextNew = 0;
-    };
-
-    for (const line of lines) {
+    for (const line of hunk.lines) {
       if (line.kind === "context") {
-        contextOld++;
-        contextNew++;
-        flushContext();
+        // A context boundary ends any unpaired removal run.
+        flushRemoves();
+        pushContext(1);
       } else if (line.kind === "remove") {
-        flushContext();
-        rows.push({
-          oldKind: "remove",
-          oldLine: oldLines[oldIdx] ?? "",
-          oldNum: oldIdx + 1,
-          newKind: null,
-          newLine: null,
-          newNum: null,
-        });
-        oldIdx++;
+        pushRemove();
       } else {
-        // add
-        flushContext();
-        rows.push({
-          oldKind: null,
-          oldLine: null,
-          oldNum: null,
-          newKind: "add",
-          newLine: newLines[newIdx] ?? "",
-          newNum: newIdx + 1,
-        });
-        newIdx++;
+        // add — pair with a pending removal when one exists (edit), else a
+        // standalone insertion.
+        if (pendingRemoves.length > 0) pushPairedEdit();
+        else pushStandaloneAdd();
       }
     }
-    flushContext();
+    flushRemoves();
   }
 
   // Remaining context after the last hunk.
@@ -194,31 +202,42 @@ export function DiffView() {
   const scrollbarRef = useRef<HTMLDivElement>(null);
   const [contentWidth, setContentWidth] = useState(0);
 
-  // Measure the wider of the two columns so the bottom scrollbar matches.
+  // Size the bottom scrollbar so its full scroll range equals the larger of the
+  // two columns' horizontal overflow. The bar is wider than either column, so a
+  // raw scrollWidth comparison would under-represent the needed scroll distance.
   useEffect(() => {
     const oldEl = oldColRef.current;
     const newEl = newColRef.current;
-    if (!oldEl || !newEl) return;
-    const w = Math.max(oldEl.scrollWidth, newEl.scrollWidth);
-    setContentWidth((prev) => (prev === w ? prev : w));
+    const barEl = scrollbarRef.current;
+    if (!oldEl || !newEl || !barEl) return;
+    const maxScroll = Math.max(
+      oldEl.scrollWidth - oldEl.clientWidth,
+      newEl.scrollWidth - newEl.clientWidth,
+    );
+    const next = barEl.clientWidth + Math.max(0, maxScroll);
+    setContentWidth((prev) => (prev === next ? prev : next));
   }, [rows, oldTokens, newTokens]);
 
-  // Sync horizontal scroll: strip <-> columns, columns <-> each other.
+  // The bottom bar is the single source of truth for horizontal scroll. It
+  // drives both columns' scrollLeft. The columns are scrollable only
+  // programmatically (overflow-x: hidden), so there is no feedback loop.
   const syncingRef = useRef(false);
-  const syncScroll = (from: "old" | "new" | "bar") => {
+  const syncScroll = () => {
     if (syncingRef.current) return;
     const oldEl = oldColRef.current;
     const newEl = newColRef.current;
     const barEl = scrollbarRef.current;
-    if (!oldEl || !newEl) return;
-    let left: number;
-    if (from === "old") left = oldEl.scrollLeft;
-    else if (from === "new") left = newEl.scrollLeft;
-    else left = barEl?.scrollLeft ?? 0;
+    if (!oldEl || !newEl || !barEl) return;
+
+    const range = (el: HTMLElement) => Math.max(0, el.scrollWidth - el.clientWidth);
+    const oldRange = range(oldEl);
+    const newRange = range(newEl);
+    const barRange = range(barEl);
+    const frac = barRange > 0 ? barEl.scrollLeft / barRange : 0;
+
     syncingRef.current = true;
-    oldEl.scrollLeft = left;
-    newEl.scrollLeft = left;
-    if (barEl) barEl.scrollLeft = left;
+    oldEl.scrollLeft = frac * oldRange;
+    newEl.scrollLeft = frac * newRange;
     requestAnimationFrame(() => {
       syncingRef.current = false;
     });
@@ -248,11 +267,20 @@ export function DiffView() {
       ) : (
         <>
           <div className="diff-table">
+            <div className="diff-col-headers">
+              <div className="diff-col-header">OLD</div>
+              <div className="diff-col-header">NEW</div>
+            </div>
             <div className="diff-cols">
-              <div className="diff-col" ref={oldColRef} onScroll={() => syncScroll("old")}>
+              <div className="diff-col" ref={oldColRef}>
                 {rows.map((r, i) => (
                   <div key={i} className={clsx("diff-line", r.oldKind && `diff-${r.oldKind}`)}>
-                    <span className="diff-gutter">{r.oldNum ?? ""}</span>
+                    <span className="diff-gutter">
+                      <span className="diff-num">{r.oldNum ?? ""}</span>
+                      <span className={clsx("diff-sign", r.oldKind === "remove" && "remove")}>
+                        {r.oldKind === "remove" ? "-" : "\u00a0"}
+                      </span>
+                    </span>
                     {r.oldNum != null ? (
                       <Cell text={r.oldLine ?? ""} num={r.oldNum} tokens={oldTokens} />
                     ) : (
@@ -261,10 +289,15 @@ export function DiffView() {
                   </div>
                 ))}
               </div>
-              <div className="diff-col" ref={newColRef} onScroll={() => syncScroll("new")}>
+              <div className="diff-col" ref={newColRef}>
                 {rows.map((r, i) => (
                   <div key={i} className={clsx("diff-line", r.newKind && `diff-${r.newKind}`)}>
-                    <span className="diff-gutter">{r.newNum ?? ""}</span>
+                    <span className="diff-gutter">
+                      <span className="diff-num">{r.newNum ?? ""}</span>
+                      <span className={clsx("diff-sign", r.newKind === "add" && "add")}>
+                        {r.newKind === "add" ? "+" : "\u00a0"}
+                      </span>
+                    </span>
                     {r.newNum != null ? (
                       <Cell text={r.newLine ?? ""} num={r.newNum} tokens={newTokens} />
                     ) : (
@@ -275,8 +308,8 @@ export function DiffView() {
               </div>
             </div>
           </div>
-          {/* Always-visible horizontal scrollbar, synced with both columns. */}
-          <div className="diff-scrollbar" ref={scrollbarRef} onScroll={() => syncScroll("bar")}>
+          {/* Always-visible horizontal scrollbar, the single scroll source. */}
+          <div className="diff-scrollbar" ref={scrollbarRef} onScroll={syncScroll}>
             <div style={{ width: Math.max(contentWidth, 1), height: 1 }} />
           </div>
         </>

@@ -25,6 +25,10 @@ export interface RefInfo {
   kind: RefKind;
   target: string;
   commit: string;
+  /** Remote name for remote branches; null otherwise. */
+  remote: string | null;
+  /** First remote URL from `git remote get-url`; null when unavailable. */
+  remoteUrl: string | null;
 }
 
 export interface GitErrorPayload {
