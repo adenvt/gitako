@@ -72,9 +72,7 @@ export function parsePorcelain(stdout: string): StatusEntry[] {
 
 /** Count of files with any change (staged or unstaged). */
 export function countChanges(entries: StatusEntry[]): number {
-  return entries.filter(
-    (e) => e.index !== "." || e.worktree !== ".",
-  ).length;
+  return entries.filter((e) => e.index !== "." || e.worktree !== ".").length;
 }
 
 /** Counts of working-tree changes grouped by kind. */

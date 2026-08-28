@@ -59,9 +59,7 @@ interface RepoState {
 }
 
 function computeLayout(commits: Commit[]): LayoutResult {
-  return layout(
-    commits.map((c) => ({ hash: c.hash, parents: c.parents })),
-  );
+  return layout(commits.map((c) => ({ hash: c.hash, parents: c.parents })));
 }
 
 export const useRepoStore = create<RepoState>((set, get) => ({
@@ -189,9 +187,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   async stageAll() {
     const { repoPath, statusEntries, stagedPaths } = get();
     if (!repoPath) return;
-    const unstaged = statusEntries
-      .filter((s) => !stagedPaths.has(s.path))
-      .map((s) => s.path);
+    const unstaged = statusEntries.filter((s) => !stagedPaths.has(s.path)).map((s) => s.path);
     if (unstaged.length === 0) return;
     const next = new Set(stagedPaths);
     unstaged.forEach((p) => next.add(p));

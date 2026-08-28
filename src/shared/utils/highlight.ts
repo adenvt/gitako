@@ -1,8 +1,4 @@
-import {
-  createHighlighter,
-  type BundledLanguage,
-  type Highlighter,
-} from "shiki";
+import { createHighlighter, type BundledLanguage, type Highlighter } from "shiki";
 
 /** A single colored token within a line. */
 export interface Token {
@@ -83,10 +79,7 @@ const lineCache = new Map<string, Line[]>();
  * Highlight `code` for the given language, returning per-line tokens.
  * Unknown/unsupported languages fall back to plaintext (single token per line).
  */
-export async function highlightLines(
-  code: string,
-  lang: string,
-): Promise<Line[]> {
+export async function highlightLines(code: string, lang: string): Promise<Line[]> {
   const cacheKey = `${lang}\n${code}`;
   const cached = lineCache.get(cacheKey);
   if (cached) return cached;

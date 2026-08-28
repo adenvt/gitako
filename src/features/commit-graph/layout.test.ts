@@ -8,7 +8,13 @@ function commits(rows: [string, string[]][]): RawCommit[] {
 
 describe("graph layout", () => {
   it("places a linear history in a single lane", () => {
-    const result = layout(commits([["c3", ["c2"]], ["c2", ["c1"]], ["c1", []]]));
+    const result = layout(
+      commits([
+        ["c3", ["c2"]],
+        ["c2", ["c1"]],
+        ["c1", []],
+      ]),
+    );
     expect(result.commits.map((c) => c.lane)).toEqual([0, 0, 0]);
     expect(result.edges).toHaveLength(2);
     // Same-lane edges carry no horizontal connector geometry change.

@@ -19,8 +19,7 @@ function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
 }
 
 export function CommitDetail() {
-  const { commits, selectedHash, filesByCommit, loadCommitFiles, openDiff } =
-    useRepoStore();
+  const { commits, selectedHash, filesByCommit, loadCommitFiles, openDiff } = useRepoStore();
 
   const commit = commits.find((c) => c.hash === selectedHash);
   const files = commit ? filesByCommit[commit.hash] : undefined;
@@ -28,10 +27,7 @@ export function CommitDetail() {
   // Hooks must be called unconditionally (Rules of Hooks) — before any
   // early return — so the hook order stays stable across renders.
   const tree = useMemo(() => (files ? buildFileTree(files) : null), [files]);
-  const counts = useMemo(
-    () => (files ? fileStatusCounts(files) : null),
-    [files],
-  );
+  const counts = useMemo(() => (files ? fileStatusCounts(files) : null), [files]);
 
   useEffect(() => {
     if (selectedHash) {
@@ -65,9 +61,7 @@ export function CommitDetail() {
           {commit.parents.length > 0 && (
             <>
               <dt>Parents</dt>
-              <dd className="mono">
-                {commit.parents.map((p) => shortHash(p)).join(", ")}
-              </dd>
+              <dd className="mono">{commit.parents.map((p) => shortHash(p)).join(", ")}</dd>
             </>
           )}
           {commit.refs.length > 0 && (
@@ -100,10 +94,7 @@ export function CommitDetail() {
                 ))}
             </div>
             {tree && tree.children.length > 0 ? (
-              <FileTree
-                root={tree}
-                onFileOpen={(n) => void openDiff(commit.hash, n.path)}
-              />
+              <FileTree root={tree} onFileOpen={(n) => void openDiff(commit.hash, n.path)} />
             ) : (
               <p className="muted">No files changed.</p>
             )}

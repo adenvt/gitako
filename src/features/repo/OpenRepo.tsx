@@ -66,6 +66,7 @@ export function OpenRepo() {
         directory: true,
         multiple: false,
         title: "Open a git repository",
+        defaultPath: await homeDir(),
       });
       if (typeof selected === "string" && selected) {
         await handleOpenPath(selected);
@@ -112,11 +113,7 @@ export function OpenRepo() {
           onChange={(e) => setQuery(e.target.value)}
         />
         {query && (
-          <button
-            className="welcome-clear"
-            onClick={() => setQuery("")}
-            aria-label="Clear search"
-          >
+          <button className="welcome-clear" onClick={() => setQuery("")} aria-label="Clear search">
             <X size={13} aria-hidden />
           </button>
         )}
@@ -127,15 +124,9 @@ export function OpenRepo() {
           <div className="welcome-section-label">Recent</div>
           <ul className="welcome-list">
             {filtered.map((r) => (
-              <li
-                key={r.path}
-                className="welcome-item"
-                onClick={() => void handleOpenPath(r.path)}
-              >
+              <li key={r.path} className="welcome-item" onClick={() => void handleOpenPath(r.path)}>
                 <div className="welcome-item-name">{r.name}</div>
-                <div className="welcome-item-path">
-                  {displayPaths[r.path] ?? r.path}
-                </div>
+                <div className="welcome-item-path">{displayPaths[r.path] ?? r.path}</div>
                 <button
                   className="welcome-item-remove"
                   onClick={(e) => {

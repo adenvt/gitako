@@ -1,4 +1,4 @@
-# GitCanoe
+# GiTako
 
 A GitKraken-style desktop Git GUI, built with **Tauri 2 + React + TypeScript + Vite**.
 
@@ -43,13 +43,13 @@ required for the webview on this machine (Wayland).
 
 ## Available scripts
 
-| Command | Description |
-| --- | --- |
-| `npm run dev:desktop` | Run the desktop app (Tauri + Vite dev server) |
-| `npm run dev` | Run only the Vite dev server (frontend) |
-| `npm run build` | Typecheck + production frontend build |
-| `npm run test` | Frontend tests (Vitest) |
-| `cd src-tauri && cargo test` | Backend tests (git parsers) |
+| Command                      | Description                                   |
+| ---------------------------- | --------------------------------------------- |
+| `npm run dev:desktop`        | Run the desktop app (Tauri + Vite dev server) |
+| `npm run dev`                | Run only the Vite dev server (frontend)       |
+| `npm run build`              | Typecheck + production frontend build         |
+| `npm run test`               | Frontend tests (Vitest)                       |
+| `cd src-tauri && cargo test` | Backend tests (git parsers)                   |
 
 ## Architecture
 

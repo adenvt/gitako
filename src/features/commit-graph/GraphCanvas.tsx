@@ -80,14 +80,10 @@ export function GraphCanvas({
       const totalRows = cur.commits.length + offset;
       const scrollTop = container.scrollTop;
       const firstRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 5);
-      const lastRow = Math.min(
-        totalRows - 1,
-        Math.ceil((scrollTop + height) / ROW_HEIGHT) + 5,
-      );
+      const lastRow = Math.min(totalRows - 1, Math.ceil((scrollTop + height) / ROW_HEIGHT) + 5);
 
       const xOf = (lane: number) => LANE_PAD + lane * LANE_WIDTH + LANE_WIDTH / 2;
-      const screenYOf = (row: number) =>
-        row * ROW_HEIGHT + ROW_HEIGHT / 2 - scrollTop;
+      const screenYOf = (row: number) => row * ROW_HEIGHT + ROW_HEIGHT / 2 - scrollTop;
 
       // ---- working directory: dashed connector from row 0 down to HEAD ----
       const headCommit = cur.commits[0];

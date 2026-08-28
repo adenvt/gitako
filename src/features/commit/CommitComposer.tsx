@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
 import { useRepoStore } from "@/state/store";
 import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
@@ -17,7 +16,6 @@ export function CommitComposer() {
     statusEntries,
     stagedPaths,
     composerError,
-    closeComposer,
     toggleStage,
     stageAll,
     unstageAll,
@@ -60,13 +58,6 @@ export function CommitComposer() {
     <div className="detail-pane composer">
       <div className="composer-head">
         <h3>Commit WIP</h3>
-        <button
-          className="composer-close"
-          onClick={closeComposer}
-          aria-label="Close composer"
-        >
-          <X size={15} aria-hidden />
-        </button>
       </div>
 
       <div className="staging-section">

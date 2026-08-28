@@ -6,7 +6,7 @@ export interface RecentRepo {
   lastOpened: number;
 }
 
-const STORAGE_KEY = "gitcanoe.recentRepos";
+const STORAGE_KEY = "gitako.recentRepos";
 const MAX_RECENT = 20;
 
 export function loadRecentRepos(): RecentRepo[] {
@@ -14,9 +14,7 @@ export function loadRecentRepos(): RecentRepo[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as RecentRepo[];
-    return Array.isArray(parsed)
-      ? parsed.filter((r) => r && typeof r.path === "string")
-      : [];
+    return Array.isArray(parsed) ? parsed.filter((r) => r && typeof r.path === "string") : [];
   } catch {
     return [];
   }
@@ -34,10 +32,7 @@ function saveRecentRepos(repos: RecentRepo[]): void {
 export function addRecentRepo(path: string): void {
   const name = path.split("/").filter(Boolean).pop() ?? path;
   const entry: RecentRepo = { path, name, lastOpened: Date.now() };
-  const repos = [
-    entry,
-    ...loadRecentRepos().filter((r) => r.path !== path),
-  ].slice(0, MAX_RECENT);
+  const repos = [entry, ...loadRecentRepos().filter((r) => r.path !== path)].slice(0, MAX_RECENT);
   saveRecentRepos(repos);
 }
 

@@ -1085,7 +1085,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "gitcanoe"
+name = "gitako"
 version = "0.1.0"
 dependencies = [
  "serde",

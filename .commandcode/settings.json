@@ -9,7 +9,7 @@
       "Shell(pkg-config:*)",
       "Shell(npx vitest run 2 >& 1)",
       "Shell(.:*)",
-      "Shell(./target/debug/gitcanoe:*)",
+      "Shell(./target/debug/gitako:*)",
       "Shell(grep:*)",
       "Shell(ss:*)",
       "Shell(fuser:*)",

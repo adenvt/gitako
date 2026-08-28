@@ -1,4 +1,4 @@
-# GitCanoe — Project Memory
+# GiTako — Project Memory
 
 ## Project Overview
 

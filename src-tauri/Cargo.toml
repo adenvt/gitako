@@ -1,11 +1,11 @@
 [package]
-name = "gitcanoe"
+name = "gitako"
 version = "0.1.0"
 description = "A GitKraken-like Git desktop client"
 edition = "2021"
 
 [lib]
-name = "gitcanoe_lib"
+name = "gitako_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

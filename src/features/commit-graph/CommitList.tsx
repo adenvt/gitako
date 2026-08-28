@@ -24,8 +24,7 @@ export function CommitList() {
   const [range, setRange] = useState({ start: 0, end: 50 });
 
   const counts = countByKind(statusEntries);
-  const hasWorkingRow =
-    counts.added + counts.deleted + counts.modified > 0;
+  const hasWorkingRow = counts.added + counts.deleted + counts.modified > 0;
   const offset = hasWorkingRow ? 1 : 0;
 
   // Update the visible row window on scroll/resize.
@@ -40,9 +39,7 @@ export function CommitList() {
         layoutNonNull.commits.length + (hasWorkingRow ? 1 : 0),
         Math.ceil((el.scrollTop + el.clientHeight) / ROW_HEIGHT) + OVERSCAN,
       );
-      setRange((prev) =>
-        prev.start === start && prev.end === end ? prev : { start, end },
-      );
+      setRange((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
     };
     update();
     el.addEventListener("scroll", update, { passive: true });
@@ -76,10 +73,7 @@ export function CommitList() {
             {/* Working-directory row (row 0), only when there are changes. */}
             {hasWorkingRow && (
               <div
-                className={clsx(
-                  "commit-row working-row",
-                  workingSelected && "selected",
-                )}
+                className={clsx("commit-row working-row", workingSelected && "selected")}
                 style={{ top: WORKING_ROW * ROW_HEIGHT, height: ROW_HEIGHT }}
                 onClick={() => {
                   // Select the WIP row (deselects any commit) + open composer.

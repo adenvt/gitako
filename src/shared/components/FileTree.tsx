@@ -1,16 +1,7 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import {
-  ChevronRight,
-  Folder,
-  FolderOpen,
-  ListCollapse,
-  ListTree,
-} from "lucide-react";
-import {
-  collectDirPaths,
-  type FileTreeNode,
-} from "@/shared/utils/fileTree";
+import { ChevronRight, Folder, FolderOpen, ListCollapse, ListTree } from "lucide-react";
+import { collectDirPaths, type FileTreeNode } from "@/shared/utils/fileTree";
 import { statusLabel } from "@/shared/utils/status";
 import { StatusIcon } from "@/shared/components/StatusIcon";
 
@@ -54,11 +45,7 @@ function TreeRow({
           onClick={() => onToggle(node.path)}
           aria-expanded={open}
         >
-          <ChevronRight
-            size={14}
-            className={clsx("tree-arrow", open && "open")}
-            aria-hidden
-          />
+          <ChevronRight size={14} className={clsx("tree-arrow", open && "open")} aria-hidden />
           {open ? (
             <FolderOpen size={14} className="tree-folder-icon" aria-hidden />
           ) : (
@@ -120,9 +107,7 @@ export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTr
     () => root.children.filter((c) => !c.isFile).map((c) => c.path),
     [root],
   );
-  const [expanded, setExpanded] = useState<Set<string>>(
-    () => new Set(topLevelDirs),
-  );
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(topLevelDirs));
 
   const toggle = (path: string) =>
     setExpanded((prev) => {
@@ -138,8 +123,7 @@ export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTr
   const expandAll = () => setExpanded(new Set(dirPaths));
   const collapseAll = () => setExpanded(new Set());
 
-  const allExpanded =
-    dirPaths.length > 0 && dirPaths.every((p) => expanded.has(p));
+  const allExpanded = dirPaths.length > 0 && dirPaths.every((p) => expanded.has(p));
 
   return (
     <div className="file-tree">

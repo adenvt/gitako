@@ -1,10 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type {
-  ChangedFile,
-  Commit,
-  DiffFile,
-  RefInfo,
-} from "@/shared/types/git";
+import type { ChangedFile, Commit, DiffFile, RefInfo } from "@/shared/types/git";
 import { toGitError } from "@/shared/utils/error";
 
 /** Typed wrapper around the Tauri invoke layer. All backend calls go through here. */
@@ -49,10 +44,7 @@ export async function fetchStatus(repoPath: string): Promise<string> {
   }
 }
 
-export async function fetchShowFiles(
-  repoPath: string,
-  rev: string,
-): Promise<ChangedFile[]> {
+export async function fetchShowFiles(repoPath: string, rev: string): Promise<ChangedFile[]> {
   try {
     return await invoke<ChangedFile[]>("git_show_files", { repoPath, rev });
   } catch (e) {

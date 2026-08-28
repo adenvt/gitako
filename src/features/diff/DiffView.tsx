@@ -3,11 +3,7 @@ import clsx from "clsx";
 import { X } from "lucide-react";
 import { useRepoStore } from "@/state/store";
 import type { DiffFile } from "@/shared/types/git";
-import {
-  highlightLines,
-  langForPath,
-  type Line,
-} from "@/shared/utils/highlight";
+import { highlightLines, langForPath, type Line } from "@/shared/utils/highlight";
 
 /** One aligned row in the side-by-side view. */
 interface DiffRow {
@@ -68,10 +64,10 @@ function buildRows(diff: DiffFile): DiffRow[] {
         const hasNew = i < contextNew;
         rows.push({
           oldKind: null,
-          oldLine: hasOld ? oldLines[oldIdx] ?? "" : "",
+          oldLine: hasOld ? (oldLines[oldIdx] ?? "") : "",
           oldNum: hasOld ? oldIdx + 1 : null,
           newKind: null,
-          newLine: hasNew ? newLines[newIdx] ?? "" : "",
+          newLine: hasNew ? (newLines[newIdx] ?? "") : "",
           newNum: hasNew ? newIdx + 1 : null,
         });
         if (hasOld) oldIdx++;
@@ -124,10 +120,10 @@ function buildRows(diff: DiffFile): DiffRow[] {
     const hasNew = newIdx < newLines.length;
     rows.push({
       oldKind: null,
-      oldLine: hasOld ? oldLines[oldIdx] ?? "" : null,
+      oldLine: hasOld ? (oldLines[oldIdx] ?? "") : null,
       oldNum: hasOld ? oldIdx + 1 : null,
       newKind: null,
-      newLine: hasNew ? newLines[newIdx] ?? "" : null,
+      newLine: hasNew ? (newLines[newIdx] ?? "") : null,
       newNum: hasNew ? newIdx + 1 : null,
     });
     if (hasOld) oldIdx++;
@@ -153,15 +149,7 @@ function useHighlightedLines(code: string, lang: string): Line[] | null {
 }
 
 /** Render one cell's text, tokenized when highlight data is available. */
-function Cell({
-  text,
-  num,
-  tokens,
-}: {
-  text: string;
-  num: number | null;
-  tokens: Line[] | null;
-}) {
+function Cell({ text, num, tokens }: { text: string; num: number | null; tokens: Line[] | null }) {
   const line = num != null && tokens ? tokens[num - 1] : undefined;
   return (
     <span className="diff-cell">
@@ -184,9 +172,7 @@ export function DiffView() {
   const { activeDiff, diffCache, closeDiff } = useRepoStore();
 
   const diff = activeDiff
-    ? diffCache[
-        `${activeDiff.hash}|${activeDiff.path}|${activeDiff.staged ? "s" : "w"}`
-      ]
+    ? diffCache[`${activeDiff.hash}|${activeDiff.path}|${activeDiff.staged ? "s" : "w"}`]
     : undefined;
 
   const path = activeDiff?.path ?? "";
@@ -246,11 +232,7 @@ export function DiffView() {
         <span className="diff-path mono" title={path}>
           {path}
         </span>
-        <button
-          className="diff-close"
-          onClick={closeDiff}
-          aria-label="Close diff"
-        >
+        <button className="diff-close" onClick={closeDiff} aria-label="Close diff">
           <X size={16} aria-hidden />
         </button>
       </div>
@@ -258,9 +240,7 @@ export function DiffView() {
       {!diff ? (
         <div className="diff-placeholder">Loading…</div>
       ) : diff.error ? (
-        <div className="diff-placeholder">
-          Failed to load diff: {diff.error}
-        </div>
+        <div className="diff-placeholder">Failed to load diff: {diff.error}</div>
       ) : diff.binary ? (
         <div className="diff-placeholder">Binary file — no diff preview.</div>
       ) : diff.tooLarge ? (
@@ -269,46 +249,24 @@ export function DiffView() {
         <>
           <div className="diff-table">
             <div className="diff-cols">
-              <div
-                className="diff-col"
-                ref={oldColRef}
-                onScroll={() => syncScroll("old")}
-              >
+              <div className="diff-col" ref={oldColRef} onScroll={() => syncScroll("old")}>
                 {rows.map((r, i) => (
-                  <div
-                    key={i}
-                    className={clsx("diff-line", r.oldKind && `diff-${r.oldKind}`)}
-                  >
+                  <div key={i} className={clsx("diff-line", r.oldKind && `diff-${r.oldKind}`)}>
                     <span className="diff-gutter">{r.oldNum ?? ""}</span>
                     {r.oldNum != null ? (
-                      <Cell
-                        text={r.oldLine ?? ""}
-                        num={r.oldNum}
-                        tokens={oldTokens}
-                      />
+                      <Cell text={r.oldLine ?? ""} num={r.oldNum} tokens={oldTokens} />
                     ) : (
                       <span className="diff-cell diff-empty" aria-hidden />
                     )}
                   </div>
                 ))}
               </div>
-              <div
-                className="diff-col"
-                ref={newColRef}
-                onScroll={() => syncScroll("new")}
-              >
+              <div className="diff-col" ref={newColRef} onScroll={() => syncScroll("new")}>
                 {rows.map((r, i) => (
-                  <div
-                    key={i}
-                    className={clsx("diff-line", r.newKind && `diff-${r.newKind}`)}
-                  >
+                  <div key={i} className={clsx("diff-line", r.newKind && `diff-${r.newKind}`)}>
                     <span className="diff-gutter">{r.newNum ?? ""}</span>
                     {r.newNum != null ? (
-                      <Cell
-                        text={r.newLine ?? ""}
-                        num={r.newNum}
-                        tokens={newTokens}
-                      />
+                      <Cell text={r.newLine ?? ""} num={r.newNum} tokens={newTokens} />
                     ) : (
                       <span className="diff-cell diff-empty" aria-hidden />
                     )}
@@ -318,11 +276,7 @@ export function DiffView() {
             </div>
           </div>
           {/* Always-visible horizontal scrollbar, synced with both columns. */}
-          <div
-            className="diff-scrollbar"
-            ref={scrollbarRef}
-            onScroll={() => syncScroll("bar")}
-          >
+          <div className="diff-scrollbar" ref={scrollbarRef} onScroll={() => syncScroll("bar")}>
             <div style={{ width: Math.max(contentWidth, 1), height: 1 }} />
           </div>
         </>
