@@ -13,6 +13,11 @@ pub fn git_show_files(
         &repo,
         &[
             "show",
+            // `-m` makes merge commits show the diff against each parent
+            // separately; for non-merge commits it's a no-op. Without it,
+            // the combined diff is empty whenever both sides agree on the
+            // result, so merge commits incorrectly show "No files changed."
+            "-m",
             "--name-status",
             "--format=", // no commit header, just the file records
             &rev,
