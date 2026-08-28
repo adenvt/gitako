@@ -122,10 +122,12 @@ export function GraphCanvas({
       // ---- edges: vertical lines + curved connectors ----
       // Each edge connects a child (higher row) to a parent (lower row).
       // Same-lane edges draw a straight vertical line between dot centers.
-      // Cross-lane edges draw one continuous path: horizontal from the child
-      // dot to the parent's lane, a rounded corner, then vertical down to the
-      // parent dot. The canvas clips naturally at its bounds, so geometry
-      // extending off-screen (child above viewport, etc.) renders correctly.
+      // Cross-lane edges:
+      //  - Type A merge (merged branch is to the right): horizontal out of the
+      //    merge dot, then drop down to the branch tip.
+      //  - Type B merge (merged branch is to the left) and every fork edge:
+      //    drop down in the child's lane, then at the parent's row turn
+      //    horizontally into the parent dot.
       const R = 6; // corner radius
 
       for (const edge of cur.edges) {
@@ -148,21 +150,33 @@ export function GraphCanvas({
           ctx.lineTo(px, py);
           ctx.stroke();
         } else {
-          // L-shaped with a rounded corner: child dot -> horizontal to the
-          // parent's lane -> curve down -> vertical to parent dot.
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          if (px > cx) {
-            // corner is to the right and below
+          const isMergeEdge = cur.commits[edge.childIndex]?.isMerge ?? false;
+          if (isMergeEdge && px > cx) {
+            // Type A — "turn right, drop down": the merged-in branch is to the
+            // right. Horizontal from the merge dot to the branch's lane at the
+            // merge row, then drop down to the branch tip. Drawn as ONE path
+            // in the branch's (parent) color so there is no color seam where
+            // the drop continues below the branch tip.
+            ctx.strokeStyle = laneColor(edge.parentLane);
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
             ctx.lineTo(px - R, cy);
             ctx.quadraticCurveTo(px, cy, px, cy + R);
+            ctx.lineTo(px, py);
+            ctx.stroke();
           } else {
-            // corner is to the left and below
-            ctx.lineTo(px + R, cy);
-            ctx.quadraticCurveTo(px, cy, px, cy + R);
+            // Type B merge (branch to the left) and every fork edge share the
+            // same shape: drop down in the child's lane, then at the parent's
+            // row turn horizontally toward the parent dot. Drawn in the
+            // child's color so the drop blends with the child's own line.
+            ctx.strokeStyle = laneColor(edge.childLane);
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx, py - R);
+            ctx.quadraticCurveTo(cx, py, cx + (px > cx ? R : -R), py);
+            ctx.lineTo(px, py);
+            ctx.stroke();
           }
-          ctx.lineTo(px, py);
-          ctx.stroke();
         }
         ctx.globalAlpha = 1;
       }
