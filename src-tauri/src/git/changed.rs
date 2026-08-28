@@ -24,9 +24,15 @@ pub struct ChangedFile {
 /// Anything before the first blank line (the commit header) is ignored, as are
 /// lines without a status letter.
 pub fn parse_show(stdout: &str) -> Vec<ChangedFile> {
-    let mut files = Vec::new();
+    let mut files: Vec<ChangedFile> = Vec::new();
+    // With `git show -m`, the same path can appear more than once (one record
+    // per parent that changed it). Keep the first occurrence so the file is
+    // listed once in the UI, matching what the user would see with a non-merge
+    // commit. New paths still appear (first occurrence is appended in order).
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     for line in stdout.lines() {
         // Skip the commit header; records start after the blank line.
+        // With `-m`, also skip the "merge parent N" header lines.
         if !line.contains('\t') {
             continue;
         }
@@ -38,17 +44,20 @@ pub fn parse_show(stdout: &str) -> Vec<ChangedFile> {
             continue;
         }
         // Renames/copies have two paths; treat the first as old, second as new.
-        match second {
-            Some(new) => files.push(ChangedFile {
+        let file = match second {
+            Some(new) => ChangedFile {
                 status,
                 path: new.to_string(),
                 old_path: Some(first.to_string()),
-            }),
-            None => files.push(ChangedFile {
+            },
+            None => ChangedFile {
                 status,
                 path: first.to_string(),
                 old_path: None,
-            }),
+            },
+        };
+        if seen.insert(file.path.clone()) {
+            files.push(file);
         }
     }
     files
@@ -83,5 +92,18 @@ mod tests {
     fn ignores_header_lines() {
         assert!(parse_show("commit deadbeef\n\n").is_empty());
         assert!(parse_show("").is_empty());
+    }
+
+    #[test]
+    fn dedupes_repeated_paths_from_m_flag() {
+        // `git show -m` repeats a path once per parent that changed it. The
+        // first occurrence wins so the file is listed once.
+        let out = "merge parent 1\n\nM\tsrc/x.ts\n\nmerge parent 2\n\nM\tsrc/x.ts\nA\tsrc/y.ts\n";
+        let files = parse_show(out);
+        assert_eq!(files.len(), 2);
+        assert_eq!(files[0].path, "src/x.ts");
+        assert_eq!(files[0].status, "M");
+        assert_eq!(files[1].path, "src/y.ts");
+        assert_eq!(files[1].status, "A");
     }
 }
