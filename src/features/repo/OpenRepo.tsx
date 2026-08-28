@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FolderOpen, Search, X } from "lucide-react";
+import { FolderOpen, GitBranch, Search, X } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { homeDir } from "@tauri-apps/api/path";
 import { useRepoStore } from "@/state/store";
@@ -25,6 +25,7 @@ export function OpenRepo() {
   const [query, setQuery] = useState("");
   const [recent, setRecent] = useState<RecentRepo[]>(() => loadRecentRepos());
   const [displayPaths, setDisplayPaths] = useState<Record<string, string>>({});
+  const [banner, setBanner] = useState<string | null>(null);
 
   // Resolve ~/ display paths once per session (homeDir is async; the path
   // plugin must be registered in the Rust backend).
@@ -56,7 +57,7 @@ export function OpenRepo() {
       await openRepo(root);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      alert(`Cannot open repository: ${msg}`);
+      setBanner(`Cannot open repository: ${msg}`);
     }
   };
 
@@ -73,7 +74,7 @@ export function OpenRepo() {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      alert(`Failed to open picker: ${msg}`);
+      setBanner(`Failed to open picker: ${msg}`);
     }
   };
 
@@ -92,12 +93,15 @@ export function OpenRepo() {
 
   return (
     <div className="welcome">
+      <div className="welcome-brand">
+        <GitBranch size={18} className="welcome-brand-icon" aria-hidden />
+        <span className="welcome-brand-name">GiTako</span>
+      </div>
+
       <div className="welcome-header">
-        <div>
-          <h1>Repositories</h1>
-        </div>
+        <h1>Repositories</h1>
         <div className="welcome-actions">
-          <button className="welcome-btn" onClick={() => void handleBrowse()}>
+          <button className="btn welcome-btn" onClick={() => void handleBrowse()}>
             <FolderOpen size={15} aria-hidden />
             Open
           </button>
@@ -108,12 +112,13 @@ export function OpenRepo() {
         <Search size={14} className="welcome-search-icon" aria-hidden />
         <input
           type="text"
+          className="input"
           placeholder="Search repositories"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         {query && (
-          <button className="welcome-clear" onClick={() => setQuery("")} aria-label="Clear search">
+          <button className="icon-btn welcome-clear" onClick={() => setQuery("")} aria-label="Clear search">
             <X size={13} aria-hidden />
           </button>
         )}
@@ -121,14 +126,14 @@ export function OpenRepo() {
 
       {recent.length > 0 ? (
         <div className="welcome-recents">
-          <div className="welcome-section-label">Recent</div>
+          <div className="section-label welcome-section-label">Recent</div>
           <ul className="welcome-list">
             {filtered.map((r) => (
               <li key={r.path} className="welcome-item" onClick={() => void handleOpenPath(r.path)}>
                 <div className="welcome-item-name">{r.name}</div>
-                <div className="welcome-item-path">{displayPaths[r.path] ?? r.path}</div>
+                <div className="welcome-item-path mono">{displayPaths[r.path] ?? r.path}</div>
                 <button
-                  className="welcome-item-remove"
+                  className="icon-btn welcome-item-remove"
                   onClick={(e) => {
                     e.stopPropagation();
                     remove(r.path);
@@ -143,12 +148,21 @@ export function OpenRepo() {
         </div>
       ) : (
         <div className="welcome-empty">
+          <GitBranch size={28} className="welcome-empty-icon" aria-hidden />
           <p className="muted">No repositories yet.</p>
           <p className="muted">Click Open to pick a git repository folder.</p>
+          <button className="btn btn-primary welcome-empty-btn" onClick={() => void handleBrowse()}>
+            <FolderOpen size={15} aria-hidden />
+            Open
+          </button>
         </div>
       )}
 
-      {error && <p className="error">{error}</p>}
+      {(error || banner) && (
+        <div className="welcome-error" role="alert">
+          {error ?? banner}
+        </div>
+      )}
     </div>
   );
 }

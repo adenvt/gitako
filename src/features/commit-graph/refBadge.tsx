@@ -50,13 +50,19 @@ export function refFullName(refInfo: RefInfo): string {
 
 interface RefBadgeProps {
   refInfo: RefInfo;
+  /** Lane color of the commit, used to tint the badge to match the node. */
+  color?: string;
 }
 
 /** A single ref badge (used when refs have distinct names). */
-export function RefBadge({ refInfo }: RefBadgeProps) {
+export function RefBadge({ refInfo, color }: RefBadgeProps) {
   const fullName = refFullName(refInfo);
   return (
-    <span className="commit-ref-badge" title={fullName}>
+    <span
+      className="commit-ref-badge"
+      title={fullName}
+      style={color ? ({ "--badge-color": color } as React.CSSProperties) : undefined}
+    >
       <span className="ref-name">{refInfo.name}</span>
       <RefIcon refInfo={refInfo} />
     </span>
@@ -66,6 +72,8 @@ export function RefBadge({ refInfo }: RefBadgeProps) {
 interface RefBadgeGroupProps {
   /** Refs sharing the same base name (e.g. `main` + `origin/main`). */
   refs: RefInfo[];
+  /** Lane color of the commit, used to tint the badge to match the node. */
+  color?: string;
 }
 
 /**
@@ -73,11 +81,15 @@ interface RefBadgeGroupProps {
  * name plus one icon per ref; hovering reveals a dropdown with each ref's
  * full name and provider.
  */
-export function RefBadgeGroup({ refs }: RefBadgeGroupProps) {
+export function RefBadgeGroup({ refs, color }: RefBadgeGroupProps) {
   const name = refs[0]?.name ?? "";
   const label = refs.map(refFullName).join(", ");
   return (
-    <span className="commit-ref-badge ref-badge-group" title={label}>
+    <span
+      className="commit-ref-badge ref-badge-group"
+      title={label}
+      style={color ? ({ "--badge-color": color } as React.CSSProperties) : undefined}
+    >
       <span className="ref-name">{name}</span>
       <span className="ref-group-icons">
         {refs.map((r) => (

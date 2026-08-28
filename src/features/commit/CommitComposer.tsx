@@ -97,7 +97,7 @@ export function CommitComposer() {
       <div className="composer-form">
         <input
           type="text"
-          className="composer-subject"
+          className="input composer-subject"
           placeholder="Subject (required)"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
@@ -109,7 +109,7 @@ export function CommitComposer() {
           }}
         />
         <textarea
-          className="composer-description"
+          className="input composer-description"
           placeholder="Description"
           rows={2}
           value={description}

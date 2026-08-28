@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { FilePenLine, FilePlus, FileX } from "lucide-react";
-import { GraphCanvas, ROW_HEIGHT, WORKING_ROW, graphGutter, TAG_WIDTH, LANE_PAD, GRAPH_PAD, LANE_WIDTH } from "./GraphCanvas";
+import { FilePenLine, FilePlus, FileX, GitBranch } from "lucide-react";
+import { GraphCanvas, ROW_HEIGHT, WORKING_ROW, graphGutter, TAG_WIDTH, MIN_GRAPH_BAND } from "./GraphCanvas";
+import { laneColor } from "./colors";
 import { RefBadge, RefBadgeGroup } from "./refBadge";
 import { useRepoStore } from "@/state/store";
 import { timeAgo } from "@/shared/utils/time";
@@ -10,8 +11,6 @@ import { countByKind } from "@/shared/utils/status";
 const OVERSCAN = 8;
 /** Drag handle hit width around the boundary between graph and text. */
 const HANDLE_HIT = 5;
-/** Smallest graph band: left pad + right pad (dots clamp to the right edge). */
-const MIN_GRAPH_BAND = LANE_PAD + (LANE_WIDTH / 2) + GRAPH_PAD;
 
 /** Virtualized commit list: canvas graph + DOM text labels, one scroll container. */
 export function CommitList() {
@@ -96,7 +95,13 @@ export function CommitList() {
   }, [layoutNonNull, hasWorkingRow]);
 
   if (!layout || layout.commits.length === 0) {
-    return <div className="commit-list empty">No commits yet</div>;
+    return (
+      <div className="commit-list empty">
+        <GitBranch size={22} aria-hidden />
+        <span>No commits yet</span>
+        <span className="muted">Commits will appear here after your first commit.</span>
+      </div>
+    );
   }
 
   const totalHeight = (layout.commits.length + offset) * ROW_HEIGHT;
@@ -185,6 +190,8 @@ export function CommitList() {
                 groups.set(r.name, list);
               }
               const top = (i + offset) * ROW_HEIGHT;
+              const lane = layout.commits[i]?.lane ?? 0;
+              const badgeColor = laneColor(lane);
               return (
                 <div key={c.hash}>
                   {refInfos.length > 0 && (
@@ -195,9 +202,9 @@ export function CommitList() {
                     >
                       {[...groups.values()].map((group) =>
                         group.length > 1 ? (
-                          <RefBadgeGroup key={group[0].fullName} refs={group} />
+                          <RefBadgeGroup key={group[0].fullName} refs={group} color={badgeColor} />
                         ) : (
-                          <RefBadge key={group[0].fullName} refInfo={group[0]} />
+                          <RefBadge key={group[0].fullName} refInfo={group[0]} color={badgeColor} />
                         ),
                       )}
                     </div>

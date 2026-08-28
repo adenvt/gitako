@@ -31,12 +31,12 @@
   left: 4px;
   width: 2px;
   background: transparent;
-  transition: background 120ms ease;
+  transition: background var(--dur-med) var(--ease);
 }
 
 .graph-resize-handle:hover::after,
 .graph-resize-handle:active::after {
-  background: var(--accent, #58a6ff);
+  background: var(--accent);
 }
 
 .commit-scroll {
@@ -60,12 +60,13 @@
   align-items: center;
   gap: 10px;
   padding: 0 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-m);
   cursor: pointer;
   pointer-events: auto;
   overflow: hidden;
   /* Solid background so graph lines don't show through the message column. */
   background: var(--bg);
+  transition: background var(--dur-fast) var(--ease);
 }
 
 .commit-row:hover {
@@ -74,6 +75,10 @@
 
 .commit-row.selected {
   background: var(--selected);
+}
+
+.commit-row:active {
+  transform: translateY(1px);
 }
 
 /* Working-directory row above the newest commit. */
@@ -90,7 +95,7 @@
   align-items: center;
   gap: 10px;
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-dim);
@@ -101,22 +106,22 @@
   align-items: center;
   gap: 4px;
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   text-transform: none;
   letter-spacing: 0;
   color: var(--text);
 }
 
 .wip-icon.added {
-  color: var(--ok, #3fb950);
+  color: var(--ok);
 }
 
 .wip-icon.deleted {
-  color: var(--err, #f85149);
+  color: var(--err);
 }
 
 .wip-icon.modified {
-  color: var(--accent, #58a6ff);
+  color: var(--accent);
 }
 
 .commit-subject {
@@ -129,9 +134,9 @@
 
 .commit-meta {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   white-space: nowrap;
 }
 
@@ -146,6 +151,7 @@
   overflow: hidden;
   pointer-events: auto;
   cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
 }
 
 .commit-tag-cell:hover {
@@ -156,11 +162,19 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  color: #fff;
-  background: #3b82f6;
-  border-radius: 4px;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  /* Off-white (--text) reads best on the tinted backgrounds (lane or teal);
+     softer than pure white and consistent with the app's text color. */
+  color: var(--text);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  /* When a lane color is provided (--badge-color), tint the badge to match
+     the commit's node: a translucent tint of the lane color on a dim tinted
+     background. */
+  background: color-mix(in srgb, var(--badge-color, transparent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--badge-color, transparent) 45%, transparent);
+  border-radius: var(--radius-s);
   padding: 2px 6px;
   white-space: nowrap;
   max-width: 100%;
@@ -196,11 +210,11 @@
   left: 0;
   z-index: 20;
   min-width: 140px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-l);
+  padding: var(--space-1);
+  box-shadow: var(--overlay-shadow);
 }
 
 .ref-badge-group:hover .ref-dropdown {
@@ -212,8 +226,8 @@
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: var(--radius-m);
+  font-size: var(--fs-xs);
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
@@ -226,4 +240,15 @@
 .ref-dropdown-name {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Empty state (no commits yet). */
+.commit-list.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--text-faint);
+  font-size: var(--fs-md);
 }

@@ -6,6 +6,7 @@ import { statusLabel } from "@/shared/utils/status";
 import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
 import { StatusIcon } from "@/shared/components/StatusIcon";
+import { laneColor } from "@/features/commit-graph/colors";
 import type { ChangedFile } from "@/shared/types/git";
 
 /** Number of changed files per status letter, e.g. { M: 3, A: 2 }. */
@@ -19,10 +20,16 @@ function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
 }
 
 export function CommitDetail() {
-  const { commits, selectedHash, filesByCommit, loadCommitFiles, openDiff } = useRepoStore();
+  const { commits, layout, selectedHash, filesByCommit, loadCommitFiles, openDiff } = useRepoStore();
 
   const commit = commits.find((c) => c.hash === selectedHash);
   const files = commit ? filesByCommit[commit.hash] : undefined;
+  // Match ref badge color to the commit's graph node (lane color).
+  const badgeColor = (() => {
+    if (!commit || !layout) return undefined;
+    const idx = layout.commits.findIndex((lc) => lc.hash === commit.hash);
+    return idx >= 0 ? laneColor(layout.commits[idx].lane) : undefined;
+  })();
 
   // Hooks must be called unconditionally (Rules of Hooks) — before any
   // early return — so the hook order stays stable across renders.
@@ -39,7 +46,9 @@ export function CommitDetail() {
     return (
       <div className="detail-pane">
         <h3>Commit details</h3>
-        <p className="muted">Select a commit to see its details.</p>
+        <div className="pane-placeholder">
+          <p className="muted">Select a commit to see its details.</p>
+        </div>
       </div>
     );
   }
@@ -69,7 +78,11 @@ export function CommitDetail() {
               <dt>Refs</dt>
               <dd>
                 {commit.refs.map((r) => (
-                  <span key={r} className="commit-ref-badge">
+                  <span
+                    key={r}
+                    className="commit-ref-badge"
+                    style={badgeColor ? ({ "--badge-color": badgeColor } as React.CSSProperties) : undefined}
+                  >
                     {r}
                   </span>
                 ))}
@@ -100,7 +113,9 @@ export function CommitDetail() {
             )}
           </>
         ) : (
-          <p className="muted">Loading…</p>
+          <div className="pane-placeholder">
+            <p className="muted">Loading…</p>
+          </div>
         )}
       </div>
     </div>

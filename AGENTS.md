@@ -30,7 +30,7 @@ src/
     commit-detail/      # detail panel (CommitDetail)
     commit/             # commit composer (CommitComposer)
     repo/               # open-repo flow
-    status-bar/         # StatusBar
+    toolbar/            # top toolbar (repo/branch + pull/push/stash/settings)
   shared/
     components/         # FileTree, StatusIcon (used by 2+ features)
     utils/              # time, hash, status, error, fileTree
@@ -51,6 +51,12 @@ Rules:
   No relative imports across feature boundaries (sibling imports within one
   feature folder are fine).
 - Never create new top-level folders in `src/` without updating this section.
+- Design constraints (visual): single accent token (`--accent`), single corner-radius
+  scale (3/5/7px), fonts via `--font-ui`/`--font-mono`; never add a second accent or
+  radius system. All shared control styles (`.btn`, `.input`, `.icon-btn`,
+  `.section-label`) live in `src/app/styles/base.css`. Canvas-drawn neutrals in
+  `GraphCanvas.tsx` are hardcoded constants that must be kept in sync with the
+  base.css tokens.
 
 Backend mirror:
 

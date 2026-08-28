@@ -1,13 +1,66 @@
+/* ---------- design tokens ---------- */
 :root {
-  --bg: #1e232b;
-  --bg-elev: #262d37;
-  --bg-hover: #2d3540;
-  --border: #333c48;
-  --text: #d7dce3;
-  --text-dim: #8b95a3;
-  --accent: #4da6ff;
-  --selected: #2a3a4d;
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  /* surfaces (dark-only) */
+  --bg: #0f1319; /* app background */
+  --bg-raised: #161b23; /* panels / toolbar / inputs */
+  --bg-hover: #1d242e; /* row / button hover */
+  --bg-active: #222b36; /* pressed */
+  --bg-inset: #0b0e13; /* wells / scrollbar track */
+  --border: #262e3a; /* hairline */
+  --border-strong: #333d4b;
+
+  /* text */
+  --text: #e3e8ee;
+  --text-dim: #97a1af;
+  --text-faint: #66707d;
+
+  /* status */
+  --ok: #3fb950;
+  --err: #f85149;
+  --warn: #d29922;
+  --info: #58a6ff;
+
+  /* accent (neon pink) */
+  --accent: #ff5ec8;
+  --accent-strong: #ff7ad3; /* hover */
+  --accent-dim: #3a1830; /* selected-row tint / selection */
+  --accent-border: #8c3a6e; /* focused input border */
+  --on-accent: #2a0a1f; /* text on accent */
+
+  /* selection */
+  --selected: #331826; /* selected row (pink-tinted) */
+
+  /* scrim for overlays */
+  --overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  /* radii scale: 3 (micro) / 5 (controls, rows) / 7 (inputs, panels) */
+  --radius-s: 3px;
+  --radius-m: 5px;
+  --radius-l: 7px;
+
+  /* spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* fonts */
+  --font-ui: "Geist Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* font sizes */
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 14px;
+  --fs-xl: 16px;
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 120ms;
+  --dur-med: 180ms;
 }
 
 * {
@@ -25,23 +78,176 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-lg);
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+::selection {
+  background: var(--accent-dim);
 }
 
 /* ---------- shared utility classes ---------- */
 .muted {
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--fs-md);
 }
 
 .mono {
-  font-family: "JetBrains Mono", "Fira Code", monospace;
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+
+/* Uppercase section header label (12px, tracked). */
+.section-label {
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+/* ---------- shared control primitives ---------- */
+
+/* Subtle button: raised surface + hairline border. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-m);
+  padding: 5px 12px;
+  font-size: var(--fs-md);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  background: var(--bg-active);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary button: accent fill. */
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+/* Text input / textarea. */
+.input {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-l);
+  padding: 8px 10px;
+  font-size: var(--fs-md);
+  font-family: inherit;
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px rgba(255, 94, 200, 0.18);
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+/* Ghost icon button (close / clear / toolbar). */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 4px;
+  cursor: pointer;
+  border-radius: var(--radius-m);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* ---------- focus ---------- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* ---------- scrollbars ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) var(--bg-inset);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--bg-inset);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+  border: 2px solid var(--bg-inset);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--bg-inset);
+}
+
+/* ---------- app shell ---------- */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  user-select: none;
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

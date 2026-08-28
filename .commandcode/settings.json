@@ -17,7 +17,9 @@
       "Shell(pgrep:*)",
       "Shell(tail:*)",
       "Shell(node_modules/.bin/tsc:*)",
-      "Shell(node_modules/.bin/vitest:*)"
+      "Shell(node_modules/.bin/vitest:*)",
+      "Shell(ps:*)",
+      "Shell(awk:*)"
     ],
     "deny": [],
     "defaultMode": "default"

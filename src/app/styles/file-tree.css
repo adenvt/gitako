@@ -1,7 +1,7 @@
 /* ---------- file tree ---------- */
 .file-tree {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-l);
   flex: 1;
   min-height: 0;
   display: flex;
@@ -11,7 +11,7 @@
 
 .file-tree-toolbar {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 4px 6px;
   border-bottom: 1px solid var(--border);
 }
@@ -22,11 +22,15 @@
   gap: 4px;
   background: none;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-m);
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--fs-xs);
+  font-family: inherit;
   padding: 3px 6px;
   cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .tree-toolbar-btn:hover {
@@ -47,13 +51,15 @@
   gap: 6px;
   width: 100%;
   padding: 3px 8px;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   background: none;
   border: none;
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-m);
+  font-family: inherit;
+  transition: background var(--dur-fast) var(--ease);
 }
 
 .tree-dir:hover {
@@ -72,17 +78,22 @@
   margin-left: auto;
   background: none;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-m);
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: var(--fs-xs);
+  font-family: inherit;
   padding: 1px 8px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.1s ease;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
   flex-shrink: 0;
 }
 
-.tree-file:hover .tree-file-action {
+.tree-file:hover .tree-file-action,
+.tree-file-action:focus-visible {
   opacity: 1;
 }
 
@@ -93,8 +104,8 @@
 
 .tree-arrow {
   flex-shrink: 0;
-  color: var(--text-dim);
-  transition: transform 0.1s ease;
+  color: var(--text-faint);
+  transition: transform var(--dur-fast) var(--ease);
 }
 
 .tree-arrow.open {
@@ -123,7 +134,7 @@
 
 .tree-children {
   /* Slight indent guide so nested directories read clearly. */
-  margin-left: 12px;
+  margin-left: var(--space-3);
   border-left: 1px solid var(--border);
-  padding-left: 4px;
+  padding-left: var(--space-1);
 }

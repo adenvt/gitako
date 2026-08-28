@@ -9,6 +9,17 @@ export const LANE_PAD = 12; // left padding before lane 0
 export const TAG_WIDTH = 140;
 /** Extra padding after the last lane before the commit text starts. */
 export const GRAPH_PAD = 16;
+/** Smallest graph band: left pad + right pad (dots clamp to the right edge). */
+export const MIN_GRAPH_BAND = LANE_PAD + LANE_WIDTH / 2 + GRAPH_PAD;
+
+/**
+ * Canvas neutrals, hardcoded to match the base.css tokens (--text, --text-faint,
+ * --bg). Kept as local constants instead of reading CSS variables so the draw
+ * loop stays dependency-light; update these if the token values change.
+ */
+const DOT_STROKE = "#0f1319"; // --bg: dark ring around each dot
+const WIP_COLOR = "#66707d"; // --text-faint: working-dir dot + dashed line
+const SELECTED_RING = "#e3e8ee"; // --text: selected ring
 
 /** Horizontal band reserved for the graph lanes for a given layout. */
 export const graphGutter = (maxLane: number) =>
@@ -110,7 +121,7 @@ export function GraphCanvas({
         const wx = xOf(headCommit.lane);
         const wy = screenYOf(WORKING_ROW);
         const hy = screenYOf(offset);
-        ctx.strokeStyle = "#888";
+        ctx.strokeStyle = WIP_COLOR;
         ctx.globalAlpha = 0.7;
         ctx.lineWidth = 2;
         ctx.setLineDash([3, 3]);
@@ -122,16 +133,16 @@ export function GraphCanvas({
         // Working-directory dot.
         ctx.beginPath();
         ctx.arc(wx, wy, 5, 0, Math.PI * 2);
-        ctx.fillStyle = "#888";
+        ctx.fillStyle = WIP_COLOR;
         ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.85)";
+        ctx.strokeStyle = DOT_STROKE;
         ctx.lineWidth = 1.5;
         ctx.stroke();
         // Selected ring, matching commit selection.
         if (workingSelectedRef.current) {
           ctx.beginPath();
           ctx.arc(wx, wy, 8.5, 0, Math.PI * 2);
-          ctx.strokeStyle = "#ffffff";
+          ctx.strokeStyle = SELECTED_RING;
           ctx.lineWidth = 2;
           ctx.stroke();
         }
@@ -224,14 +235,14 @@ export function GraphCanvas({
         ctx.arc(x, y, 5, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.85)";
+        ctx.strokeStyle = DOT_STROKE;
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
         if (isSelected) {
           ctx.beginPath();
           ctx.arc(x, y, 8.5, 0, Math.PI * 2);
-          ctx.strokeStyle = "#ffffff";
+          ctx.strokeStyle = SELECTED_RING;
           ctx.lineWidth = 2;
           ctx.stroke();
         }

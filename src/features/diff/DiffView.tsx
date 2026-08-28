@@ -251,7 +251,7 @@ export function DiffView() {
         <span className="diff-path mono" title={path}>
           {path}
         </span>
-        <button className="diff-close" onClick={closeDiff} aria-label="Close diff">
+        <button className="icon-btn diff-close" onClick={closeDiff} aria-label="Close diff">
           <X size={16} aria-hidden />
         </button>
       </div>
