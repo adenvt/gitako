@@ -141,6 +141,15 @@ pub fn git_diff(
 }
 
 /// Resolve the parent revision of `rev`; falls back to the empty tree.
+///
+/// Note: for merge commits, this returns the **first** parent. That's the
+/// default behavior of `git show`/`git diff <rev>^..<rev>` and matches what
+/// most users expect (especially for the common "rebase and merge" workflow,
+/// where the PR's content is already on the first parent's side). Showing
+/// the diff against the second parent is occasionally more useful for true
+/// merges of long-lived branches, but no single default is right for both,
+/// so the first parent wins unless a future UI lets the user pick. Octopus
+/// merges (3+ parents) are not specially handled.
 fn resolve_parent(repo: &std::path::Path, rev: &str) -> Result<String, crate::error::GitError> {
     let out = git::run_tolerate(repo, &["rev-parse", &format!("{rev}^")]);
     match out {
