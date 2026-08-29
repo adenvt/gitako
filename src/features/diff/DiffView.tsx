@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useRepoStore } from "@/state/store";
 import type { DiffFile } from "@/shared/types/git";
 import { highlightLines, langForPath, type Line } from "@/shared/utils/highlight";
+import { Button } from "@/shared/components/ui";
 
 /** One aligned row in the side-by-side view. */
 interface DiffRow {
@@ -251,9 +252,9 @@ export function DiffView() {
         <span className="diff-path mono" title={path}>
           {path}
         </span>
-        <button className="icon-btn diff-close" onClick={closeDiff} aria-label="Close diff">
+        <Button variant="ghost" className="diff-close" onClick={closeDiff} aria-label="Close diff">
           <X size={16} aria-hidden />
-        </button>
+        </Button>
       </div>
 
       {!diff ? (

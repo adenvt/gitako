@@ -110,7 +110,7 @@ body {
 /* ---------- shared control primitives ---------- */
 
 /* Subtle button: raised surface + hairline border. */
-.btn {
+.ui-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -128,36 +128,37 @@ body {
     transform var(--dur-fast) var(--ease);
 }
 
-.btn:hover {
+.ui-btn:hover:not(:disabled):not([data-disabled]) {
   background: var(--bg-hover);
   border-color: var(--border-strong);
 }
 
-.btn:active:not(:disabled) {
+.ui-btn:active:not(:disabled):not([data-disabled]) {
   transform: translateY(1px);
   background: var(--bg-active);
 }
 
-.btn:disabled {
+.ui-btn:disabled,
+.ui-btn[data-disabled] {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* Primary button: accent fill. */
-.btn-primary {
+.ui-btn-primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
   font-weight: 600;
 }
 
-.btn-primary:hover:not(:disabled) {
+.ui-btn-primary:hover:not(:disabled):not([data-disabled]) {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
 }
 
-/* Text input / textarea. */
-.input {
+/* Text input. */
+.ui-input {
   background: var(--bg-raised);
   border: 1px solid var(--border);
   color: var(--text);
@@ -167,18 +168,51 @@ body {
   font-family: inherit;
 }
 
-.input:focus-visible {
+.ui-input:focus-visible {
   outline: none;
   border-color: var(--accent-border);
   box-shadow: 0 0 0 2px rgba(255, 94, 200, 0.18);
 }
 
-.input::placeholder {
+.ui-input::placeholder {
   color: var(--text-faint);
 }
 
+.ui-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Multi-line input (no Base UI part; styled to match .ui-input). */
+.ui-textarea {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-l);
+  padding: 8px 10px;
+  font-size: var(--fs-md);
+  font-family: inherit;
+  resize: vertical;
+  min-height: 0;
+}
+
+.ui-textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px rgba(255, 94, 200, 0.18);
+}
+
+.ui-textarea::placeholder {
+  color: var(--text-faint);
+}
+
+.ui-textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Ghost icon button (close / clear / toolbar). */
-.icon-btn {
+.ui-ghost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -193,7 +227,7 @@ body {
     color var(--dur-fast) var(--ease);
 }
 
-.icon-btn:hover {
+.ui-ghost:hover:not(:disabled):not([data-disabled]) {
   background: var(--bg-hover);
   color: var(--text);
 }

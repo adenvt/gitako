@@ -4,6 +4,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { homeDir } from "@tauri-apps/api/path";
 import { useRepoStore } from "@/state/store";
 import { repoRoot } from "@/state/git";
+import { Button, Input } from "@/shared/components/ui";
 import {
   addRecentRepo,
   loadRecentRepos,
@@ -101,26 +102,26 @@ export function OpenRepo() {
       <div className="welcome-header">
         <h1>Repositories</h1>
         <div className="welcome-actions">
-          <button className="btn welcome-btn" onClick={() => void handleBrowse()}>
+          <Button variant="solid" className="welcome-btn" onClick={() => void handleBrowse()}>
             <FolderOpen size={15} aria-hidden />
             Open
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="welcome-search">
         <Search size={14} className="welcome-search-icon" aria-hidden />
-        <input
+        <Input
           type="text"
-          className="input"
+          className="welcome-search-input"
           placeholder="Search repositories"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         {query && (
-          <button className="icon-btn welcome-clear" onClick={() => setQuery("")} aria-label="Clear search">
+          <Button variant="ghost" className="welcome-clear" onClick={() => setQuery("")} aria-label="Clear search">
             <X size={13} aria-hidden />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -132,8 +133,9 @@ export function OpenRepo() {
               <li key={r.path} className="welcome-item" onClick={() => void handleOpenPath(r.path)}>
                 <div className="welcome-item-name">{r.name}</div>
                 <div className="welcome-item-path mono">{displayPaths[r.path] ?? r.path}</div>
-                <button
-                  className="icon-btn welcome-item-remove"
+                <Button
+                  variant="ghost"
+                  className="welcome-item-remove"
                   onClick={(e) => {
                     e.stopPropagation();
                     remove(r.path);
@@ -141,7 +143,7 @@ export function OpenRepo() {
                   aria-label={`Remove ${r.name} from recent`}
                 >
                   <X size={13} aria-hidden />
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -151,10 +153,10 @@ export function OpenRepo() {
           <GitBranch size={28} className="welcome-empty-icon" aria-hidden />
           <p className="muted">No repositories yet.</p>
           <p className="muted">Click Open to pick a git repository folder.</p>
-          <button className="btn btn-primary welcome-empty-btn" onClick={() => void handleBrowse()}>
+          <Button variant="primary" className="welcome-empty-btn" onClick={() => void handleBrowse()}>
             <FolderOpen size={15} aria-hidden />
             Open
-          </button>
+          </Button>
         </div>
       )}
 

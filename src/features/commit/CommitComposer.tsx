@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useRepoStore } from "@/state/store";
 import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
+import { Button, Input, Textarea } from "@/shared/components/ui";
 import type { StatusEntry } from "@/shared/utils/status";
 
 function toTreeEntry(e: StatusEntry) {
@@ -95,9 +96,9 @@ export function CommitComposer() {
       </div>
 
       <div className="composer-form">
-        <input
+        <Input
           type="text"
-          className="input composer-subject"
+          className="composer-subject"
           placeholder="Subject (required)"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
@@ -108,21 +109,22 @@ export function CommitComposer() {
             }
           }}
         />
-        <textarea
-          className="input composer-description"
+        <Textarea
+          className="composer-description"
           placeholder="Description"
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
         {composerError && <p className="composer-error">{composerError}</p>}
-        <button
+        <Button
+          variant="none"
           className="composer-commit"
           disabled={!canCommit}
           onClick={() => void handleCommit()}
         >
           {busy ? "Committing…" : "Commit"}
-        </button>
+        </Button>
       </div>
     </div>
   );

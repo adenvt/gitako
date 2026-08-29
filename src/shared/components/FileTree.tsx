@@ -4,6 +4,7 @@ import { ChevronRight, Folder, FolderOpen, ListCollapse, ListTree } from "lucide
 import { collectDirPaths, type FileTreeNode } from "@/shared/utils/fileTree";
 import { statusLabel } from "@/shared/utils/status";
 import { StatusIcon } from "@/shared/components/StatusIcon";
+import { Button } from "@/shared/components/ui";
 
 interface FileTreeProps {
   root: FileTreeNode;
@@ -39,7 +40,8 @@ function TreeRow({
   if (!node.isFile) {
     return (
       <>
-        <button
+        <Button
+          variant="none"
           className="tree-row tree-dir"
           style={{ paddingLeft: 6 + depth * 14 }}
           onClick={() => onToggle(node.path)}
@@ -52,7 +54,7 @@ function TreeRow({
             <Folder size={14} className="tree-folder-icon" aria-hidden />
           )}
           <span className="tree-name">{node.name || "/"}</span>
-        </button>
+        </Button>
         {open && (
           <div className="tree-children">
             {node.children.map((c) => (
@@ -85,7 +87,8 @@ function TreeRow({
       <StatusIcon status={node.status} />
       <span className="tree-name mono">{node.name}</span>
       {onFileAction && actionLabel && (
-        <button
+        <Button
+          variant="none"
           className="tree-file-action"
           onClick={(e) => {
             e.stopPropagation();
@@ -93,7 +96,7 @@ function TreeRow({
           }}
         >
           {actionLabel}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -130,15 +133,15 @@ export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTr
       {dirPaths.length > 0 && (
         <div className="file-tree-toolbar">
           {allExpanded ? (
-            <button className="tree-toolbar-btn" onClick={collapseAll}>
+            <Button variant="none" className="tree-toolbar-btn" onClick={collapseAll}>
               <ListCollapse size={13} aria-hidden />
               Collapse all
-            </button>
+            </Button>
           ) : (
-            <button className="tree-toolbar-btn" onClick={expandAll}>
+            <Button variant="none" className="tree-toolbar-btn" onClick={expandAll}>
               <ListTree size={13} aria-hidden />
               Expand all
-            </button>
+            </Button>
           )}
         </div>
       )}

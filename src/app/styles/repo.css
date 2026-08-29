@@ -63,7 +63,7 @@
   pointer-events: none;
 }
 
-.welcome-search input {
+.welcome-search .welcome-search-input {
   width: 100%;
   padding: 8px 30px 8px 32px;
 }

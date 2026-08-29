@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Archive, Settings } from "lucide-react";
 import { useRepoStore } from "@/state/store";
 import { countChanges } from "@/shared/utils/status";
+import { Button } from "@/shared/components/ui";
 
 /** Transient "not yet implemented" notice for placeholder toolbar actions. */
 export function Toolbar() {
@@ -33,36 +34,40 @@ export function Toolbar() {
       </div>
 
       <div className="toolbar-actions">
-        <button
-          className="btn toolbar-btn"
+        <Button
+          variant="solid"
+          className="toolbar-btn"
           onClick={handlePull}
           disabled={loading}
           title={loading ? "Refreshing…" : "Fetch and refresh"}
         >
           <ArrowDownToLine size={14} aria-hidden />
           {loading ? "Refreshing…" : "Pull"}
-        </button>
-        <button
-          className="btn toolbar-btn"
+        </Button>
+        <Button
+          variant="solid"
+          className="toolbar-btn"
           onClick={() => showNotice("Push - not yet implemented (ROADMAP Phase 5)")}
         >
           <ArrowUpFromLine size={14} aria-hidden />
           Push
-        </button>
-        <button
-          className="btn toolbar-btn"
+        </Button>
+        <Button
+          variant="solid"
+          className="toolbar-btn"
           onClick={() => showNotice("Stash - not yet implemented (ROADMAP Phase 4)")}
         >
           <Archive size={14} aria-hidden />
           Stash
-        </button>
-        <button
-          className="btn toolbar-btn"
+        </Button>
+        <Button
+          variant="solid"
+          className="toolbar-btn"
           onClick={() => showNotice("Settings - not yet implemented (ROADMAP Phase 7)")}
         >
           <Settings size={14} aria-hidden />
           Settings
-        </button>
+        </Button>
       </div>
 
       <div className="toolbar-right">
