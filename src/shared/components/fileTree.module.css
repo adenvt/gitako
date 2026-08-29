@@ -1,5 +1,5 @@
-/* ---------- file tree ---------- */
-.file-tree {
+/* ---------- file tree (shared by composer + commit detail) ---------- */
+.fileTree {
   border: 1px solid var(--border);
   border-radius: var(--radius-l);
   flex: 1;
@@ -9,14 +9,14 @@
   overflow: hidden;
 }
 
-.file-tree-toolbar {
+.fileTreeToolbar {
   display: flex;
   gap: var(--space-1);
   padding: 4px 6px;
   border-bottom: 1px solid var(--border);
 }
 
-.tree-toolbar-btn {
+.treeToolbarBtn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -33,19 +33,19 @@
     color var(--dur-fast) var(--ease);
 }
 
-.tree-toolbar-btn:hover {
+.treeToolbarBtn:hover:not(:disabled):not([data-disabled]) {
   background: var(--bg-hover);
   color: var(--text);
 }
 
-.file-tree-rows {
+.fileTreeRows {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 4px 0;
 }
 
-.tree-row {
+.treeRow {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -62,19 +62,24 @@
   transition: background var(--dur-fast) var(--ease);
 }
 
-.tree-dir:hover {
+.treeDir:hover {
   background: var(--bg-hover);
 }
 
-.tree-file {
+.treeFile {
   cursor: default;
 }
 
-.tree-file:hover {
+.treeFile:hover {
   background: var(--bg-hover);
 }
 
-.tree-file-action {
+/* File rows that open a diff show a pointer cursor. */
+.clickable {
+  cursor: pointer;
+}
+
+.treeFileAction {
   margin-left: auto;
   background: none;
   border: 1px solid var(--border);
@@ -92,47 +97,60 @@
   flex-shrink: 0;
 }
 
-.tree-file:hover .tree-file-action,
-.tree-file-action:focus-visible {
+.treeFile:hover .treeFileAction,
+.treeFileAction:focus-visible {
   opacity: 1;
 }
 
-.tree-file-action:hover {
+.treeFileAction:hover:not(:disabled):not([data-disabled]) {
   background: var(--bg-hover);
   color: var(--text);
 }
 
-.tree-arrow {
+.treeArrow {
   flex-shrink: 0;
   color: var(--text-faint);
   transition: transform var(--dur-fast) var(--ease);
 }
 
-.tree-arrow.open {
+.treeArrowOpen {
   transform: rotate(90deg);
 }
 
-.tree-folder-icon {
+.treeFolderIcon {
   flex-shrink: 0;
   color: var(--text-dim);
 }
 
-.tree-status-icon {
+.treeStatusIcon {
   flex-shrink: 0;
 }
 
-.tree-spacer {
+/* Status icon colors (file tree rows + commit detail file stats). */
+.statusAdded {
+  color: var(--ok);
+}
+
+.statusDeleted {
+  color: var(--err);
+}
+
+.statusChanged {
+  color: var(--accent);
+}
+
+.treeSpacer {
   width: 14px;
   flex-shrink: 0;
 }
 
-.tree-name {
+.treeName {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tree-children {
+.treeChildren {
   /* Slight indent guide so nested directories read clearly. */
   margin-left: var(--space-3);
   border-left: 1px solid var(--border);

@@ -1,0 +1,162 @@
+/* ---------- commit list ---------- */
+.commitList {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+
+/* Vertical drag handle at the boundary between graph band and commit text. */
+.graphResizeHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  z-index: 5;
+  cursor: col-resize;
+}
+
+.graphResizeHandle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 2px;
+  background: transparent;
+  transition: background var(--dur-med) var(--ease);
+}
+
+.graphResizeHandle:hover::after,
+.graphResizeHandle:active::after {
+  background: var(--accent);
+}
+
+.commitScroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
+}
+
+.commitRows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.commitRow {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-radius: var(--radius-m);
+  cursor: pointer;
+  pointer-events: auto;
+  overflow: hidden;
+  /* Solid background so graph lines don't show through the message column. */
+  background: var(--bg);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.commitRow:hover {
+  background: var(--bg-hover);
+}
+
+.selected {
+  background: var(--selected);
+}
+
+.commitRow:active {
+  transform: translateY(1px);
+}
+
+/* Working-directory row above the newest commit. */
+.workingRow {
+  cursor: pointer;
+}
+
+.workingRow:hover {
+  background: var(--bg-hover);
+}
+
+.wipLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.wipCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.wipAdded {
+  color: var(--ok);
+}
+
+.wipDeleted {
+  color: var(--err);
+}
+
+.wipModified {
+  color: var(--accent);
+}
+
+.commitSubject {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.commitMeta {
+  display: flex;
+  gap: var(--space-2);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+/* Tag/branch column: badges shown to the left of the graph. */
+.commitTagCell {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.commitTagCell:hover {
+  background: var(--bg-hover);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--text-faint);
+  font-size: var(--fs-md);
+}

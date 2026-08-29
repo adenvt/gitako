@@ -1,20 +1,20 @@
-/* ---------- commit composer ---------- */
+/* Commit composer (root extends the shared .detail-pane layout). */
 .composer {
   gap: var(--space-3);
   min-height: 0;
 }
 
-.composer-head {
+.composerHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.composer-head h3 {
+.composerHead h3 {
   margin-bottom: 0;
 }
 
-.staging-section {
+.stagingSection {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -22,7 +22,7 @@
   min-height: 0;
 }
 
-.staging-header {
+.stagingHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -32,7 +32,11 @@
   color: var(--text-dim);
 }
 
-.staging-bulk {
+.stagingTitle {
+  /* original: styling inherited from .staging-header; kept for parity */
+}
+
+.stagingBulk {
   background: none;
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
@@ -48,19 +52,20 @@
     color var(--dur-fast) var(--ease);
 }
 
-.staging-bulk:hover {
+.stagingBulk:hover {
   background: var(--bg-hover);
   color: var(--text);
 }
 
-.composer-form {
+.composerForm {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin-top: auto;
 }
 
-.composer-subject {
+/* Duplicate of .ui-input kept for exact visual parity. */
+.composerSubject {
   background: var(--bg-raised);
   border: 1px solid var(--border);
   color: var(--text);
@@ -70,14 +75,14 @@
   font-family: inherit;
 }
 
-.composer-subject:focus-visible,
-.composer-description:focus-visible {
+.composerSubject:focus-visible,
+.composerDescription:focus-visible {
   outline: none;
   border-color: var(--accent-border);
   box-shadow: 0 0 0 2px rgba(255, 94, 200, 0.18);
 }
 
-.composer-description {
+.composerDescription {
   background: var(--bg-raised);
   border: 1px solid var(--border);
   color: var(--text);
@@ -90,14 +95,14 @@
   max-height: 96px;
 }
 
-.composer-error {
+.composerError {
   color: var(--err);
   font-size: var(--fs-sm);
   margin: 0;
   word-break: break-word;
 }
 
-.composer-commit {
+.composerCommit {
   background: var(--accent);
   border: 1px solid var(--accent);
   color: var(--on-accent);
@@ -112,16 +117,17 @@
     transform var(--dur-fast) var(--ease);
 }
 
-.composer-commit:hover:not(:disabled) {
+.composerCommit:hover:not(:disabled):not([data-disabled]) {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
 }
 
-.composer-commit:active:not(:disabled) {
+.composerCommit:active:not(:disabled):not([data-disabled]) {
   transform: translateY(1px);
 }
 
-.composer-commit:disabled {
+.composerCommit:disabled,
+.composerCommit[data-disabled] {
   opacity: 0.5;
   cursor: not-allowed;
 }
