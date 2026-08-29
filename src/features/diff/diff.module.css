@@ -1,5 +1,5 @@
 /* ---------- diff view ---------- */
-.diff-view {
+.diffView {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -7,7 +7,7 @@
   min-height: 0;
 }
 
-.diff-topbar {
+.diffTopbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -17,7 +17,7 @@
   background: var(--bg-raised);
 }
 
-.diff-path {
+.diffPath {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -26,10 +26,11 @@
   font-size: var(--fs-md);
 }
 
-.diff-close {
+.diffClose {
   flex-shrink: 0;
 }
-.diff-placeholder {
+
+.diffPlaceholder {
   flex: 1;
   display: flex;
   align-items: center;
@@ -40,7 +41,7 @@
   text-align: center;
 }
 
-.diff-table {
+.diffTable {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -50,26 +51,26 @@
   line-height: 1.5;
 }
 
-.diff-cols {
+.diffCols {
   display: grid;
   grid-template-columns: 1fr 1fr;
   width: 100%;
   min-height: 100%;
 }
 
-.diff-col {
+.diffCol {
   min-width: 0;
   overflow-x: hidden;
   overflow-y: hidden;
   scrollbar-width: none; /* Firefox: hide the per-column native bar */
 }
 
-.diff-col::-webkit-scrollbar {
+.diffCol::-webkit-scrollbar {
   height: 0; /* Chrome/Safari: hide the per-column native bar */
 }
 
 /* Always-visible horizontal scrollbar pinned under the diff table. */
-.diff-scrollbar {
+.diffScrollbar {
   flex-shrink: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -78,26 +79,26 @@
   background: var(--bg-inset);
 }
 
-.diff-scrollbar::-webkit-scrollbar {
+.diffScrollbar::-webkit-scrollbar {
   height: 12px;
 }
 
-.diff-scrollbar::-webkit-scrollbar-thumb {
+.diffScrollbar::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 6px;
   border: 2px solid var(--bg-inset);
 }
 
-.diff-scrollbar::-webkit-scrollbar-track {
+.diffScrollbar::-webkit-scrollbar-track {
   background: var(--bg-inset);
 }
 
-.diff-col + .diff-col {
+.diffCol + .diffCol {
   border-left: 1px solid var(--border);
 }
 
 /* Column headers aligned with the two diff panes. */
-.diff-col-headers {
+.diffColHeaders {
   display: grid;
   grid-template-columns: 1fr 1fr;
   position: sticky;
@@ -108,7 +109,7 @@
   background: var(--bg-raised);
 }
 
-.diff-col-header {
+.diffColHeader {
   padding: 4px 12px;
   font-size: var(--fs-xs);
   font-weight: 600;
@@ -116,21 +117,21 @@
   color: var(--text-dim);
 }
 
-.diff-col-header + .diff-col-header {
+.diffColHeader + .diffColHeader {
   border-left: 1px solid var(--border);
 }
 
-.diff-line {
+.diffLine {
   display: flex;
   align-items: stretch;
   white-space: pre;
 }
 
-.diff-line:hover {
+.diffLine:hover {
   background: var(--bg-hover);
 }
 
-.diff-gutter {
+.diffGutter {
   flex-shrink: 0;
   position: sticky;
   left: 0;
@@ -146,36 +147,36 @@
   border-right: 1px solid var(--border);
 }
 
-.diff-gutter .diff-sign {
+.diffSign {
   display: inline-block;
   width: 1ch;
   text-align: center;
   color: var(--text-faint);
 }
 
-.diff-sign.remove {
+.diffSign.remove {
   color: var(--err);
 }
 
-.diff-sign.add {
+.diffSign.add {
   color: var(--ok);
 }
 
-.diff-cell {
+.diffCell {
   padding: 0 8px;
   white-space: pre;
 }
 
-.diff-add .diff-cell {
+.add .diffCell {
   background: rgba(63, 185, 80, 0.12);
 }
 
-.diff-remove .diff-cell {
+.remove .diffCell {
   background: rgba(248, 81, 73, 0.12);
 }
 
 /* The side with no counterpart (added/removed lines). */
-.diff-empty {
+.diffEmpty {
   background: repeating-linear-gradient(
     64deg,
     transparent,
@@ -184,9 +185,4 @@
     rgba(255, 255, 255, 0.025) 8px
   );
   width: 100%;
-}
-
-/* File rows that open a diff show a pointer cursor. */
-.tree-file.clickable {
-  cursor: pointer;
 }

@@ -4,12 +4,14 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { homeDir } from "@tauri-apps/api/path";
 import { useRepoStore } from "@/state/store";
 import { repoRoot } from "@/state/git";
+import { Button, Input } from "@/shared/components/ui";
 import {
   addRecentRepo,
   loadRecentRepos,
   removeRecentRepo,
   type RecentRepo,
 } from "@/shared/utils/recentRepos";
+import s from "./repo.module.css";
 
 async function repoDisplayPath(path: string): Promise<string> {
   try {
@@ -92,48 +94,49 @@ export function OpenRepo() {
   };
 
   return (
-    <div className="welcome">
-      <div className="welcome-brand">
-        <GitBranch size={18} className="welcome-brand-icon" aria-hidden />
-        <span className="welcome-brand-name">GiTako</span>
+    <div className={s.welcome}>
+      <div className={s.welcomeBrand}>
+        <GitBranch size={18} className={s.welcomeBrandIcon} aria-hidden />
+        <span className={s.welcomeBrandName}>GiTako</span>
       </div>
 
-      <div className="welcome-header">
+      <div className={s.welcomeHeader}>
         <h1>Repositories</h1>
-        <div className="welcome-actions">
-          <button className="btn welcome-btn" onClick={() => void handleBrowse()}>
+        <div className={s.welcomeActions}>
+          <Button variant="solid" className={s.welcomeBtn} onClick={() => void handleBrowse()}>
             <FolderOpen size={15} aria-hidden />
             Open
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="welcome-search">
-        <Search size={14} className="welcome-search-icon" aria-hidden />
-        <input
+      <div className={s.welcomeSearch}>
+        <Search size={14} className={s.welcomeSearchIcon} aria-hidden />
+        <Input
           type="text"
-          className="input"
+          className={s.welcomeSearchInput}
           placeholder="Search repositories"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         {query && (
-          <button className="icon-btn welcome-clear" onClick={() => setQuery("")} aria-label="Clear search">
+          <Button variant="ghost" className={s.welcomeClear} onClick={() => setQuery("")} aria-label="Clear search">
             <X size={13} aria-hidden />
-          </button>
+          </Button>
         )}
       </div>
 
       {recent.length > 0 ? (
-        <div className="welcome-recents">
-          <div className="section-label welcome-section-label">Recent</div>
-          <ul className="welcome-list">
+        <div className={s.welcomeRecents}>
+          <div className={`${s.welcomeSectionLabel} section-label`}>Recent</div>
+          <ul className={s.welcomeList}>
             {filtered.map((r) => (
-              <li key={r.path} className="welcome-item" onClick={() => void handleOpenPath(r.path)}>
-                <div className="welcome-item-name">{r.name}</div>
-                <div className="welcome-item-path mono">{displayPaths[r.path] ?? r.path}</div>
-                <button
-                  className="icon-btn welcome-item-remove"
+              <li key={r.path} className={s.welcomeItem} onClick={() => void handleOpenPath(r.path)}>
+                <div className={s.welcomeItemName}>{r.name}</div>
+                <div className={`${s.welcomeItemPath} mono`}>{displayPaths[r.path] ?? r.path}</div>
+                <Button
+                  variant="ghost"
+                  className={s.welcomeItemRemove}
                   onClick={(e) => {
                     e.stopPropagation();
                     remove(r.path);
@@ -141,25 +144,25 @@ export function OpenRepo() {
                   aria-label={`Remove ${r.name} from recent`}
                 >
                   <X size={13} aria-hidden />
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
         </div>
       ) : (
-        <div className="welcome-empty">
-          <GitBranch size={28} className="welcome-empty-icon" aria-hidden />
+        <div className={s.welcomeEmpty}>
+          <GitBranch size={28} className={s.welcomeEmptyIcon} aria-hidden />
           <p className="muted">No repositories yet.</p>
           <p className="muted">Click Open to pick a git repository folder.</p>
-          <button className="btn btn-primary welcome-empty-btn" onClick={() => void handleBrowse()}>
+          <Button variant="primary" className={s.welcomeEmptyBtn} onClick={() => void handleBrowse()}>
             <FolderOpen size={15} aria-hidden />
             Open
-          </button>
+          </Button>
         </div>
       )}
 
       {(error || banner) && (
-        <div className="welcome-error" role="alert">
+        <div className={s.welcomeError} role="alert">
           {error ?? banner}
         </div>
       )}

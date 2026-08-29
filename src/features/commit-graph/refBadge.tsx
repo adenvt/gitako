@@ -1,6 +1,8 @@
 import { Globe, Laptop, Tag } from "lucide-react";
 import { SiBitbucket, SiGithub, SiGitlab } from "react-icons/si";
+import clsx from "clsx";
 import type { RefInfo } from "@/shared/types/git";
+import s from "./refBadge.module.css";
 
 /** Detect the hosting provider from a remote URL (https or ssh). */
 export type RefProvider = "github" | "gitlab" | "bitbucket" | null;
@@ -59,11 +61,11 @@ export function RefBadge({ refInfo, color }: RefBadgeProps) {
   const fullName = refFullName(refInfo);
   return (
     <span
-      className="commit-ref-badge"
+      className={s.commitRefBadge}
       title={fullName}
       style={color ? ({ "--badge-color": color } as React.CSSProperties) : undefined}
     >
-      <span className="ref-name">{refInfo.name}</span>
+      <span className={s.refName}>{refInfo.name}</span>
       <RefIcon refInfo={refInfo} />
     </span>
   );
@@ -86,21 +88,21 @@ export function RefBadgeGroup({ refs, color }: RefBadgeGroupProps) {
   const label = refs.map(refFullName).join(", ");
   return (
     <span
-      className="commit-ref-badge ref-badge-group"
+      className={clsx(s.commitRefBadge, s.refBadgeGroup)}
       title={label}
       style={color ? ({ "--badge-color": color } as React.CSSProperties) : undefined}
     >
-      <span className="ref-name">{name}</span>
-      <span className="ref-group-icons">
+      <span className={s.refName}>{name}</span>
+      <span className={s.refGroupIcons}>
         {refs.map((r) => (
           <RefIcon key={r.fullName} refInfo={r} />
         ))}
       </span>
-      <span className="ref-dropdown">
+      <span className={s.refDropdown}>
         {refs.map((r) => (
-          <span key={r.fullName} className="ref-dropdown-item">
+          <span key={r.fullName} className={s.refDropdownItem}>
             <RefIcon refInfo={r} />
-            <span className="ref-dropdown-name">{refFullName(r)}</span>
+            <span className={s.refDropdownName}>{refFullName(r)}</span>
           </span>
         ))}
       </span>

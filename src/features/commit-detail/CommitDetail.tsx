@@ -7,14 +7,16 @@ import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
 import { StatusIcon } from "@/shared/components/StatusIcon";
 import { laneColor } from "@/features/commit-graph/colors";
+import badge from "@/features/commit-graph/refBadge.module.css";
+import s from "./detail.module.css";
 import type { ChangedFile } from "@/shared/types/git";
 
 /** Number of changed files per status letter, e.g. { M: 3, A: 2 }. */
 function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const f of files) {
-    const s = f.status[0] ?? f.status;
-    counts[s] = (counts[s] ?? 0) + 1;
+    const st = f.status[0] ?? f.status;
+    counts[st] = (counts[st] ?? 0) + 1;
   }
   return counts;
 }
@@ -44,9 +46,9 @@ export function CommitDetail() {
 
   if (!commit) {
     return (
-      <div className="detail-pane">
+      <div className={s.detailPane}>
         <h3>Commit details</h3>
-        <div className="pane-placeholder">
+        <div className={s.panePlaceholder}>
           <p className="muted">Select a commit to see its details.</p>
         </div>
       </div>
@@ -54,11 +56,11 @@ export function CommitDetail() {
   }
 
   return (
-    <div className="detail-pane">
+    <div className={s.detailPane}>
       <h3>Commit details</h3>
-      <div className="detail-commit">
-        <div className="detail-subject">{commit.subject}</div>
-        <dl className="detail-meta">
+      <div>
+        <div className={s.detailSubject}>{commit.subject}</div>
+        <dl className={s.detailMeta}>
           <dt>Author</dt>
           <dd>
             {commit.authorName} &lt;{commit.authorEmail}&gt;
@@ -80,7 +82,7 @@ export function CommitDetail() {
                 {commit.refs.map((r) => (
                   <span
                     key={r}
-                    className="commit-ref-badge"
+                    className={badge.commitRefBadge}
                     style={badgeColor ? ({ "--badge-color": badgeColor } as React.CSSProperties) : undefined}
                   >
                     {r}
@@ -92,15 +94,15 @@ export function CommitDetail() {
         </dl>
       </div>
 
-      <div className="detail-files">
+      <div className={s.detailFiles}>
         <h4>Changed files</h4>
         {files && counts ? (
           <>
-            <div className="file-stats">
+            <div className={s.fileStats}>
               {Object.entries(counts)
                 .sort((a, b) => a[0].localeCompare(b[0]))
                 .map(([status, n]) => (
-                  <span key={status} className="file-stat">
+                  <span key={status} className={s.fileStat}>
                     <StatusIcon status={status} />
                     {n} {statusLabel(status).toLowerCase()}
                   </span>
@@ -113,7 +115,7 @@ export function CommitDetail() {
             )}
           </>
         ) : (
-          <div className="pane-placeholder">
+          <div className={s.panePlaceholder}>
             <p className="muted">Loading…</p>
           </div>
         )}

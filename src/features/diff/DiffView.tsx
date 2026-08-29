@@ -4,6 +4,8 @@ import { X } from "lucide-react";
 import { useRepoStore } from "@/state/store";
 import type { DiffFile } from "@/shared/types/git";
 import { highlightLines, langForPath, type Line } from "@/shared/utils/highlight";
+import { Button } from "@/shared/components/ui";
+import s from "./diff.module.css";
 
 /** One aligned row in the side-by-side view. */
 interface DiffRow {
@@ -160,7 +162,7 @@ function useHighlightedLines(code: string, lang: string): Line[] | null {
 function Cell({ text, num, tokens }: { text: string; num: number | null; tokens: Line[] | null }) {
   const line = num != null && tokens ? tokens[num - 1] : undefined;
   return (
-    <span className="diff-cell">
+    <span className={s.diffCell}>
       {line && line.length > 0
         ? line.map((t, i) =>
             t.color ? (
@@ -246,62 +248,62 @@ export function DiffView() {
   if (!activeDiff) return null;
 
   return (
-    <div className="diff-view">
-      <div className="diff-topbar">
-        <span className="diff-path mono" title={path}>
+    <div className={s.diffView}>
+      <div className={s.diffTopbar}>
+        <span className={`${s.diffPath} mono`} title={path}>
           {path}
         </span>
-        <button className="icon-btn diff-close" onClick={closeDiff} aria-label="Close diff">
+        <Button variant="ghost" className={s.diffClose} onClick={closeDiff} aria-label="Close diff">
           <X size={16} aria-hidden />
-        </button>
+        </Button>
       </div>
 
       {!diff ? (
-        <div className="diff-placeholder">Loading…</div>
+        <div className={s.diffPlaceholder}>Loading…</div>
       ) : diff.error ? (
-        <div className="diff-placeholder">Failed to load diff: {diff.error}</div>
+        <div className={s.diffPlaceholder}>Failed to load diff: {diff.error}</div>
       ) : diff.binary ? (
-        <div className="diff-placeholder">Binary file — no diff preview.</div>
+        <div className={s.diffPlaceholder}>Binary file — no diff preview.</div>
       ) : diff.tooLarge ? (
-        <div className="diff-placeholder">File too large to display.</div>
+        <div className={s.diffPlaceholder}>File too large to display.</div>
       ) : (
         <>
-          <div className="diff-table">
-            <div className="diff-col-headers">
-              <div className="diff-col-header">OLD</div>
-              <div className="diff-col-header">NEW</div>
+          <div className={s.diffTable}>
+            <div className={s.diffColHeaders}>
+              <div className={s.diffColHeader}>OLD</div>
+              <div className={s.diffColHeader}>NEW</div>
             </div>
-            <div className="diff-cols">
-              <div className="diff-col" ref={oldColRef}>
+            <div className={s.diffCols}>
+              <div className={s.diffCol} ref={oldColRef}>
                 {rows.map((r, i) => (
-                  <div key={i} className={clsx("diff-line", r.oldKind && `diff-${r.oldKind}`)}>
-                    <span className="diff-gutter">
-                      <span className="diff-num">{r.oldNum ?? ""}</span>
-                      <span className={clsx("diff-sign", r.oldKind === "remove" && "remove")}>
+                  <div key={i} className={clsx(s.diffLine, r.oldKind && s[r.oldKind])}>
+                    <span className={s.diffGutter}>
+                      <span>{r.oldNum ?? ""}</span>
+                      <span className={clsx(s.diffSign, r.oldKind === "remove" && s.remove)}>
                         {r.oldKind === "remove" ? "-" : "\u00a0"}
                       </span>
                     </span>
                     {r.oldNum != null ? (
                       <Cell text={r.oldLine ?? ""} num={r.oldNum} tokens={oldTokens} />
                     ) : (
-                      <span className="diff-cell diff-empty" aria-hidden />
+                      <span className={clsx(s.diffCell, s.diffEmpty)} aria-hidden />
                     )}
                   </div>
                 ))}
               </div>
-              <div className="diff-col" ref={newColRef}>
+              <div className={s.diffCol} ref={newColRef}>
                 {rows.map((r, i) => (
-                  <div key={i} className={clsx("diff-line", r.newKind && `diff-${r.newKind}`)}>
-                    <span className="diff-gutter">
-                      <span className="diff-num">{r.newNum ?? ""}</span>
-                      <span className={clsx("diff-sign", r.newKind === "add" && "add")}>
+                  <div key={i} className={clsx(s.diffLine, r.newKind && s[r.newKind])}>
+                    <span className={s.diffGutter}>
+                      <span>{r.newNum ?? ""}</span>
+                      <span className={clsx(s.diffSign, r.newKind === "add" && s.add)}>
                         {r.newKind === "add" ? "+" : "\u00a0"}
                       </span>
                     </span>
                     {r.newNum != null ? (
                       <Cell text={r.newLine ?? ""} num={r.newNum} tokens={newTokens} />
                     ) : (
-                      <span className="diff-cell diff-empty" aria-hidden />
+                      <span className={clsx(s.diffCell, s.diffEmpty)} aria-hidden />
                     )}
                   </div>
                 ))}
@@ -309,7 +311,7 @@ export function DiffView() {
             </div>
           </div>
           {/* Always-visible horizontal scrollbar, the single scroll source. */}
-          <div className="diff-scrollbar" ref={scrollbarRef} onScroll={syncScroll}>
+          <div className={s.diffScrollbar} ref={scrollbarRef} onScroll={syncScroll}>
             <div style={{ width: Math.max(contentWidth, 1), height: 1 }} />
           </div>
         </>

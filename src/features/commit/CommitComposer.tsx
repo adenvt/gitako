@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { useRepoStore } from "@/state/store";
 import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
+import { Button, Input, Textarea } from "@/shared/components/ui";
+import detail from "@/features/commit-detail/detail.module.css";
+import s from "./composer.module.css";
 import type { StatusEntry } from "@/shared/utils/status";
 
 function toTreeEntry(e: StatusEntry) {
@@ -55,18 +58,18 @@ export function CommitComposer() {
   };
 
   return (
-    <div className="detail-pane composer">
-      <div className="composer-head">
+    <div className={`${detail.detailPane} ${s.composer}`}>
+      <div className={s.composerHead}>
         <h3>Commit WIP</h3>
       </div>
 
-      <div className="staging-section">
-        <div className="staging-header">
-          <span className="staging-title">Unstaged ({unstagedCount})</span>
+      <div className={s.stagingSection}>
+        <div className={s.stagingHeader}>
+          <span className={s.stagingTitle}>Unstaged ({unstagedCount})</span>
           {unstagedCount > 0 && (
-            <button className="staging-bulk" onClick={() => void stageAll()}>
+            <Button variant="none" className={s.stagingBulk} onClick={() => void stageAll()}>
               Stage all
-            </button>
+            </Button>
           )}
         </div>
         <FileTree
@@ -77,13 +80,13 @@ export function CommitComposer() {
         />
       </div>
 
-      <div className="staging-section">
-        <div className="staging-header">
-          <span className="staging-title">Staged ({stagedCount})</span>
+      <div className={s.stagingSection}>
+        <div className={s.stagingHeader}>
+          <span className={s.stagingTitle}>Staged ({stagedCount})</span>
           {stagedCount > 0 && (
-            <button className="staging-bulk" onClick={() => void unstageAll()}>
+            <Button variant="none" className={s.stagingBulk} onClick={() => void unstageAll()}>
               Unstage all
-            </button>
+            </Button>
           )}
         </div>
         <FileTree
@@ -94,10 +97,10 @@ export function CommitComposer() {
         />
       </div>
 
-      <div className="composer-form">
-        <input
+      <div className={s.composerForm}>
+        <Input
           type="text"
-          className="input composer-subject"
+          className={s.composerSubject}
           placeholder="Subject (required)"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
@@ -108,21 +111,22 @@ export function CommitComposer() {
             }
           }}
         />
-        <textarea
-          className="input composer-description"
+        <Textarea
+          className={s.composerDescription}
           placeholder="Description"
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        {composerError && <p className="composer-error">{composerError}</p>}
-        <button
-          className="composer-commit"
+        {composerError && <p className={s.composerError}>{composerError}</p>}
+        <Button
+          variant="none"
+          className={s.composerCommit}
           disabled={!canCommit}
           onClick={() => void handleCommit()}
         >
           {busy ? "Committing…" : "Commit"}
-        </button>
+        </Button>
       </div>
     </div>
   );

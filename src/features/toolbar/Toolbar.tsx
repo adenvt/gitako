@@ -2,6 +2,8 @@ import { useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Archive, Settings } from "lucide-react";
 import { useRepoStore } from "@/state/store";
 import { countChanges } from "@/shared/utils/status";
+import { Button } from "@/shared/components/ui";
+import s from "./workspace.module.css";
 
 /** Transient "not yet implemented" notice for placeholder toolbar actions. */
 export function Toolbar() {
@@ -23,54 +25,58 @@ export function Toolbar() {
   };
 
   return (
-    <div className="toolbar">
-      <div className="toolbar-left">
-        <span className="toolbar-repo">{repoPath?.split("/").filter(Boolean).pop()}</span>
-        <span className="toolbar-branch" title={branch}>
+    <div className={s.toolbar}>
+      <div className={s.toolbarLeft}>
+        <span className={s.toolbarRepo}>{repoPath?.split("/").filter(Boolean).pop()}</span>
+        <span className={s.toolbarBranch} title={branch}>
           {branch}
         </span>
-        {head && <span className="toolbar-hash mono">{head.hash.slice(0, 7)}</span>}
+        {head && <span className={`${s.toolbarHash} mono`}>{head.hash.slice(0, 7)}</span>}
       </div>
 
-      <div className="toolbar-actions">
-        <button
-          className="btn toolbar-btn"
+      <div className={s.toolbarActions}>
+        <Button
+          variant="solid"
+          className={s.toolbarBtn}
           onClick={handlePull}
           disabled={loading}
           title={loading ? "Refreshing…" : "Fetch and refresh"}
         >
           <ArrowDownToLine size={14} aria-hidden />
           {loading ? "Refreshing…" : "Pull"}
-        </button>
-        <button
-          className="btn toolbar-btn"
+        </Button>
+        <Button
+          variant="solid"
+          className={s.toolbarBtn}
           onClick={() => showNotice("Push - not yet implemented (ROADMAP Phase 5)")}
         >
           <ArrowUpFromLine size={14} aria-hidden />
           Push
-        </button>
-        <button
-          className="btn toolbar-btn"
+        </Button>
+        <Button
+          variant="solid"
+          className={s.toolbarBtn}
           onClick={() => showNotice("Stash - not yet implemented (ROADMAP Phase 4)")}
         >
           <Archive size={14} aria-hidden />
           Stash
-        </button>
-        <button
-          className="btn toolbar-btn"
+        </Button>
+        <Button
+          variant="solid"
+          className={s.toolbarBtn}
           onClick={() => showNotice("Settings - not yet implemented (ROADMAP Phase 7)")}
         >
           <Settings size={14} aria-hidden />
           Settings
-        </button>
+        </Button>
       </div>
 
-      <div className="toolbar-right">
-        {dirty && <span className="toolbar-dirty" title="Uncommitted changes">WIP</span>}
-        {repoPath && <span className="toolbar-path" title={repoPath}>{repoPath}</span>}
+      <div className={s.toolbarRight}>
+        {dirty && <span className={s.toolbarDirty} title="Uncommitted changes">WIP</span>}
+        {repoPath && <span className={s.toolbarPath} title={repoPath}>{repoPath}</span>}
       </div>
 
-      {notice && <div className="toolbar-notice" role="status">{notice}</div>}
+      {notice && <div className={s.toolbarNotice} role="status">{notice}</div>}
     </div>
   );
 }

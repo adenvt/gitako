@@ -7,6 +7,7 @@ import { RefBadge, RefBadgeGroup } from "./refBadge";
 import { useRepoStore } from "@/state/store";
 import { timeAgo } from "@/shared/utils/time";
 import { countByKind } from "@/shared/utils/status";
+import s from "./commitList.module.css";
 
 const OVERSCAN = 8;
 /** Drag handle hit width around the boundary between graph and text. */
@@ -96,7 +97,7 @@ export function CommitList() {
 
   if (!layout || layout.commits.length === 0) {
     return (
-      <div className="commit-list empty">
+      <div className={clsx(s.commitList, s.empty)}>
         <GitBranch size={22} aria-hidden />
         <span>No commits yet</span>
         <span className="muted">Commits will appear here after your first commit.</span>
@@ -114,7 +115,7 @@ export function CommitList() {
   const handleLeft = textLeft - HANDLE_HIT;
 
   return (
-    <div className="commit-list">
+    <div className={s.commitList}>
       {/* Canvas pinned to the viewport (not the scroll content). */}
       <GraphCanvas
         layout={layout}
@@ -126,18 +127,18 @@ export function CommitList() {
       />
       {/* Drag handle at the boundary between graph band and message column. */}
       <div
-        className="graph-resize-handle"
+        className={s.graphResizeHandle}
         style={{ left: handleLeft }}
         onPointerDown={onPointerDown}
         title="Drag to resize the graph column"
       />
-      <div className="commit-scroll" ref={scrollRef}>
+      <div className={s.commitScroll} ref={scrollRef}>
         <div style={{ height: totalHeight, position: "relative" }}>
-          <div className="commit-rows">
+          <div className={s.commitRows}>
             {/* Working-directory row (row 0), only when there are changes. */}
             {hasWorkingRow && (
               <div
-                className={clsx("commit-row working-row", workingSelected && "selected")}
+                className={clsx(s.commitRow, s.workingRow, workingSelected && s.selected)}
                 style={{
                   top: WORKING_ROW * ROW_HEIGHT,
                   height: ROW_HEIGHT,
@@ -150,23 +151,23 @@ export function CommitList() {
                 }}
                 title="Open commit composer"
               >
-                <span className="commit-subject wip-label">
+                <span className={clsx(s.commitSubject, s.wipLabel)}>
                   WIP
                   {counts.modified > 0 && (
-                    <span className="wip-count">
-                      <FilePenLine size={13} className="wip-icon modified" aria-hidden />
+                    <span className={s.wipCount}>
+                      <FilePenLine size={13} className={s.wipModified} aria-hidden />
                       {counts.modified}
                     </span>
                   )}
                   {counts.added > 0 && (
-                    <span className="wip-count">
-                      <FilePlus size={13} className="wip-icon added" aria-hidden />
+                    <span className={s.wipCount}>
+                      <FilePlus size={13} className={s.wipAdded} aria-hidden />
                       {counts.added}
                     </span>
                   )}
                   {counts.deleted > 0 && (
-                    <span className="wip-count">
-                      <FileX size={13} className="wip-icon deleted" aria-hidden />
+                    <span className={s.wipCount}>
+                      <FileX size={13} className={s.wipDeleted} aria-hidden />
                       {counts.deleted}
                     </span>
                   )}
@@ -196,7 +197,7 @@ export function CommitList() {
                 <div key={c.hash}>
                   {refInfos.length > 0 && (
                     <div
-                      className="commit-tag-cell"
+                      className={s.commitTagCell}
                       style={{ top, height: ROW_HEIGHT, width: TAG_WIDTH }}
                       onClick={() => select(c.hash)}
                     >
@@ -210,7 +211,7 @@ export function CommitList() {
                     </div>
                   )}
                   <div
-                    className={clsx("commit-row", isSelected && "selected")}
+                    className={clsx(s.commitRow, isSelected && s.selected)}
                     style={{
                       top,
                       height: ROW_HEIGHT,
@@ -218,12 +219,12 @@ export function CommitList() {
                     }}
                     onClick={() => select(c.hash)}
                   >
-                    <span className="commit-subject" title={c.subject}>
+                    <span className={s.commitSubject} title={c.subject}>
                       {c.subject}
                     </span>
-                    <span className="commit-meta">
-                      <span className="commit-author">{c.authorName}</span>
-                      <span className="commit-time">{timeAgo(c.authorTime)}</span>
+                    <span className={s.commitMeta}>
+                      <span>{c.authorName}</span>
+                      <span>{timeAgo(c.authorTime)}</span>
                     </span>
                   </div>
                 </div>
