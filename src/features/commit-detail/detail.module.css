@@ -1,5 +1,5 @@
-/* ---------- detail pane ---------- */
-.detail-pane {
+/* Commit detail pane (shared pane base with the composer). */
+.detailPane {
   width: 360px;
   padding: var(--space-4);
   border-left: 1px solid var(--border);
@@ -9,7 +9,7 @@
   flex-direction: column;
 }
 
-.detail-pane h3 {
+.detailPane h3 {
   font-size: var(--fs-sm);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -17,7 +17,7 @@
   margin-bottom: var(--space-3);
 }
 
-.pane-placeholder {
+.panePlaceholder {
   flex: 1;
   display: flex;
   align-items: center;
@@ -28,7 +28,7 @@
   text-align: center;
 }
 
-.detail-subject {
+.detailSubject {
   font-size: 15px;
   font-weight: 600;
   margin-bottom: var(--space-3);
@@ -37,7 +37,7 @@
   color: var(--text);
 }
 
-.detail-meta {
+.detailMeta {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 6px 12px;
@@ -45,16 +45,16 @@
   margin-bottom: var(--space-3);
 }
 
-.detail-meta dt {
+.detailMeta dt {
   color: var(--text-dim);
   white-space: nowrap;
 }
 
-.detail-meta dd {
+.detailMeta dd {
   word-break: break-word;
 }
 
-.detail-files {
+.detailFiles {
   margin-bottom: var(--space-4);
   flex: 1;
   display: flex;
@@ -62,7 +62,7 @@
   min-height: 0;
 }
 
-.detail-files h4 {
+.detailFiles h4 {
   font-size: var(--fs-sm);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -70,7 +70,7 @@
   margin-bottom: var(--space-2);
 }
 
-.file-stats {
+.fileStats {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
@@ -79,25 +79,8 @@
   color: var(--text-dim);
 }
 
-.file-stat {
+.fileStat {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-}
-
-/* Status icon colors (shared with the file tree rows). */
-.file-status-a {
-  color: var(--ok);
-}
-
-.file-status-d {
-  color: var(--err);
-}
-
-.file-status-m,
-.file-status-r,
-.file-status-c,
-.file-status-t,
-.file-status-u {
-  color: var(--accent);
 }

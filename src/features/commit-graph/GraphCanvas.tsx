@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { LayoutResult } from "./layout";
 import { laneColor } from "./colors";
+import s from "./graphCanvas.module.css";
 
 export const ROW_HEIGHT = 36;
 export const LANE_WIDTH = 18;
@@ -274,7 +275,7 @@ export function GraphCanvas({
   return (
     <canvas
       ref={canvasRef}
-      className="graph-canvas"
+      className={s.graphCanvas}
       // The canvas lives OUTSIDE the scroll content (in the viewport-sized
       // .commit-list), so it's absolutely positioned to the viewport and stays
       // put while the commit rows scroll beneath it. The draw code maps

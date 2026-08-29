@@ -1,0 +1,84 @@
+/* Ref badge: used by commit list tag cells and the commit detail refs row. */
+.commitRefBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  /* Off-white (--text) reads best on the tinted backgrounds (lane or teal);
+     softer than pure white and consistent with the app's text color. */
+  color: var(--text);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  /* When a lane color is provided (--badge-color), tint the badge to match
+     the commit's node: a translucent tint of the lane color on a dim tinted
+     background. */
+  background: color-mix(in srgb, var(--badge-color, transparent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--badge-color, transparent) 45%, transparent);
+  border-radius: var(--radius-s);
+  padding: 2px 6px;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.refName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 96px;
+}
+
+/* Grouped badge: shared name + multiple icons, dropdown on hover. */
+.refBadgeGroup {
+  position: relative;
+  cursor: default;
+}
+
+.refGroupIcons {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.refGroupIcons svg {
+  display: block;
+}
+
+.refDropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 140px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-l);
+  padding: var(--space-1);
+  box-shadow: var(--overlay-shadow);
+}
+
+.refBadgeGroup:hover .refDropdown {
+  display: block;
+}
+
+.refDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-m);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.refDropdownItem:hover {
+  background: var(--bg-hover);
+}
+
+.refDropdownName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

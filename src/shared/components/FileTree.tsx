@@ -5,6 +5,7 @@ import { collectDirPaths, type FileTreeNode } from "@/shared/utils/fileTree";
 import { statusLabel } from "@/shared/utils/status";
 import { StatusIcon } from "@/shared/components/StatusIcon";
 import { Button } from "@/shared/components/ui";
+import s from "./fileTree.module.css";
 
 interface FileTreeProps {
   root: FileTreeNode;
@@ -42,21 +43,21 @@ function TreeRow({
       <>
         <Button
           variant="none"
-          className="tree-row tree-dir"
+          className={clsx(s.treeRow, s.treeDir)}
           style={{ paddingLeft: 6 + depth * 14 }}
           onClick={() => onToggle(node.path)}
           aria-expanded={open}
         >
-          <ChevronRight size={14} className={clsx("tree-arrow", open && "open")} aria-hidden />
+          <ChevronRight size={14} className={clsx(s.treeArrow, open && s.treeArrowOpen)} aria-hidden />
           {open ? (
-            <FolderOpen size={14} className="tree-folder-icon" aria-hidden />
+            <FolderOpen size={14} className={s.treeFolderIcon} aria-hidden />
           ) : (
-            <Folder size={14} className="tree-folder-icon" aria-hidden />
+            <Folder size={14} className={s.treeFolderIcon} aria-hidden />
           )}
-          <span className="tree-name">{node.name || "/"}</span>
+          <span className={s.treeName}>{node.name || "/"}</span>
         </Button>
         {open && (
-          <div className="tree-children">
+          <div className={s.treeChildren}>
             {node.children.map((c) => (
               <TreeRow
                 key={c.path}
@@ -78,18 +79,18 @@ function TreeRow({
 
   return (
     <div
-      className={clsx("tree-row tree-file", onFileOpen && "clickable")}
+      className={clsx(s.treeRow, s.treeFile, onFileOpen && s.clickable)}
       style={{ paddingLeft: 6 + depth * 14 }}
       title={`${statusLabel(node.status)}: ${node.path}`}
       onClick={onFileOpen ? () => onFileOpen(node) : undefined}
     >
-      <span className="tree-spacer" aria-hidden />
+      <span className={s.treeSpacer} aria-hidden />
       <StatusIcon status={node.status} />
-      <span className="tree-name mono">{node.name}</span>
+      <span className={`${s.treeName} mono`}>{node.name}</span>
       {onFileAction && actionLabel && (
         <Button
           variant="none"
-          className="tree-file-action"
+          className={s.treeFileAction}
           onClick={(e) => {
             e.stopPropagation();
             onFileAction(node);
@@ -129,23 +130,23 @@ export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTr
   const allExpanded = dirPaths.length > 0 && dirPaths.every((p) => expanded.has(p));
 
   return (
-    <div className="file-tree">
+    <div className={s.fileTree}>
       {dirPaths.length > 0 && (
-        <div className="file-tree-toolbar">
+        <div className={s.fileTreeToolbar}>
           {allExpanded ? (
-            <Button variant="none" className="tree-toolbar-btn" onClick={collapseAll}>
+            <Button variant="none" className={s.treeToolbarBtn} onClick={collapseAll}>
               <ListCollapse size={13} aria-hidden />
               Collapse all
             </Button>
           ) : (
-            <Button variant="none" className="tree-toolbar-btn" onClick={expandAll}>
+            <Button variant="none" className={s.treeToolbarBtn} onClick={expandAll}>
               <ListTree size={13} aria-hidden />
               Expand all
             </Button>
           )}
         </div>
       )}
-      <div className="file-tree-rows">
+      <div className={s.fileTreeRows}>
         {root.children.map((c) => (
           <TreeRow
             key={c.path}

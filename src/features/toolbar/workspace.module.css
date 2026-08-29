@@ -19,20 +19,20 @@
   flex-shrink: 0;
 }
 
-.toolbar-left {
+.toolbarLeft {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
 }
 
-.toolbar-repo {
+.toolbarRepo {
   color: var(--text-dim);
   font-weight: 500;
   white-space: nowrap;
 }
 
-.toolbar-branch {
+.toolbarBranch {
   color: var(--text);
   font-weight: 600;
   white-space: nowrap;
@@ -41,23 +41,23 @@
   text-overflow: ellipsis;
 }
 
-.toolbar-hash {
+.toolbarHash {
   color: var(--text-dim);
   font-size: var(--fs-xs);
 }
 
-.toolbar-actions {
+.toolbarActions {
   display: flex;
   align-items: center;
   gap: var(--space-1);
 }
 
-.toolbar-btn {
+.toolbarBtn {
   padding: 3px 10px;
   font-size: var(--fs-sm);
 }
 
-.toolbar-right {
+.toolbarRight {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -65,7 +65,7 @@
   min-width: 0;
 }
 
-.toolbar-dirty {
+.toolbarDirty {
   font-size: var(--fs-xs);
   font-weight: 600;
   text-transform: uppercase;
@@ -78,7 +78,7 @@
   white-space: nowrap;
 }
 
-.toolbar-path {
+.toolbarPath {
   color: var(--text-faint);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -87,7 +87,7 @@
 }
 
 /* Transient "not yet implemented" notice, auto-dismissed. */
-.toolbar-notice {
+.toolbarNotice {
   position: absolute;
   top: calc(100% + 6px);
   right: 12px;
