@@ -7,7 +7,7 @@ import detail from "@/features/commit-detail/detail.module.css";
 import s from "./composer.module.css";
 import type { StatusEntry } from "@/shared/utils/status";
 
-function toTreeEntry(e: StatusEntry) {
+export function toTreeEntry(e: StatusEntry) {
   // Parser normalizes spaces to "." and untracked "?" to "A".
   const status = e.index !== "." ? e.index : e.worktree;
   return { path: e.oldPath ? `${e.oldPath} → ${e.path}` : e.path, status };

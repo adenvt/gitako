@@ -13,7 +13,7 @@ import {
 } from "@/shared/utils/recentRepos";
 import s from "./repo.module.css";
 
-async function repoDisplayPath(path: string): Promise<string> {
+export async function repoDisplayPath(path: string): Promise<string> {
   try {
     const home = await homeDir();
     return path.startsWith(home) ? `~${path.slice(home.length)}` : path;

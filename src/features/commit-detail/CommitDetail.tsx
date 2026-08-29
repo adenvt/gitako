@@ -12,7 +12,7 @@ import s from "./detail.module.css";
 import type { ChangedFile } from "@/shared/types/git";
 
 /** Number of changed files per status letter, e.g. { M: 3, A: 2 }. */
-function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
+export function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const f of files) {
     const st = f.status[0] ?? f.status;

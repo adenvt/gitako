@@ -1,0 +1,152 @@
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { Toolbar } from "./Toolbar";
+import { useRepoStore } from "@/state/store";
+
+// Mock the backend layer so the (mocked) store actions don't try to invoke
+// over the real Tauri bridge when the user clicks "Pull".
+vi.mock("@/state/git", () => ({
+  fetchLog: vi.fn().mockResolvedValue([]),
+  fetchRefs: vi.fn().mockResolvedValue([]),
+  fetchStatus: vi.fn().mockResolvedValue(""),
+  fetchShowFiles: vi.fn().mockResolvedValue([]),
+  fetchDiff: vi.fn(),
+  stageFiles: vi.fn().mockResolvedValue(undefined),
+  commitChanges: vi.fn(),
+}));
+
+import type { Commit } from "@/shared/types/git";
+import type { StatusEntry } from "@/shared/utils/status";
+
+function commit(overrides: Partial<Commit> = {}): Commit {
+  return {
+    hash: "abcdef0123456789",
+    parents: [],
+    authorName: "Test",
+    authorEmail: "t@e",
+    authorTime: 0,
+    subject: "subject",
+    refs: ["main", "origin/main"],
+    ...overrides,
+  };
+}
+
+function setStore(updates: Partial<ReturnType<typeof useRepoStore.getState>>): void {
+  useRepoStore.setState(updates);
+}
+
+describe("Toolbar", () => {
+  it("shows the local branch and short hash for the HEAD commit", () => {
+    setStore({
+      repoPath: "/home/user/projects/myrepo",
+      commits: [commit({ hash: "abcdef0123456789", refs: ["main", "origin/main"] })],
+    });
+    render(<Toolbar />);
+    expect(screen.getByText("myrepo")).toBeInTheDocument();
+    expect(screen.getByText("main")).toBeInTheDocument();
+    // Short hash: first 7 chars of "abcdef0123456789" -> "abcdef0".
+    expect(screen.getByText("abcdef0")).toBeInTheDocument();
+  });
+
+  it("falls back to 'detached HEAD' when no ref lacks a slash", () => {
+    setStore({
+      repoPath: "/repo",
+      commits: [commit({ refs: ["origin/main", "upstream/main"] })],
+    });
+    render(<Toolbar />);
+    expect(screen.getByText("detached HEAD")).toBeInTheDocument();
+  });
+
+  it("does not render the hash span when there are no commits", () => {
+    setStore({ repoPath: "/repo", commits: [] });
+    render(<Toolbar />);
+    // The short hash is only rendered when `head` is truthy.
+    expect(screen.queryByText("abcdef0")).toBeNull();
+  });
+
+  it("shows the WIP badge when status entries have any change", () => {
+    const statusEntries: StatusEntry[] = [
+      { index: ".", worktree: "M", path: "a.ts", oldPath: null },
+    ];
+    setStore({
+      repoPath: "/repo",
+      commits: [commit()],
+      statusEntries,
+    });
+    render(<Toolbar />);
+    expect(screen.getByText("WIP")).toBeInTheDocument();
+  });
+
+  it("hides the WIP badge when status is clean", () => {
+    setStore({
+      repoPath: "/repo",
+      commits: [commit()],
+      statusEntries: [
+        { index: ".", worktree: ".", path: "clean.ts", oldPath: null },
+      ],
+    });
+    render(<Toolbar />);
+    expect(screen.queryByText("WIP")).toBeNull();
+  });
+
+  it("shows the full repo path in the right-side pill (hover title)", () => {
+    setStore({ repoPath: "/home/user/projects/myrepo", commits: [commit()] });
+    render(<Toolbar />);
+    expect(screen.getByTitle("/home/user/projects/myrepo")).toBeInTheDocument();
+  });
+
+  it("hides the right-side path pill when no repo is open", () => {
+    setStore({ repoPath: null, commits: [] });
+    render(<Toolbar />);
+    expect(screen.queryByTitle("/home/user/projects/myrepo")).toBeNull();
+  });
+
+  it("shows a transient notice when Push is clicked, then auto-clears", async () => {
+    // Use fake timers so we can advance past the 2.5s clear without waiting.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      setStore({ repoPath: "/r", commits: [commit()] });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      render(<Toolbar />);
+      await user.click(screen.getByRole("button", { name: /push/i }));
+      expect(screen.getByText(/not yet implemented/i)).toBeInTheDocument();
+      // After the timer fires, the notice clears.
+      await vi.advanceTimersByTimeAsync(2600);
+      expect(screen.queryByText(/not yet implemented/i)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("calls refresh() when the Pull button is clicked", async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    setStore({ repoPath: "/r", commits: [commit()], refresh });
+    const user = userEvent.setup();
+    render(<Toolbar />);
+    await user.click(screen.getByRole("button", { name: /pull/i }));
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("disables the Pull button while loading", () => {
+    setStore({ repoPath: "/r", commits: [commit()], loading: true });
+    render(<Toolbar />);
+    expect(screen.getByRole("button", { name: /refreshing/i })).toBeDisabled();
+  });
+
+  it("shows a Stash notice when the Stash button is clicked", async () => {
+    setStore({ repoPath: "/r", commits: [commit()] });
+    const user = userEvent.setup();
+    render(<Toolbar />);
+    await user.click(screen.getByRole("button", { name: /stash/i }));
+    expect(screen.getByText(/stash.*not yet implemented/i)).toBeInTheDocument();
+  });
+
+  it("shows a Settings notice when the Settings button is clicked", async () => {
+    setStore({ repoPath: "/r", commits: [commit()] });
+    const user = userEvent.setup();
+    render(<Toolbar />);
+    await user.click(screen.getByRole("button", { name: /settings/i }));
+    expect(screen.getByText(/settings.*not yet implemented/i)).toBeInTheDocument();
+  });
+});

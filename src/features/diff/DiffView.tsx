@@ -27,7 +27,7 @@ interface DiffRow {
  * line on the left and the new line on the right. Leftover removals become
  * left-only rows; leftover additions become right-only rows.
  */
-function buildRows(diff: DiffFile): DiffRow[] {
+export function buildRows(diff: DiffFile): DiffRow[] {
   const oldLines = diff.oldLines;
   const newLines = diff.newLines;
   const rows: DiffRow[] = [];

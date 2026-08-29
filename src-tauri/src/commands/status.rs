@@ -6,6 +6,6 @@ use crate::git;
 #[tauri::command]
 pub fn git_status(repo_path: String) -> Result<String, crate::error::GitError> {
     let repo = PathBuf::from(&repo_path);
-    let out = git::run_ok(&repo, &["status", "--porcelain=v1"])?;
+    let out = git::run_ok(&repo, &["status", "--porcelain=v1", "--untracked-files=all"])?;
     Ok(out.stdout)
 }

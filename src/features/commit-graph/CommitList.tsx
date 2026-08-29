@@ -7,11 +7,32 @@ import { RefBadge, RefBadgeGroup } from "./refBadge";
 import { useRepoStore } from "@/state/store";
 import { timeAgo } from "@/shared/utils/time";
 import { countByKind } from "@/shared/utils/status";
+import type { RefInfo } from "@/shared/types/git";
 import s from "./commitList.module.css";
 
 const OVERSCAN = 8;
 /** Drag handle hit width around the boundary between graph and text. */
 const HANDLE_HIT = 5;
+
+/**
+ * Group refs by their base `name` for badge rendering. The remote `HEAD`
+ * pointer (e.g. `origin/HEAD`) is filtered out — it's a convenience
+ * annotation, not a real ref to show.
+ *
+ * Example: refs `[main, origin/main, v1.0]` -> `[[main, origin/main], [v1.0]]`.
+ */
+export function groupRefsForBadging(refs: RefInfo[]): RefInfo[][] {
+  const visible = refs.filter(
+    (r) => !(r.kind === "remoteBranch" && r.name === "HEAD"),
+  );
+  const groups = new Map<string, RefInfo[]>();
+  for (const r of visible) {
+    const list = groups.get(r.name) ?? [];
+    list.push(r);
+    groups.set(r.name, list);
+  }
+  return [...groups.values()];
+}
 
 /** Virtualized commit list: canvas graph + DOM text labels, one scroll container. */
 export function CommitList() {
@@ -179,29 +200,23 @@ export function CommitList() {
               const c = commits[i];
               if (!c) return null;
               const isSelected = c.hash === selectedHash;
-              // Hide remote convenience pointers like origin/HEAD.
-              const refInfos = (refsByCommit[c.hash] ?? []).filter(
-                (r) => !(r.kind === "remoteBranch" && r.name === "HEAD"),
-              );
-              // Group refs by base name so `main` + `origin/main` share one badge.
-              const groups = new Map<string, typeof refInfos>();
-              for (const r of refInfos) {
-                const list = groups.get(r.name) ?? [];
-                list.push(r);
-                groups.set(r.name, list);
-              }
+              // Hide remote convenience pointers like origin/HEAD and group
+              // refs by base name so `main` + `origin/main` share one badge.
+              const refInfos = refsByCommit[c.hash] ?? [];
+              const groups = groupRefsForBadging(refInfos);
+              const hasVisibleRefs = groups.length > 0;
               const top = (i + offset) * ROW_HEIGHT;
               const lane = layout.commits[i]?.lane ?? 0;
               const badgeColor = laneColor(lane);
               return (
                 <div key={c.hash}>
-                  {refInfos.length > 0 && (
+                  {hasVisibleRefs && (
                     <div
                       className={s.commitTagCell}
                       style={{ top, height: ROW_HEIGHT, width: TAG_WIDTH }}
                       onClick={() => select(c.hash)}
                     >
-                      {[...groups.values()].map((group) =>
+                      {groups.map((group) =>
                         group.length > 1 ? (
                           <RefBadgeGroup key={group[0].fullName} refs={group} color={badgeColor} />
                         ) : (

@@ -7,8 +7,6 @@
       "Shell(rustc:*)",
       "Shell(git:*)",
       "Shell(pkg-config:*)",
-      "Shell(.:*)",
-      "Shell(./target/debug/gitako:*)",
       "Shell(grep:*)",
       "Shell(ss:*)",
       "Shell(fuser:*)",
@@ -16,10 +14,10 @@
       "Shell(xwininfo:*)",
       "Shell(pgrep:*)",
       "Shell(tail:*)",
-      "Shell(node_modules/.bin/tsc:*)",
-      "Shell(node_modules/.bin/vitest:*)",
       "Shell(ps:*)",
-      "Shell(awk:*)"
+      "Shell(awk:*)",
+      "Shell(npx vitest run *",
+      "Shell(npx tsc:*"
     ],
     "deny": [],
     "defaultMode": "default"

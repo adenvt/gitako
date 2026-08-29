@@ -5,6 +5,22 @@ import { countChanges } from "@/shared/utils/status";
 import { Button } from "@/shared/components/ui";
 import s from "./workspace.module.css";
 
+/**
+ * Pick the local branch name to show in the toolbar from a list of ref
+ * strings. The first ref that does NOT contain a `/` is treated as the
+ * local branch (remote branches are always `remote/name`); when none
+ * qualify, the user is in detached-HEAD state and we show a placeholder.
+ */
+export function pickLocalBranch(refs: string[]): string {
+  return refs.find((r) => !r.includes("/")) ?? "detached HEAD";
+}
+
+/** Last path component of a repo path, for the toolbar's "repo name" pill. */
+export function repoNameFromPath(path: string | null | undefined): string | undefined {
+  if (!path) return undefined;
+  return path.split("/").filter(Boolean).pop();
+}
+
 /** Transient "not yet implemented" notice for placeholder toolbar actions. */
 export function Toolbar() {
   const { repoPath, commits, loading, refresh, statusEntries } = useRepoStore();
@@ -12,7 +28,8 @@ export function Toolbar() {
 
   const head = commits[0];
   const headRefs = head?.refs ?? [];
-  const branch = headRefs.find((r) => !r.includes("/")) ?? "detached HEAD";
+  const branch = pickLocalBranch(headRefs);
+  const repoName = repoNameFromPath(repoPath);
   const dirty = countChanges(statusEntries) > 0;
 
   const showNotice = (msg: string) => {
@@ -27,7 +44,7 @@ export function Toolbar() {
   return (
     <div className={s.toolbar}>
       <div className={s.toolbarLeft}>
-        <span className={s.toolbarRepo}>{repoPath?.split("/").filter(Boolean).pop()}</span>
+        <span className={s.toolbarRepo}>{repoName}</span>
         <span className={s.toolbarBranch} title={branch}>
           {branch}
         </span>
