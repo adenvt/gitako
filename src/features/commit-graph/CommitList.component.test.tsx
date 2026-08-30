@@ -76,7 +76,7 @@ describe("CommitList", () => {
     expect(select).toHaveBeenCalledWith(c.hash);
   });
 
-  it("renders a WIP row when there are unstaged changes, and clicking it opens the composer", async () => {
+  it("renders a working-tree row when there are unstaged changes, and clicking it opens the composer", async () => {
     const setWorkingSelected = vi.fn();
     const openComposer = vi.fn();
     const c = commit();
@@ -92,14 +92,14 @@ describe("CommitList", () => {
     });
     const user = userEvent.setup();
     render(<CommitList />);
-    const wip = screen.getByText("WIP");
+    const wip = screen.getByTitle("Open commit composer");
     expect(wip).toBeInTheDocument();
     await user.click(wip);
     expect(setWorkingSelected).toHaveBeenCalledWith(true);
     expect(openComposer).toHaveBeenCalled();
   });
 
-  it("hides the WIP row when status is clean (no added/deleted/modified)", () => {
+  it("hides the working-tree row when status is clean (no added/deleted/modified)", () => {
     const c = commit();
     useRepoStore.setState({
       commits: [c],
@@ -107,7 +107,7 @@ describe("CommitList", () => {
       statusEntries: [], // empty -> countByKind returns zeros
     });
     render(<CommitList />);
-    expect(screen.queryByText("WIP")).toBeNull();
+    expect(screen.queryByTitle("Open commit composer")).toBeNull();
   });
 
   it("renders ref badges for refs joined to a commit, grouped by base name", () => {
@@ -119,7 +119,12 @@ describe("CommitList", () => {
       refsByCommit: {
         [c.hash]: [
           refInfo({ name: "main", fullName: "main", kind: "branch" }),
-          refInfo({ name: "main", fullName: "origin/main", kind: "remoteBranch", remote: "origin" }),
+          refInfo({
+            name: "main",
+            fullName: "origin/main",
+            kind: "remoteBranch",
+            remote: "origin",
+          }),
         ],
       },
     });
@@ -137,7 +142,12 @@ describe("CommitList", () => {
       statusEntries: [],
       refsByCommit: {
         [c.hash]: [
-          refInfo({ name: "HEAD", fullName: "origin/HEAD", kind: "remoteBranch", remote: "origin" }),
+          refInfo({
+            name: "HEAD",
+            fullName: "origin/HEAD",
+            kind: "remoteBranch",
+            remote: "origin",
+          }),
         ],
       },
     });

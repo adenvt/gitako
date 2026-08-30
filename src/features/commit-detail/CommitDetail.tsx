@@ -22,7 +22,8 @@ export function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
 }
 
 export function CommitDetail() {
-  const { commits, layout, selectedHash, filesByCommit, loadCommitFiles, openDiff } = useRepoStore();
+  const { commits, layout, selectedHash, filesByCommit, loadCommitFiles, openDiff } =
+    useRepoStore();
 
   const commit = commits.find((c) => c.hash === selectedHash);
   const files = commit ? filesByCommit[commit.hash] : undefined;
@@ -83,7 +84,11 @@ export function CommitDetail() {
                   <span
                     key={r}
                     className={badge.commitRefBadge}
-                    style={badgeColor ? ({ "--badge-color": badgeColor } as React.CSSProperties) : undefined}
+                    style={
+                      badgeColor
+                        ? ({ "--badge-color": badgeColor } as React.CSSProperties)
+                        : undefined
+                    }
                   >
                     {r}
                   </span>

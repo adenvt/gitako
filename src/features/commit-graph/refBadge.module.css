@@ -1,24 +1,20 @@
-/* Ref badge: used by commit list tag cells and the commit detail refs row. */
+/* Ref badge: used by commit list tag cells and the commit detail refs row.
+   The badge reads like a `git log --decorate` decoration chip — minimal,
+   square, lane-tinted. */
 .commitRefBadge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-size: var(--fs-xs);
-  font-weight: 400;
-  /* Off-white (--text) reads best on the tinted backgrounds (lane or teal);
-     softer than pure white and consistent with the app's text color. */
+  font-weight: 500;
   color: var(--text);
-  background: var(--accent-dim);
-  border: 1px solid var(--accent-border);
-  /* When a lane color is provided (--badge-color), tint the badge to match
-     the commit's node: a translucent tint of the lane color on a dim tinted
-     background. */
-  background: color-mix(in srgb, var(--badge-color, transparent) 18%, transparent);
-  border-color: color-mix(in srgb, var(--badge-color, transparent) 45%, transparent);
-  border-radius: var(--radius-s);
-  padding: 2px 6px;
+  border: 1px solid var(--badge-color, var(--border));
+  background: transparent;
+  border-radius: 0;
+  padding: 0 4px;
   white-space: nowrap;
   max-width: 100%;
+  line-height: 1.6;
 }
 
 .refName {
@@ -47,15 +43,14 @@
 .refDropdown {
   display: none;
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 1px);
   left: 0;
   z-index: 20;
   min-width: 140px;
   background: var(--bg-raised);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-l);
-  padding: var(--space-1);
-  box-shadow: var(--overlay-shadow);
+  border-radius: 0;
+  padding: 2px;
 }
 
 .refBadgeGroup:hover .refDropdown {
@@ -66,8 +61,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
-  border-radius: var(--radius-m);
+  padding: 2px 8px;
   font-size: var(--fs-xs);
   font-weight: 500;
   color: var(--text);

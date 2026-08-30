@@ -101,11 +101,13 @@ export function OpenRepo() {
       </div>
 
       <div className={s.welcomeHeader}>
-        <h1>Repositories</h1>
+        <h1>
+          <span style={{ color: "var(--text-faint)" }}>~/repos$</span> open
+        </h1>
         <div className={s.welcomeActions}>
           <Button variant="solid" className={s.welcomeBtn} onClick={() => void handleBrowse()}>
-            <FolderOpen size={15} aria-hidden />
-            Open
+            <FolderOpen size={13} aria-hidden />
+            open
           </Button>
         </div>
       </div>
@@ -120,7 +122,12 @@ export function OpenRepo() {
           onChange={(e) => setQuery(e.target.value)}
         />
         {query && (
-          <Button variant="ghost" className={s.welcomeClear} onClick={() => setQuery("")} aria-label="Clear search">
+          <Button
+            variant="ghost"
+            className={s.welcomeClear}
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+          >
             <X size={13} aria-hidden />
           </Button>
         )}
@@ -131,7 +138,11 @@ export function OpenRepo() {
           <div className={`${s.welcomeSectionLabel} section-label`}>Recent</div>
           <ul className={s.welcomeList}>
             {filtered.map((r) => (
-              <li key={r.path} className={s.welcomeItem} onClick={() => void handleOpenPath(r.path)}>
+              <li
+                key={r.path}
+                className={s.welcomeItem}
+                onClick={() => void handleOpenPath(r.path)}
+              >
                 <div className={s.welcomeItemName}>{r.name}</div>
                 <div className={`${s.welcomeItemPath} mono`}>{displayPaths[r.path] ?? r.path}</div>
                 <Button
@@ -151,12 +162,16 @@ export function OpenRepo() {
         </div>
       ) : (
         <div className={s.welcomeEmpty}>
-          <GitBranch size={28} className={s.welcomeEmptyIcon} aria-hidden />
+          <GitBranch size={22} className={s.welcomeEmptyIcon} aria-hidden />
           <p className="muted">No repositories yet.</p>
-          <p className="muted">Click Open to pick a git repository folder.</p>
-          <Button variant="primary" className={s.welcomeEmptyBtn} onClick={() => void handleBrowse()}>
-            <FolderOpen size={15} aria-hidden />
-            Open
+          <p className="muted">Pick a git repository folder to get started.</p>
+          <Button
+            variant="primary"
+            className={s.welcomeEmptyBtn}
+            onClick={() => void handleBrowse()}
+          >
+            <FolderOpen size={13} aria-hidden />
+            open
           </Button>
         </div>
       )}

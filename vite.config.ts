@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // Lets CSS @font-face url() and any TS imports resolve /assets/*.
+      "@assets": fileURLToPath(new URL("./assets", import.meta.url)),
     },
   },
   clearScreen: false,
@@ -31,10 +33,7 @@ export default defineConfig({
     coverage: {
       // CSS modules and barrel re-exports can't be meaningfully tested.
       // Exclude them so the coverage % reflects the actual code surface.
-      exclude: [
-        "**/*.module.css",
-        "**/index.ts",
-      ],
+      exclude: ["**/*.module.css", "**/index.ts"],
     },
   },
 });

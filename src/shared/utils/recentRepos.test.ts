@@ -1,10 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  addRecentRepo,
-  loadRecentRepos,
-  removeRecentRepo,
-  type RecentRepo,
-} from "./recentRepos";
+import { addRecentRepo, loadRecentRepos, removeRecentRepo, type RecentRepo } from "./recentRepos";
 
 const STORAGE_KEY = "gitako.recentRepos";
 

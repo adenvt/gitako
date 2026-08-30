@@ -81,10 +81,9 @@ describe("CommitDetail", () => {
   it("shows the Refs row when the commit has refs joined onto it", () => {
     // The component reads `commit.refs` (the string array joined by the
     // store on refresh), not refsByCommit — pin that contract.
-    setStoreWith(
-      commit({ refs: ["main", "origin/main"] }),
-      [refInfo({ name: "main", fullName: "main", kind: "branch" })],
-    );
+    setStoreWith(commit({ refs: ["main", "origin/main"] }), [
+      refInfo({ name: "main", fullName: "main", kind: "branch" }),
+    ]);
     render(<CommitDetail />);
     expect(screen.getByText("Refs")).toBeInTheDocument();
     expect(screen.getByText("main")).toBeInTheDocument();

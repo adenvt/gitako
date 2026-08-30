@@ -66,10 +66,7 @@ export function visibleRowRange(
   const offset = workingRowOffset(hasWorkingRow);
   const totalRows = layout.commits.length + offset;
   const firstRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 5);
-  const lastRow = Math.min(
-    totalRows - 1,
-    Math.ceil((scrollTop + height) / ROW_HEIGHT) + 5,
-  );
+  const lastRow = Math.min(totalRows - 1, Math.ceil((scrollTop + height) / ROW_HEIGHT) + 5);
   return { firstRow, lastRow, offset, totalRows };
 }
 
@@ -88,11 +85,7 @@ export function screenY(row: number, scrollTop: number): number {
 }
 
 /** Is this edge entirely outside the visible viewport? */
-function edgeOffscreen(
-  cy: number,
-  py: number,
-  height: number,
-): boolean {
+function edgeOffscreen(cy: number, py: number, height: number): boolean {
   return (cy < 0 && py < 0) || (cy > height && py > height);
 }
 
@@ -123,16 +116,12 @@ export function drawGraph(
   layout: LayoutResult,
   viewport: GraphViewport,
 ): void {
-  const { width, height, scrollTop, graphBand, selectedHash, hasWorkingRow, workingSelected } = viewport;
+  const { width, height, scrollTop, graphBand, selectedHash, hasWorkingRow, workingSelected } =
+    viewport;
 
   ctx.clearRect(0, 0, width, height);
 
-  const { firstRow, lastRow, offset } = visibleRowRange(
-    layout,
-    hasWorkingRow,
-    scrollTop,
-    height,
-  );
+  const { firstRow, lastRow, offset } = visibleRowRange(layout, hasWorkingRow, scrollTop, height);
 
   // ---- WIP connector + dot (working directory) ----
   const headCommit = layout.commits[0];
@@ -250,5 +239,4 @@ export function drawGraph(
 
 /** Compute the graph gutter (the X range reserved for lanes) for a given
  * max lane. Re-exported here so the renderer is self-contained. */
-export const graphGutter = (maxLane: number) =>
-  LANE_PAD + (maxLane + 1) * LANE_WIDTH + GRAPH_PAD;
+export const graphGutter = (maxLane: number) => LANE_PAD + (maxLane + 1) * LANE_WIDTH + GRAPH_PAD;

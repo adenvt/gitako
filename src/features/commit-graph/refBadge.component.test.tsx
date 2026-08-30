@@ -90,9 +90,7 @@ describe("RefBadge", () => {
   });
 
   it("applies the optional color as a CSS custom property", () => {
-    const { container } = render(
-      <RefBadge refInfo={makeRef({ name: "main" })} color="#ff0000" />,
-    );
+    const { container } = render(<RefBadge refInfo={makeRef({ name: "main" })} color="#ff0000" />);
     const span = container.querySelector("[class*='commitRefBadge']") as HTMLElement | null;
     expect(span?.getAttribute("style") ?? "").toMatch(/badge-color:\s*#ff0000/);
   });

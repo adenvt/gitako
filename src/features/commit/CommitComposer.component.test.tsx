@@ -61,8 +61,8 @@ describe("CommitComposer", () => {
   it("splits status entries into the Unstaged (0) and Staged lists", () => {
     useRepoStore.setState({
       statusEntries: [
-        entry({ path: "a.ts", worktree: "M" }),  // unstaged
-        entry({ path: "b.ts", index: "M" }),     // staged
+        entry({ path: "a.ts", worktree: "M" }), // unstaged
+        entry({ path: "b.ts", index: "M" }), // staged
       ],
       stagedPaths: new Set(["b.ts"]),
     });
@@ -106,9 +106,7 @@ describe("CommitComposer", () => {
 
   it("renders the rename label as 'old -> new' (the source uses U+2192)", () => {
     useRepoStore.setState({
-      statusEntries: [
-        entry({ path: "new.ts", oldPath: "old.ts", index: "R" }),
-      ],
+      statusEntries: [entry({ path: "new.ts", oldPath: "old.ts", index: "R" })],
       stagedPaths: new Set(),
     });
     render(<CommitComposer />);
@@ -167,7 +165,10 @@ describe("CommitComposer", () => {
   it("shows 'Committing…' while the commit is in flight (button label)", async () => {
     let resolveCommit!: () => void;
     const commit = vi.fn().mockImplementation(
-      () => new Promise<void>((res) => { resolveCommit = res; }),
+      () =>
+        new Promise<void>((res) => {
+          resolveCommit = res;
+        }),
     );
     useRepoStore.setState({
       commit,

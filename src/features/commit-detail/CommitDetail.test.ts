@@ -14,12 +14,7 @@ describe("fileStatusCounts", () => {
   it("groups files by their first status character (the kind letter)", () => {
     // Real status strings are single letters but defensive code uses the
     // first character so it tolerates the score suffix on renames/copies.
-    const files = [
-      file("M", "a.ts"),
-      file("M", "b.ts"),
-      file("A", "c.ts"),
-      file("D", "d.ts"),
-    ];
+    const files = [file("M", "a.ts"), file("M", "b.ts"), file("A", "c.ts"), file("D", "d.ts")];
     expect(fileStatusCounts(files)).toEqual({ M: 2, A: 1, D: 1 });
   });
 

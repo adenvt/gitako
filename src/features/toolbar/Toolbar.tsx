@@ -46,10 +46,12 @@ export function Toolbar() {
       <div className={s.toolbarLeft}>
         <span className={s.toolbarRepo}>{repoName}</span>
         <span className={s.toolbarBranch} title={branch}>
-          {branch}
+          on {branch}
         </span>
-        {head && <span className={`${s.toolbarHash} mono`}>{head.hash.slice(0, 7)}</span>}
+        {head && <span className={s.toolbarHash}>{head.hash.slice(0, 7)}</span>}
       </div>
+
+      <div className={s.toolbarDivider} aria-hidden />
 
       <div className={s.toolbarActions}>
         <Button
@@ -59,41 +61,53 @@ export function Toolbar() {
           disabled={loading}
           title={loading ? "Refreshing…" : "Fetch and refresh"}
         >
-          <ArrowDownToLine size={14} aria-hidden />
-          {loading ? "Refreshing…" : "Pull"}
+          <ArrowDownToLine size={13} aria-hidden />
+          {loading ? "pull…" : "pull"}
         </Button>
         <Button
           variant="solid"
           className={s.toolbarBtn}
           onClick={() => showNotice("Push - not yet implemented (ROADMAP Phase 5)")}
         >
-          <ArrowUpFromLine size={14} aria-hidden />
-          Push
+          <ArrowUpFromLine size={13} aria-hidden />
+          push
         </Button>
         <Button
           variant="solid"
           className={s.toolbarBtn}
           onClick={() => showNotice("Stash - not yet implemented (ROADMAP Phase 4)")}
         >
-          <Archive size={14} aria-hidden />
-          Stash
+          <Archive size={13} aria-hidden />
+          stash
         </Button>
         <Button
           variant="solid"
           className={s.toolbarBtn}
           onClick={() => showNotice("Settings - not yet implemented (ROADMAP Phase 7)")}
         >
-          <Settings size={14} aria-hidden />
-          Settings
+          <Settings size={13} aria-hidden />
+          settings
         </Button>
       </div>
 
       <div className={s.toolbarRight}>
-        {dirty && <span className={s.toolbarDirty} title="Uncommitted changes">WIP</span>}
-        {repoPath && <span className={s.toolbarPath} title={repoPath}>{repoPath}</span>}
+        {dirty && (
+          <span className={s.toolbarDirty} title="Uncommitted changes">
+            *
+          </span>
+        )}
+        {repoPath && (
+          <span className={s.toolbarPath} title={repoPath}>
+            {repoPath}
+          </span>
+        )}
       </div>
 
-      {notice && <div className={s.toolbarNotice} role="status">{notice}</div>}
+      {notice && (
+        <div className={s.toolbarNotice} role="status">
+          {notice}
+        </div>
+      )}
     </div>
   );
 }

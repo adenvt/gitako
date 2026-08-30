@@ -5,18 +5,18 @@
   height: 100%;
 }
 
-/* ---------- toolbar ---------- */
+/* ---------- toolbar (single-line status bar) ---------- */
 .toolbar {
-  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: 6px 12px;
+  gap: 0;
+  padding: 0;
   background: var(--bg-raised);
   border-bottom: 1px solid var(--border);
   font-size: var(--fs-sm);
   color: var(--text-dim);
   flex-shrink: 0;
+  min-height: 30px;
 }
 
 .toolbarLeft {
@@ -24,6 +24,10 @@
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
+  padding: 4px 10px;
+  flex-shrink: 1;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .toolbarRepo {
@@ -32,28 +36,37 @@
   white-space: nowrap;
 }
 
+/* Branch marker. Uses a pseudo-element so we always render the leading
+   "[" without needing to thread it through the component. */
 .toolbarBranch {
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
-  max-width: 180px;
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Hash chip — slightly faded mono so the eye groups (branch) + (hash) as
+   one unit. */
 .toolbarHash {
   color: var(--text-dim);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
+  font-weight: 500;
 }
 
+/* Single-line container for the action buttons. */
 .toolbarActions {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 4px;
+  padding: 0 8px;
+  flex-shrink: 0;
 }
 
+/* Tighter buttons in the status bar — same control kit, less padding. */
 .toolbarBtn {
-  padding: 3px 10px;
+  padding: 2px 8px;
   font-size: var(--fs-sm);
 }
 
@@ -63,18 +76,21 @@
   gap: var(--space-2);
   margin-left: auto;
   min-width: 0;
+  padding: 4px 10px;
+  flex-shrink: 1;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
+/* "dirty" marker — red asterisk + count, ANSI red. Replaces the
+   uppercase "WIP" pill from before, which was the wrong tone for a TUI. */
 .toolbarDirty {
-  font-size: var(--fs-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--fs-sm);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--accent-strong);
-  background: var(--accent-dim);
-  border: 1px solid var(--accent-border);
-  border-radius: var(--radius-s);
-  padding: 1px 6px;
+  color: var(--err);
   white-space: nowrap;
 }
 
@@ -86,19 +102,26 @@
   max-width: 40%;
 }
 
-/* Transient "not yet implemented" notice, auto-dismissed. */
+/* Transient notice — same flat raised panel, no shadow. */
 .toolbarNotice {
   position: absolute;
-  top: calc(100% + 6px);
-  right: 12px;
+  top: calc(100% + 1px);
+  right: 0;
   z-index: 30;
   background: var(--bg-raised);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-l);
   color: var(--text);
-  font-size: var(--fs-md);
-  padding: 8px 12px;
-  box-shadow: var(--overlay-shadow);
+  font-size: var(--fs-sm);
+  padding: 6px 10px;
+}
+
+/* Vertical divider rendered between toolbar regions. Pure hairline, drawn
+   as a 1px background cell — survives any layout reflow. */
+.toolbarDivider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  flex-shrink: 0;
 }
 
 .main {

@@ -131,7 +131,7 @@ export function GraphCanvas({
       // .commit-list), so it's absolutely positioned to the viewport and stays
       // put while the commit rows scroll beneath it. The draw code maps
       // row -> viewport Y by subtracting scrollTop, which matches this.
-      style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+      style={{ pointerEvents: "none" }}
     />
   );
 }

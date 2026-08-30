@@ -105,10 +105,7 @@ afterEach(() => {
 
 describe("openRepo", () => {
   it("sets the repo path, fetches log/refs/status, and joins refs to commits", async () => {
-    mockFetchLog.mockResolvedValueOnce([
-      makeCommit("c1"),
-      makeCommit("c0"),
-    ]);
+    mockFetchLog.mockResolvedValueOnce([makeCommit("c1"), makeCommit("c0")]);
     mockFetchRefs.mockResolvedValueOnce([makeRef("main", "c0")]);
     mockFetchStatus.mockResolvedValueOnce(" M a.ts");
 
@@ -125,9 +122,7 @@ describe("openRepo", () => {
     expect(s.layout).not.toBeNull();
     expect(s.layout?.commits.every((c) => c.lane >= 0)).toBe(true);
     // Status was parsed into entries.
-    expect(s.statusEntries).toEqual([
-      { index: ".", worktree: "M", path: "a.ts", oldPath: null },
-    ]);
+    expect(s.statusEntries).toEqual([{ index: ".", worktree: "M", path: "a.ts", oldPath: null }]);
     // Final loading is false even on success.
     expect(s.loading).toBe(false);
   });

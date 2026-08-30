@@ -48,7 +48,11 @@ function TreeRow({
           onClick={() => onToggle(node.path)}
           aria-expanded={open}
         >
-          <ChevronRight size={14} className={clsx(s.treeArrow, open && s.treeArrowOpen)} aria-hidden />
+          <ChevronRight
+            size={14}
+            className={clsx(s.treeArrow, open && s.treeArrowOpen)}
+            aria-hidden
+          />
           {open ? (
             <FolderOpen size={14} className={s.treeFolderIcon} aria-hidden />
           ) : (

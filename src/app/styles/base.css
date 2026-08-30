@@ -1,44 +1,56 @@
 /* ---------- design tokens ---------- */
 :root {
-  /* surfaces (dark-only) */
-  --bg: #0f1319; /* app background */
+  /* Terminal-ground surfaces (kept dark; near-black phosphor ground).
+     These exact hex values are intentionally duplicated in
+     features/commit-graph/drawGraph.ts — keep them in sync if you
+     change them. */
+  --bg: #0f1319; /* terminal ground */
   --bg-raised: #161b23; /* panels / toolbar / inputs */
   --bg-hover: #1d242e; /* row / button hover */
   --bg-active: #222b36; /* pressed */
   --bg-inset: #0b0e13; /* wells / scrollbar track */
-  --border: #262e3a; /* hairline */
-  --border-strong: #333d4b;
+  --bg-selected: #1f3324; /* selected row — green-tinted, ANSI selection */
+  --border: #2a323e; /* hairline (slightly brighter so 1px rules hold up) */
+  --border-strong: #3a4452;
 
-  /* text */
-  --text: #e3e8ee;
-  --text-dim: #97a1af;
-  --text-faint: #66707d;
+  /* Phosphor-cool text. Cooler than the warm off-white used previously so
+     it reads as terminal output, not paper. */
+  --text: #d6dde6;
+  --text-dim: #7e8a99;
+  --text-faint: #525a66;
 
-  /* status */
-  --ok: #3fb950;
-  --err: #f85149;
-  --warn: #d29922;
-  --info: #58a6ff;
+  /* ANSI accent set — each color carries a semantic role. Avoid drifting
+     into neon/saturated hues; TUI palettes stay calm. */
+  --ok: #7ec07c; /* ansi green */
+  --err: #e06c75; /* ansi red */
+  --warn: #e5c07b; /* ansi yellow */
+  --info: #61afef; /* ansi blue */
 
-  /* accent (neon pink) */
-  --accent: #ff5ec8;
-  --accent-strong: #ff7ad3; /* hover */
-  --accent-dim: #3a1830; /* selected-row tint / selection */
-  --accent-border: #8c3a6e; /* focused input border */
-  --on-accent: #2a0a1f; /* text on accent */
+  /* Single accent — same hue as --ok (ANSI green), since the accent role
+     is "you-are-here / current-line / cursor", and the green cursor is
+     the canonical TUI signal. */
+  --accent: #7ec07c;
+  --accent-strong: #9ed09c;
+  --accent-dim: #1f3324; /* selected-row tint, matches --bg-selected */
+  --accent-border: #4a7a4c;
+  --on-accent: #0f1319; /* text on accent fills */
 
-  /* selection */
-  --selected: #331826; /* selected row (pink-tinted) */
+  /* Selection — also green-tinted, mirrors how vim / tig shade the active
+     row without inverting the whole line. */
+  --selected: #1f3324;
 
-  /* scrim for overlays */
-  --overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  /* No shadows in a TUI. */
+  --overlay-shadow: none;
 
-  /* radii scale: 3 (micro) / 5 (controls, rows) / 7 (inputs, panels) */
-  --radius-s: 3px;
-  --radius-m: 5px;
-  --radius-l: 7px;
+  /* TUI = zero corner-radius. The previous 3/5/7 scale collapses to one
+     value to enforce the aesthetic. The s/m/l names are kept as aliases
+     so colocated modules that already reference them don't break. */
+  --radius: 0;
+  --radius-s: 0;
+  --radius-m: 0;
+  --radius-l: 0;
 
-  /* spacing */
+  /* spacing — tighter than the previous scale, to support higher density. */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -46,21 +58,24 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  /* fonts */
-  --font-ui: "Geist Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Geist Mono", "SFMono-Regular", Consolas, monospace;
+  /* Single type family for everything. IoskeleyMono is monospaced, so
+     there is no display/body split — only weight + case carry role. */
+  --font-ui: "IoskeleyMono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-mono: "IoskeleyMono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-display: "IoskeleyMono SC", "IoskeleyMono", ui-monospace, monospace;
 
-  /* font sizes */
+  /* font sizes — single column-friendly scale. Terminal text reads best
+     at 12–13px on hidpi; we keep the small end for meta data. */
   --fs-xs: 11px;
   --fs-sm: 12px;
   --fs-md: 13px;
   --fs-lg: 14px;
   --fs-xl: 16px;
 
-  /* motion */
+  /* motion — kept brief; TUI transitions are blink-and-miss. */
   --ease: cubic-bezier(0.2, 0, 0, 1);
-  --dur-fast: 120ms;
-  --dur-med: 180ms;
+  --dur-fast: 80ms;
+  --dur-med: 120ms;
 }
 
 * {
@@ -79,19 +94,21 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui);
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
+  font-feature-settings: "calt" 0, "liga" 0; /* no contextual ligatures in a TUI */
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
   background: var(--accent-dim);
+  color: var(--text);
 }
 
 /* ---------- shared utility classes ---------- */
 .muted {
   color: var(--text-dim);
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
 }
 
 .mono {
@@ -99,17 +116,20 @@ body {
   font-size: var(--fs-sm);
 }
 
-/* Uppercase section header label (12px, tracked). */
+/* Section header: uppercase, tracked, dim. */
 .section-label {
+  font-family: var(--font-display);
   font-size: var(--fs-sm);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--text-dim);
 }
 
 /* ---------- shared control primitives ---------- */
 
-/* Subtle button: raised surface + hairline border. */
+/* Button — single-line rectangular control with a 1px hairline border.
+   Default variant ("solid") is the dim raised look. No rounded corners,
+   no shadow. Hover = one shade up, focus = accent border. */
 .ui-btn {
   display: inline-flex;
   align-items: center;
@@ -117,15 +137,15 @@ body {
   background: var(--bg-raised);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: var(--radius-m);
-  padding: 5px 12px;
-  font-size: var(--fs-md);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  font-size: var(--fs-sm);
   font-family: inherit;
+  font-weight: 500;
   cursor: pointer;
   transition:
     background var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    transform var(--dur-fast) var(--ease);
+    border-color var(--dur-fast) var(--ease);
 }
 
 .ui-btn:hover:not(:disabled):not([data-disabled]) {
@@ -134,22 +154,21 @@ body {
 }
 
 .ui-btn:active:not(:disabled):not([data-disabled]) {
-  transform: translateY(1px);
   background: var(--bg-active);
 }
 
 .ui-btn:disabled,
 .ui-btn[data-disabled] {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Primary button: accent fill. */
+/* Primary button — green fill, dark text. The "do this" button. */
 .ui-btn-primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .ui-btn-primary:hover:not(:disabled):not([data-disabled]) {
@@ -157,21 +176,24 @@ body {
   border-color: var(--accent-strong);
 }
 
-/* Text input. */
+/* Text input — flat panel with hairline border, monospace font for that
+   terminal-prompt feel. */
 .ui-input {
   background: var(--bg-raised);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: var(--radius-l);
-  padding: 8px 10px;
-  font-size: var(--fs-md);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
   font-family: inherit;
 }
 
 .ui-input:focus-visible {
   outline: none;
   border-color: var(--accent-border);
-  box-shadow: 0 0 0 2px rgba(255, 94, 200, 0.18);
+  /* No box-shadow in a TUI — use a thin inner caret-style outline instead. */
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .ui-input::placeholder {
@@ -179,27 +201,29 @@ body {
 }
 
 .ui-input:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Multi-line input (no Base UI part; styled to match .ui-input). */
+/* Multi-line input. */
 .ui-textarea {
   background: var(--bg-raised);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: var(--radius-l);
-  padding: 8px 10px;
-  font-size: var(--fs-md);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   resize: vertical;
   min-height: 0;
+  line-height: 1.5;
 }
 
 .ui-textarea:focus-visible {
   outline: none;
   border-color: var(--accent-border);
-  box-shadow: 0 0 0 2px rgba(255, 94, 200, 0.18);
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .ui-textarea::placeholder {
@@ -207,11 +231,11 @@ body {
 }
 
 .ui-textarea:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Ghost icon button (close / clear / toolbar). */
+/* Ghost icon button — text-only, no border, tight padding. */
 .ui-ghost {
   display: inline-flex;
   align-items: center;
@@ -219,9 +243,9 @@ body {
   background: none;
   border: none;
   color: var(--text-dim);
-  padding: 4px;
+  padding: 2px 4px;
   cursor: pointer;
-  border-radius: var(--radius-m);
+  border-radius: var(--radius);
   transition:
     background var(--dur-fast) var(--ease),
     color var(--dur-fast) var(--ease);
@@ -234,7 +258,7 @@ body {
 
 /* ---------- focus ---------- */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 1px solid var(--accent);
   outline-offset: -1px;
 }
 
@@ -245,8 +269,8 @@ body {
 }
 
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -255,8 +279,8 @@ body {
 
 *::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 6px;
-  border: 2px solid var(--bg-inset);
+  border-radius: 0;
+  border: 1px solid var(--bg-inset);
 }
 
 *::-webkit-scrollbar-thumb:hover {

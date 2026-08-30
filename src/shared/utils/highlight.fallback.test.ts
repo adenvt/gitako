@@ -44,10 +44,7 @@ describe("highlightLines fallback", () => {
   it("returns plain per-line tokens when the shiki factory itself throws", async () => {
     const hl = await loadWithFactory(() => Promise.reject(new Error("boom")));
     const lines = await hl("line1\nline2", "ts");
-    expect(lines).toEqual([
-      [{ text: "line1" }],
-      [{ text: "line2" }],
-    ]);
+    expect(lines).toEqual([[{ text: "line1" }], [{ text: "line2" }]]);
   });
 
   it("returns plain per-line tokens when the highlighter exists but the language is plaintext and shiki returns nothing useful", async () => {

@@ -59,9 +59,7 @@ describe("refFullName", () => {
   it("returns just the name for local branches / tags / heads", () => {
     expect(refFullName(makeRef({ name: "main", kind: "branch" }))).toBe("main");
     expect(refFullName(makeRef({ name: "v1.0.0", kind: "tag" }))).toBe("v1.0.0");
-    expect(
-      refFullName(makeRef({ name: "HEAD", kind: "head", fullName: "HEAD" })),
-    ).toBe("HEAD");
+    expect(refFullName(makeRef({ name: "HEAD", kind: "head", fullName: "HEAD" }))).toBe("HEAD");
   });
 
   it("prefixes with the remote name for remote branches", () => {

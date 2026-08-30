@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { FilePenLine, FilePlus, FileX, GitBranch } from "lucide-react";
-import { GraphCanvas, ROW_HEIGHT, WORKING_ROW, graphGutter, TAG_WIDTH, MIN_GRAPH_BAND } from "./GraphCanvas";
+import {
+  GraphCanvas,
+  ROW_HEIGHT,
+  WORKING_ROW,
+  graphGutter,
+  TAG_WIDTH,
+  MIN_GRAPH_BAND,
+} from "./GraphCanvas";
 import { laneColor } from "./colors";
 import { RefBadge, RefBadgeGroup } from "./refBadge";
 import { useRepoStore } from "@/state/store";
@@ -22,9 +29,7 @@ const HANDLE_HIT = 5;
  * Example: refs `[main, origin/main, v1.0]` -> `[[main, origin/main], [v1.0]]`.
  */
 export function groupRefsForBadging(refs: RefInfo[]): RefInfo[][] {
-  const visible = refs.filter(
-    (r) => !(r.kind === "remoteBranch" && r.name === "HEAD"),
-  );
+  const visible = refs.filter((r) => !(r.kind === "remoteBranch" && r.name === "HEAD"));
   const groups = new Map<string, RefInfo[]>();
   for (const r of visible) {
     const list = groups.get(r.name) ?? [];
@@ -130,7 +135,10 @@ export function CommitList() {
   // The graph band is resizable: use the user-set width, else the auto gutter.
   const gutter = graphGutter(layout.maxLane);
   maxGraphBandRef.current = gutter;
-  const graphBand = Math.min(Math.max(graphWidth > 0 ? graphWidth : gutter, MIN_GRAPH_BAND), gutter);
+  const graphBand = Math.min(
+    Math.max(graphWidth > 0 ? graphWidth : gutter, MIN_GRAPH_BAND),
+    gutter,
+  );
   const textLeft = TAG_WIDTH + graphBand;
   // Handle sits at the boundary between graph band and message column.
   const handleLeft = textLeft - HANDLE_HIT;
@@ -173,22 +181,22 @@ export function CommitList() {
                 title="Open commit composer"
               >
                 <span className={clsx(s.commitSubject, s.wipLabel)}>
-                  WIP
+                  *
                   {counts.modified > 0 && (
                     <span className={s.wipCount}>
-                      <FilePenLine size={13} className={s.wipModified} aria-hidden />
+                      <FilePenLine size={11} className={s.wipModified} aria-hidden />
                       {counts.modified}
                     </span>
                   )}
                   {counts.added > 0 && (
                     <span className={s.wipCount}>
-                      <FilePlus size={13} className={s.wipAdded} aria-hidden />
+                      <FilePlus size={11} className={s.wipAdded} aria-hidden />
                       {counts.added}
                     </span>
                   )}
                   {counts.deleted > 0 && (
                     <span className={s.wipCount}>
-                      <FileX size={13} className={s.wipDeleted} aria-hidden />
+                      <FileX size={11} className={s.wipDeleted} aria-hidden />
                       {counts.deleted}
                     </span>
                   )}
@@ -239,6 +247,7 @@ export function CommitList() {
                     </span>
                     <span className={s.commitMeta}>
                       <span>{c.authorName}</span>
+                      <span className={s.commitMetaSep}>·</span>
                       <span>{timeAgo(c.authorTime)}</span>
                     </span>
                   </div>

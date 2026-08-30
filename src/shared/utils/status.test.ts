@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  countByKind,
-  countChanges,
-  parsePorcelain,
-  statusLabel,
-} from "./status";
+import { countByKind, countChanges, parsePorcelain, statusLabel } from "./status";
 
 describe("statusLabel", () => {
   it("maps known status letters to human labels", () => {
@@ -41,9 +36,7 @@ describe("parsePorcelain", () => {
 
   it("parses a simple modified file with no spaces in path", () => {
     const out = parsePorcelain(" M README.md");
-    expect(out).toEqual([
-      { index: ".", worktree: "M", path: "README.md", oldPath: null },
-    ]);
+    expect(out).toEqual([{ index: ".", worktree: "M", path: "README.md", oldPath: null }]);
   });
 
   it("normalizes spaces to '.' and untracked '?' to 'A' (on both slots)", () => {
@@ -51,29 +44,21 @@ describe("parsePorcelain", () => {
     // `?` is the untracked marker; the parser normalizes it to `A` on
     // BOTH index and worktree slots, so a single untracked file shows up
     // as `added` (worktree wins when both index/worktree are the same).
-    expect(out).toEqual([
-      { index: "A", worktree: "A", path: "new.ts", oldPath: null },
-    ]);
+    expect(out).toEqual([{ index: "A", worktree: "A", path: "new.ts", oldPath: null }]);
   });
 
   it("preserves a real status letter on the index side (staged add)", () => {
     const out = parsePorcelain("A  new.ts");
-    expect(out).toEqual([
-      { index: "A", worktree: ".", path: "new.ts", oldPath: null },
-    ]);
+    expect(out).toEqual([{ index: "A", worktree: ".", path: "new.ts", oldPath: null }]);
   });
 
   it("parses renames with both old and new path", () => {
     const out = parsePorcelain("R  old.ts -> new.ts");
-    expect(out).toEqual([
-      { index: "R", worktree: ".", path: "new.ts", oldPath: "old.ts" },
-    ]);
+    expect(out).toEqual([{ index: "R", worktree: ".", path: "new.ts", oldPath: "old.ts" }]);
   });
 
   it("handles multiple lines in one pass", () => {
-    const out = parsePorcelain(
-      [" M a.ts", "M  b.ts", "?? c.ts", "A  d.ts", "D  e.ts"].join("\n"),
-    );
+    const out = parsePorcelain([" M a.ts", "M  b.ts", "?? c.ts", "A  d.ts", "D  e.ts"].join("\n"));
     expect(out).toHaveLength(5);
     expect(out[0]).toMatchObject({ index: ".", worktree: "M", path: "a.ts" });
     expect(out[1]).toMatchObject({ index: "M", worktree: ".", path: "b.ts" });
@@ -86,9 +71,7 @@ describe("parsePorcelain", () => {
     const out = parsePorcelain(' M "weird name.ts"');
     // Note: the parser doesn't strip quotes; it stores the raw substring.
     // This test pins current behavior so any future change is intentional.
-    expect(out).toEqual([
-      { index: ".", worktree: "M", path: '"weird name.ts"', oldPath: null },
-    ]);
+    expect(out).toEqual([{ index: ".", worktree: "M", path: '"weird name.ts"', oldPath: null }]);
   });
 });
 

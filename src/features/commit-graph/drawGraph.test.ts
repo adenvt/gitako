@@ -18,15 +18,26 @@ import { layout, type LayoutResult } from "./layout";
 /** Build a recording 2D context. Returns the context + a call log. */
 function makeContext(): DrawingContext & {
   calls: Array<{ method: string; args: unknown[] }>;
-  setStyle: { stroke: string | null; fill: string | null; lineWidth: number | null; alpha: number | null };
+  setStyle: {
+    stroke: string | null;
+    fill: string | null;
+    lineWidth: number | null;
+    alpha: number | null;
+  };
   path: Array<{ op: string; args: number[] }>;
 } {
   const calls: Array<{ method: string; args: unknown[] }> = [];
   const path: Array<{ op: string; args: number[] }> = [];
-  const setStyle = { stroke: null as string | null, fill: null as string | null, lineWidth: null as number | null, alpha: null as number | null };
+  const setStyle = {
+    stroke: null as string | null,
+    fill: null as string | null,
+    lineWidth: null as number | null,
+    alpha: null as number | null,
+  };
   const ctx: DrawingContext = {
     clearRect: (x, y, w, h) => calls.push({ method: "clearRect", args: [x, y, w, h] }),
-    setTransform: (a, b, c, d, e, f) => calls.push({ method: "setTransform", args: [a, b, c, d, e, f] }),
+    setTransform: (a, b, c, d, e, f) =>
+      calls.push({ method: "setTransform", args: [a, b, c, d, e, f] }),
     beginPath: () => path.push({ op: "begin", args: [] }),
     moveTo: (x, y) => path.push({ op: "moveTo", args: [x, y] }),
     lineTo: (x, y) => path.push({ op: "lineTo", args: [x, y] }),
@@ -35,14 +46,34 @@ function makeContext(): DrawingContext & {
     fill: () => calls.push({ method: "fill", args: [] }),
     stroke: () => calls.push({ method: "stroke", args: [path.slice()] }),
     setLineDash: (segs) => calls.push({ method: "setLineDash", args: [segs] }),
-    get strokeStyle() { return setStyle.stroke ?? ""; },
-    set strokeStyle(v: string) { setStyle.stroke = v; calls.push({ method: "setStrokeStyle", args: [v] }); },
-    get fillStyle() { return setStyle.fill ?? ""; },
-    set fillStyle(v: string) { setStyle.fill = v; calls.push({ method: "setFillStyle", args: [v] }); },
-    get lineWidth() { return setStyle.lineWidth ?? 0; },
-    set lineWidth(v: number) { setStyle.lineWidth = v; calls.push({ method: "setLineWidth", args: [v] }); },
-    get globalAlpha() { return setStyle.alpha ?? 1; },
-    set globalAlpha(v: number) { setStyle.alpha = v; calls.push({ method: "setAlpha", args: [v] }); },
+    get strokeStyle() {
+      return setStyle.stroke ?? "";
+    },
+    set strokeStyle(v: string) {
+      setStyle.stroke = v;
+      calls.push({ method: "setStrokeStyle", args: [v] });
+    },
+    get fillStyle() {
+      return setStyle.fill ?? "";
+    },
+    set fillStyle(v: string) {
+      setStyle.fill = v;
+      calls.push({ method: "setFillStyle", args: [v] });
+    },
+    get lineWidth() {
+      return setStyle.lineWidth ?? 0;
+    },
+    set lineWidth(v: number) {
+      setStyle.lineWidth = v;
+      calls.push({ method: "setLineWidth", args: [v] });
+    },
+    get globalAlpha() {
+      return setStyle.alpha ?? 1;
+    },
+    set globalAlpha(v: number) {
+      setStyle.alpha = v;
+      calls.push({ method: "setAlpha", args: [v] });
+    },
   };
   return Object.assign(ctx, { calls, setStyle, path });
 }
@@ -136,7 +167,11 @@ describe("drawGraph", () => {
     const ctx = makeContext();
     drawGraph(ctx, lay, { ...DEFAULT_VIEWPORT, hasWorkingRow: true, workingSelected: true });
     // setLineDash([3,3]) for the dashed line.
-    expect(ctx.calls.some((c) => c.method === "setLineDash" && JSON.stringify(c.args) === JSON.stringify([[3, 3]]))).toBe(true);
+    expect(
+      ctx.calls.some(
+        (c) => c.method === "setLineDash" && JSON.stringify(c.args) === JSON.stringify([[3, 3]]),
+      ),
+    ).toBe(true);
     // A working dot arc.
     expect(ctx.path.some((p) => p.op === "arc" && p.args[2] === 5)).toBe(true);
     // Selection ring (radius 8.5) when workingSelected.
@@ -229,9 +264,7 @@ describe("drawGraph", () => {
 
   it("draws a soft outer bubble for merge commits (radius 7) before the dot", () => {
     const lay: LayoutResult = {
-      commits: [
-        { hash: "c0", parents: [], children: [], lane: 0, isMerge: true },
-      ],
+      commits: [{ hash: "c0", parents: [], children: [], lane: 0, isMerge: true }],
       edges: [],
       maxLane: 0,
     };
@@ -246,9 +279,7 @@ describe("drawGraph", () => {
 
   it("draws the selection ring (radius 8.5) when the commit is selected", () => {
     const lay: LayoutResult = {
-      commits: [
-        { hash: "selected", parents: [], children: [], lane: 0, isMerge: false },
-      ],
+      commits: [{ hash: "selected", parents: [], children: [], lane: 0, isMerge: false }],
       edges: [],
       maxLane: 0,
     };
@@ -259,9 +290,7 @@ describe("drawGraph", () => {
 
   it("does NOT draw the selection ring when no commit is selected", () => {
     const lay: LayoutResult = {
-      commits: [
-        { hash: "c0", parents: [], children: [], lane: 0, isMerge: false },
-      ],
+      commits: [{ hash: "c0", parents: [], children: [], lane: 0, isMerge: false }],
       edges: [],
       maxLane: 0,
     };
@@ -310,9 +339,7 @@ describe("drawGraph", () => {
 
   it("uses SELECTED_RING color for the selection ring", () => {
     const lay: LayoutResult = {
-      commits: [
-        { hash: "x", parents: [], children: [], lane: 0, isMerge: false },
-      ],
+      commits: [{ hash: "x", parents: [], children: [], lane: 0, isMerge: false }],
       edges: [],
       maxLane: 0,
     };
@@ -325,9 +352,7 @@ describe("drawGraph", () => {
 
   it("draws the dot with fillStyle = laneColor and strokeStyle = DOT_STROKE", () => {
     const lay: LayoutResult = {
-      commits: [
-        { hash: "x", parents: [], children: [], lane: 1, isMerge: false },
-      ],
+      commits: [{ hash: "x", parents: [], children: [], lane: 1, isMerge: false }],
       edges: [],
       maxLane: 1,
     };
@@ -368,7 +393,9 @@ describe("drawGraph integration with the layout algorithm", () => {
   it("uses the graph gutter when no commits are loaded (only WIP would draw, here nothing)", () => {
     const lay: LayoutResult = { commits: [], edges: [], maxLane: -1 };
     const ctx = makeContext();
-    expect(() => drawGraph(ctx, lay, { ...DEFAULT_VIEWPORT, graphBand: MIN_GRAPH_BAND })).not.toThrow();
+    expect(() =>
+      drawGraph(ctx, lay, { ...DEFAULT_VIEWPORT, graphBand: MIN_GRAPH_BAND }),
+    ).not.toThrow();
   });
 
   it("draws a commit with a smaller graphBand so the lane clamps to the right edge", () => {
@@ -376,9 +403,7 @@ describe("drawGraph integration with the layout algorithm", () => {
     // bandRight = TAG_WIDTH + 30 - 16 = TAG_WIDTH + 14.
     // The dot is at 21, the bandRight is 14, so the lane is clamped to 14.
     const lay: LayoutResult = {
-      commits: [
-        { hash: "x", parents: [], children: [], lane: 0, isMerge: false },
-      ],
+      commits: [{ hash: "x", parents: [], children: [], lane: 0, isMerge: false }],
       edges: [],
       maxLane: 0,
     };

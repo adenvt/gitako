@@ -44,7 +44,8 @@ describe("Toolbar", () => {
     });
     render(<Toolbar />);
     expect(screen.getByText("myrepo")).toBeInTheDocument();
-    expect(screen.getByText("main")).toBeInTheDocument();
+    // The branch pill carries the full branch name in its title attribute.
+    expect(screen.getByTitle("main")).toBeInTheDocument();
     // Short hash: first 7 chars of "abcdef0123456789" -> "abcdef0".
     expect(screen.getByText("abcdef0")).toBeInTheDocument();
   });
@@ -55,7 +56,7 @@ describe("Toolbar", () => {
       commits: [commit({ refs: ["origin/main", "upstream/main"] })],
     });
     render(<Toolbar />);
-    expect(screen.getByText("detached HEAD")).toBeInTheDocument();
+    expect(screen.getByText(/detached/)).toBeInTheDocument();
   });
 
   it("does not render the hash span when there are no commits", () => {
@@ -65,7 +66,7 @@ describe("Toolbar", () => {
     expect(screen.queryByText("abcdef0")).toBeNull();
   });
 
-  it("shows the WIP badge when status entries have any change", () => {
+  it("shows the dirty marker when status entries have any change", () => {
     const statusEntries: StatusEntry[] = [
       { index: ".", worktree: "M", path: "a.ts", oldPath: null },
     ];
@@ -75,19 +76,17 @@ describe("Toolbar", () => {
       statusEntries,
     });
     render(<Toolbar />);
-    expect(screen.getByText("WIP")).toBeInTheDocument();
+    expect(screen.getByTitle("Uncommitted changes")).toBeInTheDocument();
   });
 
-  it("hides the WIP badge when status is clean", () => {
+  it("hides the dirty marker when status is clean", () => {
     setStore({
       repoPath: "/repo",
       commits: [commit()],
-      statusEntries: [
-        { index: ".", worktree: ".", path: "clean.ts", oldPath: null },
-      ],
+      statusEntries: [{ index: ".", worktree: ".", path: "clean.ts", oldPath: null }],
     });
     render(<Toolbar />);
-    expect(screen.queryByText("WIP")).toBeNull();
+    expect(screen.queryByTitle("Uncommitted changes")).toBeNull();
   });
 
   it("shows the full repo path in the right-side pill (hover title)", () => {
@@ -131,7 +130,7 @@ describe("Toolbar", () => {
   it("disables the Pull button while loading", () => {
     setStore({ repoPath: "/r", commits: [commit()], loading: true });
     render(<Toolbar />);
-    expect(screen.getByRole("button", { name: /refreshing/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /pull…/i })).toBeDisabled();
   });
 
   it("shows a Stash notice when the Stash button is clicked", async () => {

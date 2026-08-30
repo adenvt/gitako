@@ -5,9 +5,7 @@ import { FileTree } from "./FileTree";
 import { buildFileTree, type FileTreeNode } from "@/shared/utils/fileTree";
 
 function tree(...paths: Array<[string, string]>): FileTreeNode {
-  return buildFileTree(
-    paths.map(([path, status]) => ({ path, status })),
-  );
+  return buildFileTree(paths.map(([path, status]) => ({ path, status })));
 }
 
 /** Shorthand: tree with all files having status "M". */
@@ -67,13 +65,7 @@ describe("FileTree", () => {
   it("calls onFileAction with the clicked file node when the action label is shown", async () => {
     const user = userEvent.setup();
     const onAction = vi.fn();
-    render(
-      <FileTree
-        root={flat("a.ts")}
-        onFileAction={onAction}
-        actionLabel="Stage"
-      />,
-    );
+    render(<FileTree root={flat("a.ts")} onFileAction={onAction} actionLabel="Stage" />);
     await user.click(screen.getByRole("button", { name: "Stage" }));
     expect(onAction).toHaveBeenCalledTimes(1);
     const arg = onAction.mock.calls[0]?.[0];

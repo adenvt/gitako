@@ -56,7 +56,13 @@ describe("buildRows", () => {
       diff(
         ["a", "b", "c"],
         ["a", "b", "c"],
-        [hunk(1, 1, [["context", "a"], ["context", "b"], ["context", "c"]])],
+        [
+          hunk(1, 1, [
+            ["context", "a"],
+            ["context", "b"],
+            ["context", "c"],
+          ]),
+        ],
       ),
     );
     expect(rows).toHaveLength(3);
@@ -78,7 +84,14 @@ describe("buildRows", () => {
       diff(
         ["a", "x", "c"],
         ["a", "y", "c"],
-        [hunk(1, 1, [["context", "a"], ["remove", "x"], ["add", "y"], ["context", "c"]])],
+        [
+          hunk(1, 1, [
+            ["context", "a"],
+            ["remove", "x"],
+            ["add", "y"],
+            ["context", "c"],
+          ]),
+        ],
       ),
     );
     expect(rows).toHaveLength(3);
@@ -98,7 +111,14 @@ describe("buildRows", () => {
       diff(
         ["a", "b", "c", "d"],
         ["a", "d"],
-        [hunk(1, 1, [["context", "a"], ["remove", "b"], ["remove", "c"], ["context", "d"]])],
+        [
+          hunk(1, 1, [
+            ["context", "a"],
+            ["remove", "b"],
+            ["remove", "c"],
+            ["context", "d"],
+          ]),
+        ],
       ),
     );
     // Expected: context(a), remove(b), remove(c), context(d) -> 4 rows.
@@ -122,7 +142,13 @@ describe("buildRows", () => {
       diff(
         ["a"],
         ["a", "b", "c"],
-        [hunk(1, 1, [["context", "a"], ["add", "b"], ["add", "c"]])],
+        [
+          hunk(1, 1, [
+            ["context", "a"],
+            ["add", "b"],
+            ["add", "c"],
+          ]),
+        ],
       ),
     );
     expect(rows).toHaveLength(3);
@@ -198,10 +224,17 @@ describe("buildRows", () => {
     const rows = buildRows(
       diff(oldLines, newLines, [
         // Hunk 1: keep "a", remove "b". Valid: -1,2 +1,1.
-        hunk(1, 1, [["context", "a"], ["remove", "b"]]),
+        hunk(1, 1, [
+          ["context", "a"],
+          ["remove", "b"],
+        ]),
         // Hunk 2: "c" is at new index 2 (after the deletion), old index 3.
         // -3,3 +2,3 with 3 context lines that line up.
-        hunk(3, 2, [["context", "c"], ["context", "d"], ["context", "e"]]),
+        hunk(3, 2, [
+          ["context", "c"],
+          ["context", "d"],
+          ["context", "e"],
+        ]),
       ]),
     );
     // 1 (a) + 1 (remove b) + 3 (c, d, e) = 5 rows, all paired correctly
@@ -223,11 +256,7 @@ describe("buildRows", () => {
   it("emits trailing context after the last hunk", () => {
     // hunk only covers line 1, but the file has 3 lines on each side.
     const rows = buildRows(
-      diff(
-        ["a", "b", "c"],
-        ["a", "b", "c"],
-        [hunk(1, 1, [["context", "a"]])],
-      ),
+      diff(["a", "b", "c"], ["a", "b", "c"], [hunk(1, 1, [["context", "a"]])]),
     );
     expect(rows).toHaveLength(3);
     expect(rows[1]?.oldLine).toBe("b");
@@ -240,9 +269,7 @@ describe("buildRows", () => {
     // as left-only overflow rows (d, e, f).
     const oldLines = ["a", "b", "c", "d", "e", "f"];
     const newLines = ["a", "b", "c"];
-    const rows = buildRows(
-      diff(oldLines, newLines, [hunk(1, 1, [["context", "a"]])]),
-    );
+    const rows = buildRows(diff(oldLines, newLines, [hunk(1, 1, [["context", "a"]])]));
     expect(rows).toHaveLength(6);
     // First 3 rows are paired.
     expect(rows[0]).toMatchObject({ oldLine: "a", newLine: "a" });
@@ -264,7 +291,13 @@ describe("buildRows", () => {
       diff(
         ["b", "c"],
         ["B", "c"],
-        [hunk(1, 1, [["remove", "b"], ["add", "B"], ["context", "c"]])],
+        [
+          hunk(1, 1, [
+            ["remove", "b"],
+            ["add", "B"],
+            ["context", "c"],
+          ]),
+        ],
       ),
     );
     expect(rows).toHaveLength(2);
