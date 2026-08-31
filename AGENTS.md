@@ -60,6 +60,11 @@ Rules:
 
 ## Styling: Base UI + CSS Modules
 
+This project uses Base UI. Its documentation can be found at base-ui.com/llms.txt.
+Base UI components do not have the same API as Radix UI; this includes props, data attributes, or components.
+There is no asChild prop on any component; instead, the render prop is used. Read Base UI's composition guide for details on how to use render: base-ui.com/react/handbook/composition.md.
+Always consult the Base UI llms.txt doc before building components with Base UI to ensure the correct patterns are being used.
+
 Controls come from the shared kit in `src/shared/components/ui/` — `Button`,
 `Input`, `Textarea` — which wraps **Base UI** (`@base-ui/react`) primitives.
 Do not use raw `<button>`/`<input>` for shared-looking controls; use the kit

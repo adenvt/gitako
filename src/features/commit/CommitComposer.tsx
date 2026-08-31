@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
 import { useRepoStore } from "@/state/store";
 import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
@@ -58,76 +59,83 @@ export function CommitComposer() {
   };
 
   return (
-    <div className={`${detail.detailPane} ${s.composer}`}>
-      <div className={s.composerHead}>
-        <h3>Commit WIP</h3>
-      </div>
+    <ScrollArea.Root className={`${detail.detailPane} ${s.composer}`}>
+      <ScrollArea.Viewport className={detail.detailPaneViewport}>
+        <ScrollArea.Content>
+          <div className={s.composerHead}>
+            <h3>Commit WIP</h3>
+          </div>
 
-      <div className={s.stagingSection}>
-        <div className={s.stagingHeader}>
-          <span className={s.stagingTitle}>Unstaged ({unstagedCount})</span>
-          {unstagedCount > 0 && (
-            <Button variant="none" className={s.stagingBulk} onClick={() => void stageAll()}>
-              Stage all
+          <div className={s.stagingSection}>
+            <div className={s.stagingHeader}>
+              <span className={s.stagingTitle}>Unstaged ({unstagedCount})</span>
+              {unstagedCount > 0 && (
+                <Button variant="none" className={s.stagingBulk} onClick={() => void stageAll()}>
+                  Stage all
+                </Button>
+              )}
+            </div>
+            <FileTree
+              root={unstagedTree}
+              onFileAction={(n) => void toggleStage(n.path, true)}
+              actionLabel="Stage"
+              onFileOpen={(n) => void openDiff("", n.path)}
+            />
+          </div>
+
+          <div className={s.stagingSection}>
+            <div className={s.stagingHeader}>
+              <span className={s.stagingTitle}>Staged ({stagedCount})</span>
+              {stagedCount > 0 && (
+                <Button variant="none" className={s.stagingBulk} onClick={() => void unstageAll()}>
+                  Unstage all
+                </Button>
+              )}
+            </div>
+            <FileTree
+              root={stagedTree}
+              onFileAction={(n) => void toggleStage(n.path, false)}
+              actionLabel="Unstage"
+              onFileOpen={(n) => void openDiff("", n.path, true)}
+            />
+          </div>
+
+          <div className={s.composerForm}>
+            <Input
+              type="text"
+              className={s.composerSubject}
+              placeholder="Subject (required)"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void handleCommit();
+                }
+              }}
+            />
+            <Textarea
+              className={s.composerDescription}
+              placeholder="Description"
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            {composerError && <p className={s.composerError}>{composerError}</p>}
+            <Button
+              variant="none"
+              className={s.composerCommit}
+              disabled={!canCommit}
+              onClick={() => void handleCommit()}
+            >
+              {busy ? "Committing…" : "Commit"}
             </Button>
-          )}
-        </div>
-        <FileTree
-          root={unstagedTree}
-          onFileAction={(n) => void toggleStage(n.path, true)}
-          actionLabel="Stage"
-          onFileOpen={(n) => void openDiff("", n.path)}
-        />
-      </div>
-
-      <div className={s.stagingSection}>
-        <div className={s.stagingHeader}>
-          <span className={s.stagingTitle}>Staged ({stagedCount})</span>
-          {stagedCount > 0 && (
-            <Button variant="none" className={s.stagingBulk} onClick={() => void unstageAll()}>
-              Unstage all
-            </Button>
-          )}
-        </div>
-        <FileTree
-          root={stagedTree}
-          onFileAction={(n) => void toggleStage(n.path, false)}
-          actionLabel="Unstage"
-          onFileOpen={(n) => void openDiff("", n.path, true)}
-        />
-      </div>
-
-      <div className={s.composerForm}>
-        <Input
-          type="text"
-          className={s.composerSubject}
-          placeholder="Subject (required)"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void handleCommit();
-            }
-          }}
-        />
-        <Textarea
-          className={s.composerDescription}
-          placeholder="Description"
-          rows={2}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        {composerError && <p className={s.composerError}>{composerError}</p>}
-        <Button
-          variant="none"
-          className={s.composerCommit}
-          disabled={!canCommit}
-          onClick={() => void handleCommit()}
-        >
-          {busy ? "Committing…" : "Commit"}
-        </Button>
-      </div>
-    </div>
+          </div>
+        </ScrollArea.Content>
+      </ScrollArea.Viewport>
+      <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
+        <ScrollArea.Thumb className="scrollbarThumb" />
+      </ScrollArea.Scrollbar>
+    </ScrollArea.Root>
   );
 }

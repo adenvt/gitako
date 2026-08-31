@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { X } from "lucide-react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
 import { useRepoStore } from "@/state/store";
 import type { DiffFile } from "@/shared/types/git";
 import { highlightLines, langForPath, type Line } from "@/shared/utils/highlight";
@@ -199,52 +200,6 @@ export function DiffView() {
     [diff],
   );
 
-  const oldColRef = useRef<HTMLDivElement>(null);
-  const newColRef = useRef<HTMLDivElement>(null);
-  const scrollbarRef = useRef<HTMLDivElement>(null);
-  const [contentWidth, setContentWidth] = useState(0);
-
-  // Size the bottom scrollbar so its full scroll range equals the larger of the
-  // two columns' horizontal overflow. The bar is wider than either column, so a
-  // raw scrollWidth comparison would under-represent the needed scroll distance.
-  useEffect(() => {
-    const oldEl = oldColRef.current;
-    const newEl = newColRef.current;
-    const barEl = scrollbarRef.current;
-    if (!oldEl || !newEl || !barEl) return;
-    const maxScroll = Math.max(
-      oldEl.scrollWidth - oldEl.clientWidth,
-      newEl.scrollWidth - newEl.clientWidth,
-    );
-    const next = barEl.clientWidth + Math.max(0, maxScroll);
-    setContentWidth((prev) => (prev === next ? prev : next));
-  }, [rows, oldTokens, newTokens]);
-
-  // The bottom bar is the single source of truth for horizontal scroll. It
-  // drives both columns' scrollLeft. The columns are scrollable only
-  // programmatically (overflow-x: hidden), so there is no feedback loop.
-  const syncingRef = useRef(false);
-  const syncScroll = () => {
-    if (syncingRef.current) return;
-    const oldEl = oldColRef.current;
-    const newEl = newColRef.current;
-    const barEl = scrollbarRef.current;
-    if (!oldEl || !newEl || !barEl) return;
-
-    const range = (el: HTMLElement) => Math.max(0, el.scrollWidth - el.clientWidth);
-    const oldRange = range(oldEl);
-    const newRange = range(newEl);
-    const barRange = range(barEl);
-    const frac = barRange > 0 ? barEl.scrollLeft / barRange : 0;
-
-    syncingRef.current = true;
-    oldEl.scrollLeft = frac * oldRange;
-    newEl.scrollLeft = frac * newRange;
-    requestAnimationFrame(() => {
-      syncingRef.current = false;
-    });
-  };
-
   if (!activeDiff) return null;
 
   return (
@@ -267,54 +222,59 @@ export function DiffView() {
       ) : diff.tooLarge ? (
         <div className={s.diffPlaceholder}>File too large to display.</div>
       ) : (
-        <>
-          <div className={s.diffTable}>
-            <div className={s.diffColHeaders}>
-              <div className={s.diffColHeader}>OLD</div>
-              <div className={s.diffColHeader}>NEW</div>
-            </div>
-            <div className={s.diffCols}>
-              <div className={s.diffCol} ref={oldColRef}>
-                {rows.map((r, i) => (
-                  <div key={i} className={clsx(s.diffLine, r.oldKind && s[r.oldKind])}>
-                    <span className={s.diffGutter}>
-                      <span>{r.oldNum ?? ""}</span>
-                      <span className={clsx(s.diffSign, r.oldKind === "remove" && s.remove)}>
-                        {r.oldKind === "remove" ? "-" : "\u00a0"}
-                      </span>
-                    </span>
-                    {r.oldNum != null ? (
-                      <Cell text={r.oldLine ?? ""} num={r.oldNum} tokens={oldTokens} />
-                    ) : (
-                      <span className={clsx(s.diffCell, s.diffEmpty)} aria-hidden />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className={s.diffCol} ref={newColRef}>
-                {rows.map((r, i) => (
-                  <div key={i} className={clsx(s.diffLine, r.newKind && s[r.newKind])}>
-                    <span className={s.diffGutter}>
-                      <span>{r.newNum ?? ""}</span>
-                      <span className={clsx(s.diffSign, r.newKind === "add" && s.add)}>
-                        {r.newKind === "add" ? "+" : "\u00a0"}
-                      </span>
-                    </span>
-                    {r.newNum != null ? (
-                      <Cell text={r.newLine ?? ""} num={r.newNum} tokens={newTokens} />
-                    ) : (
-                      <span className={clsx(s.diffCell, s.diffEmpty)} aria-hidden />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+        <ScrollArea.Root className={s.diffTable}>
+          <div className={s.diffColHeaders}>
+            <div className={s.diffColHeader}>OLD</div>
+            <div className={s.diffColHeader}>NEW</div>
           </div>
-          {/* Always-visible horizontal scrollbar, the single scroll source. */}
-          <div className={s.diffScrollbar} ref={scrollbarRef} onScroll={syncScroll}>
-            <div style={{ width: Math.max(contentWidth, 1), height: 1 }} />
-          </div>
-        </>
+          <ScrollArea.Viewport className={s.diffTableViewport}>
+            <ScrollArea.Content className={s.diffContent}>
+              <div className={s.diffCols}>
+                <div className={s.diffCol}>
+                  {rows.map((r, i) => (
+                    <div key={i} className={clsx(s.diffLine, r.oldKind && s[r.oldKind])}>
+                      <span className={s.diffGutter}>
+                        <span>{r.oldNum ?? ""}</span>
+                        <span className={clsx(s.diffSign, r.oldKind === "remove" && s.remove)}>
+                          {r.oldKind === "remove" ? "-" : "\u00a0"}
+                        </span>
+                      </span>
+                      {r.oldNum != null ? (
+                        <Cell text={r.oldLine ?? ""} num={r.oldNum} tokens={oldTokens} />
+                      ) : (
+                        <span className={clsx(s.diffCell, s.diffEmpty)} aria-hidden />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className={s.diffCol}>
+                  {rows.map((r, i) => (
+                    <div key={i} className={clsx(s.diffLine, r.newKind && s[r.newKind])}>
+                      <span className={s.diffGutter}>
+                        <span>{r.newNum ?? ""}</span>
+                        <span className={clsx(s.diffSign, r.newKind === "add" && s.add)}>
+                          {r.newKind === "add" ? "+" : "\u00a0"}
+                        </span>
+                      </span>
+                      {r.newNum != null ? (
+                        <Cell text={r.newLine ?? ""} num={r.newNum} tokens={newTokens} />
+                      ) : (
+                        <span className={clsx(s.diffCell, s.diffEmpty)} aria-hidden />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollArea.Content>
+          </ScrollArea.Viewport>
+          <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
+            <ScrollArea.Thumb className="scrollbarThumb" />
+          </ScrollArea.Scrollbar>
+          <ScrollArea.Scrollbar orientation="horizontal" className="scrollbarTrack" keepMounted>
+            <ScrollArea.Thumb className="scrollbarThumb" />
+          </ScrollArea.Scrollbar>
+          <ScrollArea.Corner />
+        </ScrollArea.Root>
       )}
     </div>
   );

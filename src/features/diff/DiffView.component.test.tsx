@@ -113,56 +113,27 @@ describe("DiffView", () => {
     expect(screen.getByText("NEW")).toBeInTheDocument();
   });
 
-  it("drives column scrollLeft from the bottom bar's scroll position (syncScroll)", () => {
+  it("renders both diff columns inside a single scroll viewport (BaseUI ScrollArea)", () => {
     useRepoStore.setState({
       activeDiff: { hash: "c1", path: "a.ts", staged: false },
       diffCache: { "c1|a.ts|w": makeDiff() },
     });
     const { container } = render(<DiffView />);
-    // The bottom scrollbar is the single source of truth for horizontal scroll.
-    const bar = container.querySelector("[class*='diffScrollbar']") as HTMLElement | null;
-    expect(bar).not.toBeNull();
-    // Monkey-patch layout sizes for the bar and the two columns. React's
-    // onScroll handler reads these to compute the column scrollLeft.
-    Object.defineProperty(bar!, "scrollWidth", { configurable: true, value: 500 });
-    Object.defineProperty(bar!, "clientWidth", { configurable: true, value: 100 });
-    Object.defineProperty(bar!, "scrollLeft", { configurable: true, value: 200, writable: true });
-    // Use a CSS-modules-aware selector: match the column class but not
-    // the headers container. The compiled class is something like
-    // "_diffCol_xxx", so we exclude the "diffCol" / "diffCols" /
-    // "diffColHeader" / "diffColHeaders" prefixes that aren't a column.
+    // The two columns live inside the same Content/Viewport, so a single
+    // scroll event drives both — no separate bottom bar, no syncScroll needed.
+    const viewport = container.querySelector("[class*='diffTableViewport']");
+    expect(viewport).not.toBeNull();
     const cols = container.querySelectorAll("[class*='_diffCol_']:not([class*='Header'])");
     expect(cols.length).toBe(2);
-    for (const col of Array.from(cols)) {
-      Object.defineProperty(col, "scrollWidth", { configurable: true, value: 400 });
-      Object.defineProperty(col, "clientWidth", { configurable: true, value: 100 });
-    }
-    // Fire a native scroll event on the bar; React's onScroll will read the
-    // new scrollLeft and drive the columns' scrollLeft via syncScroll.
-    bar!.dispatchEvent(new Event("scroll", { bubbles: true }));
-
-    // frac = 200 / (500-100) = 0.5; column range = 400-100 = 300; new = 150.
-    expect((cols[0] as HTMLElement).scrollLeft).toBe(150);
   });
 
-  it("syncScroll is a no-op when the bar's scroll range is zero (no overflow)", () => {
+  it("does not render the old bottom diffScrollbar element", () => {
     useRepoStore.setState({
       activeDiff: { hash: "c1", path: "a.ts", staged: false },
       diffCache: { "c1|a.ts|w": makeDiff() },
     });
     const { container } = render(<DiffView />);
-    const bar = container.querySelector("[class*='diffScrollbar']") as HTMLElement;
-    // bar range = 0 (scrollWidth == clientWidth) -> frac defaults to 0.
-    Object.defineProperty(bar, "scrollWidth", { configurable: true, value: 100 });
-    Object.defineProperty(bar, "clientWidth", { configurable: true, value: 100 });
-    Object.defineProperty(bar, "scrollLeft", { configurable: true, value: 50, writable: true });
-    const cols = container.querySelectorAll("[class*='diffCol']");
-    for (const col of Array.from(cols)) {
-      Object.defineProperty(col, "scrollWidth", { configurable: true, value: 400 });
-      Object.defineProperty(col, "clientWidth", { configurable: true, value: 100 });
-    }
-    bar.dispatchEvent(new Event("scroll", { bubbles: true }));
-    // No overflow on the bar -> frac = 0 -> column scrollLeft stays 0.
-    expect((cols[0] as HTMLElement).scrollLeft).toBe(0);
+    // The standalone bottom scrollbar was replaced by BaseUI's Scrollbar.
+    expect(container.querySelector("[class*='diffScrollbar']")).toBeNull();
   });
 });

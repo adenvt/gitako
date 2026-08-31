@@ -38,8 +38,13 @@
 .commitScroll {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.commitScrollViewport {
+  flex: 1;
+  min-height: 0;
 }
 
 .commitRows {

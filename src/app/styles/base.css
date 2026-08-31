@@ -262,33 +262,41 @@ body {
   outline-offset: -1px;
 }
 
-/* ---------- scrollbars ---------- */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) var(--bg-inset);
-}
-
-*::-webkit-scrollbar {
+/* ---------- scrollbars (BaseUI ScrollArea) ---------- */
+.scrollbarTrack {
+  display: flex;
+  background: var(--bg-inset);
   width: 8px;
-  height: 8px;
-}
-
-*::-webkit-scrollbar-track {
-  background: var(--bg-inset);
-}
-
-*::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  padding: 0;
   border-radius: 0;
-  border: 1px solid var(--bg-inset);
+  flex-shrink: 0;
+  z-index: 1;
 }
 
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--text-faint);
+.scrollbarTrack[data-orientation="horizontal"] {
+  width: auto;
+  height: 8px;
+  flex-direction: column;
 }
 
-*::-webkit-scrollbar-corner {
-  background: var(--bg-inset);
+/* Reserve layout space for the absolutely-positioned custom scrollbar so
+   content doesn't shift when overflow appears/disappears. The Viewport
+   has `overflow: scroll` with native bars hidden by BaseUI's injected
+   `.base-ui-disable-scrollbar`, so the gutter is empty unless we claim it. */
+:where([class*="Viewport"]) {
+  scrollbar-gutter: stable;
+}
+
+.scrollbarThumb {
+  background: var(--text-dim);
+  border-radius: 0;
+  flex: 0 0 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.scrollbarThumb:hover {
+  background: var(--text);
 }
 
 /* ---------- app shell ---------- */

@@ -86,7 +86,17 @@
 
 .welcomeRecents {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.welcomeRecentsViewport {
+  flex: 1;
+  min-height: 0;
+}
+
+.welcomeRecentsContent {
   padding: 0 24px;
 }
 

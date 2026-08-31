@@ -43,7 +43,16 @@
 .fileTreeRows {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.fileTreeRowsViewport {
+  flex: 1;
+  min-height: 0;
+}
+
+.fileTreeRowsContent {
   padding: 2px 0;
 }
 

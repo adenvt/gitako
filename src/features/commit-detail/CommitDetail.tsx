@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
 import { useRepoStore } from "@/state/store";
 import { formatDate } from "@/shared/utils/time";
 import { shortHash } from "@/shared/utils/hash";
@@ -47,84 +48,98 @@ export function CommitDetail() {
 
   if (!commit) {
     return (
-      <div className={s.detailPane}>
-        <h3>Commit details</h3>
-        <div className={s.panePlaceholder}>
-          <p className="muted">Select a commit to see its details.</p>
-        </div>
-      </div>
+      <ScrollArea.Root className={s.detailPane}>
+        <ScrollArea.Viewport className={s.detailPaneViewport}>
+          <ScrollArea.Content>
+            <h3>Commit details</h3>
+            <div className={s.panePlaceholder}>
+              <p className="muted">Select a commit to see its details.</p>
+            </div>
+          </ScrollArea.Content>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
+          <ScrollArea.Thumb className="scrollbarThumb" />
+        </ScrollArea.Scrollbar>
+      </ScrollArea.Root>
     );
   }
 
   return (
-    <div className={s.detailPane}>
-      <h3>Commit details</h3>
-      <div>
-        <div className={s.detailSubject}>{commit.subject}</div>
-        <dl className={s.detailMeta}>
-          <dt>Author</dt>
-          <dd>
-            {commit.authorName} &lt;{commit.authorEmail}&gt;
-          </dd>
-          <dt>Date</dt>
-          <dd>{formatDate(commit.authorTime)}</dd>
-          <dt>Hash</dt>
-          <dd className="mono">{shortHash(commit.hash)}</dd>
-          {commit.parents.length > 0 && (
-            <>
-              <dt>Parents</dt>
-              <dd className="mono">{commit.parents.map((p) => shortHash(p)).join(", ")}</dd>
-            </>
-          )}
-          {commit.refs.length > 0 && (
-            <>
-              <dt>Refs</dt>
+    <ScrollArea.Root className={s.detailPane}>
+      <ScrollArea.Viewport className={s.detailPaneViewport}>
+        <ScrollArea.Content>
+          <h3>Commit details</h3>
+          <div>
+            <div className={s.detailSubject}>{commit.subject}</div>
+            <dl className={s.detailMeta}>
+              <dt>Author</dt>
               <dd>
-                {commit.refs.map((r) => (
-                  <span
-                    key={r}
-                    className={badge.commitRefBadge}
-                    style={
-                      badgeColor
-                        ? ({ "--badge-color": badgeColor } as React.CSSProperties)
-                        : undefined
-                    }
-                  >
-                    {r}
-                  </span>
-                ))}
+                {commit.authorName} &lt;{commit.authorEmail}&gt;
               </dd>
-            </>
-          )}
-        </dl>
-      </div>
-
-      <div className={s.detailFiles}>
-        <h4>Changed files</h4>
-        {files && counts ? (
-          <>
-            <div className={s.fileStats}>
-              {Object.entries(counts)
-                .sort((a, b) => a[0].localeCompare(b[0]))
-                .map(([status, n]) => (
-                  <span key={status} className={s.fileStat}>
-                    <StatusIcon status={status} />
-                    {n} {statusLabel(status).toLowerCase()}
-                  </span>
-                ))}
-            </div>
-            {tree && tree.children.length > 0 ? (
-              <FileTree root={tree} onFileOpen={(n) => void openDiff(commit.hash, n.path)} />
-            ) : (
-              <p className="muted">No files changed.</p>
-            )}
-          </>
-        ) : (
-          <div className={s.panePlaceholder}>
-            <p className="muted">Loading…</p>
+              <dt>Date</dt>
+              <dd>{formatDate(commit.authorTime)}</dd>
+              <dt>Hash</dt>
+              <dd className="mono">{shortHash(commit.hash)}</dd>
+              {commit.parents.length > 0 && (
+                <>
+                  <dt>Parents</dt>
+                  <dd className="mono">{commit.parents.map((p) => shortHash(p)).join(", ")}</dd>
+                </>
+              )}
+              {commit.refs.length > 0 && (
+                <>
+                  <dt>Refs</dt>
+                  <dd>
+                    {commit.refs.map((r) => (
+                      <span
+                        key={r}
+                        className={badge.commitRefBadge}
+                        style={
+                          badgeColor
+                            ? ({ "--badge-color": badgeColor } as React.CSSProperties)
+                            : undefined
+                        }
+                      >
+                        {r}
+                      </span>
+                    ))}
+                  </dd>
+                </>
+              )}
+            </dl>
           </div>
-        )}
-      </div>
-    </div>
+
+          <div className={s.detailFiles}>
+            <h4>Changed files</h4>
+            {files && counts ? (
+              <>
+                <div className={s.fileStats}>
+                  {Object.entries(counts)
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .map(([status, n]) => (
+                      <span key={status} className={s.fileStat}>
+                        <StatusIcon status={status} />
+                        {n} {statusLabel(status).toLowerCase()}
+                      </span>
+                    ))}
+                </div>
+                {tree && tree.children.length > 0 ? (
+                  <FileTree root={tree} onFileOpen={(n) => void openDiff(commit.hash, n.path)} />
+                ) : (
+                  <p className="muted">No files changed.</p>
+                )}
+              </>
+            ) : (
+              <div className={s.panePlaceholder}>
+                <p className="muted">Loading…</p>
+              </div>
+            )}
+          </div>
+        </ScrollArea.Content>
+      </ScrollArea.Viewport>
+      <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack">
+        <ScrollArea.Thumb className="scrollbarThumb" />
+      </ScrollArea.Scrollbar>
+    </ScrollArea.Root>
   );
 }

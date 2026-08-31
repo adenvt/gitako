@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { FolderOpen, GitBranch, Search, X } from "lucide-react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
 import { open } from "@tauri-apps/plugin-dialog";
 import { homeDir } from "@tauri-apps/api/path";
 import { useRepoStore } from "@/state/store";
@@ -134,32 +135,41 @@ export function OpenRepo() {
       </div>
 
       {recent.length > 0 ? (
-        <div className={s.welcomeRecents}>
-          <div className={`${s.welcomeSectionLabel} section-label`}>Recent</div>
-          <ul className={s.welcomeList}>
-            {filtered.map((r) => (
-              <li
-                key={r.path}
-                className={s.welcomeItem}
-                onClick={() => void handleOpenPath(r.path)}
-              >
-                <div className={s.welcomeItemName}>{r.name}</div>
-                <div className={`${s.welcomeItemPath} mono`}>{displayPaths[r.path] ?? r.path}</div>
-                <Button
-                  variant="ghost"
-                  className={s.welcomeItemRemove}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    remove(r.path);
-                  }}
-                  aria-label={`Remove ${r.name} from recent`}
-                >
-                  <X size={13} aria-hidden />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ScrollArea.Root className={s.welcomeRecents}>
+          <ScrollArea.Viewport className={s.welcomeRecentsViewport}>
+            <ScrollArea.Content className={s.welcomeRecentsContent}>
+              <div className={`${s.welcomeSectionLabel} section-label`}>Recent</div>
+              <ul className={s.welcomeList}>
+                {filtered.map((r) => (
+                  <li
+                    key={r.path}
+                    className={s.welcomeItem}
+                    onClick={() => void handleOpenPath(r.path)}
+                  >
+                    <div className={s.welcomeItemName}>{r.name}</div>
+                    <div className={`${s.welcomeItemPath} mono`}>
+                      {displayPaths[r.path] ?? r.path}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      className={s.welcomeItemRemove}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        remove(r.path);
+                      }}
+                      aria-label={`Remove ${r.name} from recent`}
+                    >
+                      <X size={13} aria-hidden />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea.Content>
+          </ScrollArea.Viewport>
+          <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
+            <ScrollArea.Thumb className="scrollbarThumb" />
+          </ScrollArea.Scrollbar>
+        </ScrollArea.Root>
       ) : (
         <div className={s.welcomeEmpty}>
           <GitBranch size={22} className={s.welcomeEmptyIcon} aria-hidden />

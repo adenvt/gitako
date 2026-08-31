@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 import { ChevronRight, Folder, FolderOpen, ListCollapse, ListTree } from "lucide-react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
 import { collectDirPaths, type FileTreeNode } from "@/shared/utils/fileTree";
 import { statusLabel } from "@/shared/utils/status";
 import { StatusIcon } from "@/shared/components/StatusIcon";
@@ -150,21 +151,28 @@ export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTr
           )}
         </div>
       )}
-      <div className={s.fileTreeRows}>
-        {root.children.map((c) => (
-          <TreeRow
-            key={c.path}
-            node={c}
-            depth={0}
-            open={expanded.has(c.path)}
-            expanded={expanded}
-            onToggle={toggle}
-            onFileAction={onFileAction}
-            actionLabel={actionLabel}
-            onFileOpen={onFileOpen}
-          />
-        ))}
-      </div>
+      <ScrollArea.Root className={s.fileTreeRows}>
+        <ScrollArea.Viewport className={s.fileTreeRowsViewport}>
+          <ScrollArea.Content className={s.fileTreeRowsContent}>
+            {root.children.map((c) => (
+              <TreeRow
+                key={c.path}
+                node={c}
+                depth={0}
+                open={expanded.has(c.path)}
+                expanded={expanded}
+                onToggle={toggle}
+                onFileAction={onFileAction}
+                actionLabel={actionLabel}
+                onFileOpen={onFileOpen}
+              />
+            ))}
+          </ScrollArea.Content>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
+          <ScrollArea.Thumb className="scrollbarThumb" />
+        </ScrollArea.Scrollbar>
+      </ScrollArea.Root>
     </div>
   );
 }
