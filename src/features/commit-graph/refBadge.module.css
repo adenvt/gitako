@@ -17,6 +17,17 @@
   line-height: 1.6;
 }
 
+/* Current branch (HEAD): checked icon on the left + a stronger lane-tinted
+   fill so the active ref reads as the focused/current one at a glance. */
+.activeRef {
+  background: color-mix(in srgb, var(--badge-color, var(--border)) 38%, var(--bg));
+}
+
+.activeRefCheck {
+  flex-shrink: 0;
+  color: var(--badge-color, var(--text));
+}
+
 .refName {
   overflow: hidden;
   text-overflow: ellipsis;

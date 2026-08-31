@@ -100,6 +100,20 @@ describe("RefBadge", () => {
     const span = container.querySelector("[class*='commitRefBadge']") as HTMLElement | null;
     expect(span?.getAttribute("style")).toBeNull();
   });
+
+  it("shows a check icon for the current branch (kind='head')", () => {
+    const { container } = render(
+      <RefBadge refInfo={makeRef({ name: "main", kind: "head" })} />,
+    );
+    expect(container.querySelector("svg.lucide-check")).not.toBeNull();
+    // And the active class is applied.
+    expect(container.querySelector("[class*='activeRef']")).not.toBeNull();
+  });
+
+  it("does not show a check icon for a plain branch", () => {
+    const { container } = render(<RefBadge refInfo={makeRef({ name: "feature" })} />);
+    expect(container.querySelector("svg.lucide-check")).toBeNull();
+  });
 });
 
 describe("RefBadgeGroup", () => {
@@ -142,5 +156,33 @@ describe("RefBadgeGroup", () => {
     const { container } = render(<RefBadgeGroup refs={[]} />);
     // The component falls back to an empty string for the label.
     expect(container.querySelector("[class*='commitRefBadge']")).not.toBeNull();
+  });
+
+  it("shows a check icon when the group contains the current branch (kind='head')", () => {
+    const refs = [
+      makeRef({ name: "main", fullName: "main", kind: "head" }),
+      makeRef({
+        name: "main",
+        fullName: "origin/main",
+        kind: "remoteBranch",
+        remote: "origin",
+      }),
+    ];
+    const { container } = render(<RefBadgeGroup refs={refs} />);
+    expect(container.querySelector("svg.lucide-check")).not.toBeNull();
+  });
+
+  it("does not show a check icon when no ref in the group is the head", () => {
+    const refs = [
+      makeRef({ name: "main", fullName: "main", kind: "branch" }),
+      makeRef({
+        name: "main",
+        fullName: "origin/main",
+        kind: "remoteBranch",
+        remote: "origin",
+      }),
+    ];
+    const { container } = render(<RefBadgeGroup refs={refs} />);
+    expect(container.querySelector("svg.lucide-check")).toBeNull();
   });
 });

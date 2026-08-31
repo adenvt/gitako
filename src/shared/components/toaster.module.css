@@ -1,0 +1,64 @@
+/* ---------- toasts ---------- */
+.toastViewport {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(360px, calc(100vw - 24px));
+  z-index: 100;
+  pointer-events: none;
+}
+
+.toastRoot {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--err);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  box-shadow: none; /* flat design */
+}
+
+.toastBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toastTitle {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--err);
+}
+
+.toastDescription {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.toastClose {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.toastClose:hover {
+  color: var(--text);
+}

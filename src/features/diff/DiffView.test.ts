@@ -160,6 +160,47 @@ describe("buildRows", () => {
     expect(addedB.newNum).toBe(2);
   });
 
+  it("anchors trailing context correctly after a run of standalone additions", () => {
+    // The AGENTS.md shape: an insertion block between context lines. The
+    // trailing context must map to the correct old/new positions — the adds
+    // shift the new side by their count, so NEW's trailing context lands
+    // further down than OLD's.
+    // @@ -1,6 +1,11 @@: context, context, context, add×5, context×3.
+    const rows = buildRows(
+      diff(
+        ["a", "b", "c", "d", "e", "f"],
+        ["a", "b", "c", "X", "Y", "Z", "W", "V", "d", "e", "f"],
+        [
+          hunk(1, 1, [
+            ["context", "a"],
+            ["context", "b"],
+            ["context", "c"],
+            ["add", "X"],
+            ["add", "Y"],
+            ["add", "Z"],
+            ["add", "W"],
+            ["add", "V"],
+            ["context", "d"],
+            ["context", "e"],
+            ["context", "f"],
+          ]),
+        ],
+      ),
+    );
+    // context(a), context(b), context(c), add(X..V), context(d), context(e), context(f)
+    expect(rows).toHaveLength(11);
+    // The standalone adds occupy new lines 4..8 with no old counterpart.
+    for (let k = 3; k < 8; k++) {
+      const r = rows[k]!;
+      expect(r.oldLine).toBeNull();
+      expect(r.newKind).toBe("add");
+      expect(r.newNum).toBe(k + 1);
+    }
+    // Trailing context: OLD lines 4,5,6 → new lines 9,10,11 (adds shifted NEW).
+    expect(rows[8]).toMatchObject({ oldLine: "d", oldNum: 4, newLine: "d", newNum: 9 });
+    expect(rows[9]).toMatchObject({ oldLine: "e", oldNum: 5, newLine: "e", newNum: 10 });
+  });
+
   it("pairs consecutive edits one-to-one (remove,add,remove,add -> 2 edit rows)", () => {
     // @@ -1,3 +1,3 @@: keep a, swap b->B, swap c->C.
     const rows = buildRows(
@@ -182,11 +223,14 @@ describe("buildRows", () => {
     expect(rows[2]).toMatchObject({ oldLine: "c", newLine: "C" });
   });
 
-  it("clamps the gap between two hunks to the shorter side, then drains overflow on its own side", () => {
+  it("clamps the gap between two hunks to the shorter side, then anchors the next hunk's context", () => {
     // old: 10 lines, new: 5 lines. Hunk 1 covers line 1 (both sides).
     // Hunk 2 starts at old 10 / new 5 — i.e. there's an 8-line / 3-line gap
     // between them. The function emits `min(8, 3) = 3` paired context rows,
-    // then the overflow tail drains remaining old lines as left-only rows.
+    // then hunk 2's context anchors to its declared position (old 10 / new 5).
+    // Old lines 5..9 between the two hunks aren't covered by any hunk context,
+    // so they're skipped (the old incremental code dumped them as overflow,
+    // which mislabeled L5 as hunk2's context).
     const oldLines = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10"];
     const newLines = ["L1", "L2", "L3", "L4", "L5"];
     const rows = buildRows(
@@ -195,24 +239,15 @@ describe("buildRows", () => {
         hunk(10, 5, [["context", "L10"]]),
       ]),
     );
-    // Expected: L1 (hunk1) + L2/L3/L4 (3 paired gap) + L5 (hunk2) +
-    // L6..L10 drained as overflow = 10 rows.
-    expect(rows).toHaveLength(10);
-    // First 5 rows are properly paired (oldLine === newLine).
+    // Expected: L1 (hunk1) + L2/L3/L4 (3 paired gap) + L10 (hunk2, anchored
+    // to old 10 / new 5) = 5 rows.
+    expect(rows).toHaveLength(5);
     expect(rows[0]).toMatchObject({ oldLine: "L1", newLine: "L1", oldNum: 1, newNum: 1 });
     expect(rows[1]).toMatchObject({ oldLine: "L2", newLine: "L2" });
     expect(rows[2]).toMatchObject({ oldLine: "L3", newLine: "L3" });
     expect(rows[3]).toMatchObject({ oldLine: "L4", newLine: "L4" });
-    expect(rows[4]).toMatchObject({ oldLine: "L5", newLine: "L5", oldNum: 5, newNum: 5 });
-    // The remaining old lines (L6..L10) are dumped as left-only context
-    // rows; new side is null. New-line numbers stay at 5 (no longer used).
-    for (let i = 5; i < rows.length; i++) {
-      const r = rows[i]!;
-      expect(r.oldLine).toBe(oldLines[i]);
-      expect(r.oldNum).toBe(i + 1);
-      expect(r.newLine).toBeNull();
-      expect(r.newNum).toBeNull();
-    }
+    // Hunk 2's context is anchored to its declared old 10 / new 5 position.
+    expect(rows[4]).toMatchObject({ oldLine: "L10", newLine: "L5", oldNum: 10, newNum: 5 });
   });
 
   it("flushes pending removals at the end of every hunk (so they appear before the next hunk's gap)", () => {

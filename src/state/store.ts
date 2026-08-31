@@ -11,6 +11,11 @@ import {
   commitChanges,
 } from "./git";
 import { parsePorcelain, type StatusEntry } from "@/shared/utils/status";
+import { errorMessage } from "@/shared/utils/error";
+import { toastError } from "@/shared/components/Toaster";
+
+const isStaged = (e: StatusEntry) =>
+  e.index !== "." && !(e.index === "A" && e.worktree === "A");
 
 interface RepoState {
   /** Root path of the open repository. */
@@ -49,6 +54,7 @@ interface RepoState {
 
   openRepo: (path: string) => Promise<void>;
   refresh: () => Promise<void>;
+  refreshStatus: () => Promise<void>;
   select: (hash: string | null) => void;
   loadCommitFiles: (hash: string) => Promise<void>;
   openComposer: () => void;
@@ -118,18 +124,42 @@ export const useRepoStore = create<RepoState>((set, get) => ({
         ...c,
         refs: (refByCommit.get(c.hash) ?? []).map((r) => r.name),
       }));
+      const statusEntries = parsePorcelain(status);
       set({
         commits: withRefs,
         refs,
         refsByCommit,
         layout: computeLayout(withRefs),
-        statusEntries: parsePorcelain(status),
+        statusEntries,
+        // A repo can open with files already staged (e.g. staged in a
+        // terminal before launching the app) — mirror the real index so the
+        // composer's staged/unstaged split is correct from the start.
+        stagedPaths: new Set(statusEntries.filter(isStaged).map((e) => e.path)),
       });
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = errorMessage(e);
       set({ error: message });
     } finally {
       set({ loading: false });
+    }
+  },
+
+  /** Re-fetch just the working-tree status (used after stage/unstage). */
+  async refreshStatus() {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    try {
+      const status = await fetchStatus(repoPath);
+      const entries = parsePorcelain(status);
+      // Rebuild the optimistic overlay from the real index: a path is
+      // "staged" when the index marks it, regardless of how it got there.
+      set({
+        statusEntries: entries,
+        stagedPaths: new Set(entries.filter(isStaged).map((e) => e.path)),
+      });
+    } catch (e) {
+      const message = errorMessage(e);
+      console.error("refreshStatus", message);
     }
   },
 
@@ -153,7 +183,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       });
     } catch (e) {
       // File list is a nice-to-have; don't fail the whole selection.
-      const message = e instanceof Error ? e.message : String(e);
+      const message = errorMessage(e);
       console.error("loadCommitFiles", message);
     }
   },
@@ -184,13 +214,17 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     set({ stagedPaths: next, composerError: null });
     try {
       await stageFiles(repoPath, [path], staged);
+      // Re-sync from git so the split reflects the real index, including
+      // changes made outside the app (e.g. staging via the CLI).
+      await get().refreshStatus();
     } catch (e) {
       // Revert on failure.
       const rollback = new Set(get().stagedPaths);
       if (staged) rollback.delete(path);
       else rollback.add(path);
-      const message = e instanceof Error ? e.message : String(e);
+      const message = errorMessage(e);
       set({ stagedPaths: rollback, composerError: message });
+      toastError(staged ? "Stage failed" : "Unstage failed", message);
     }
   },
 
@@ -204,9 +238,11 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     set({ stagedPaths: next, composerError: null });
     try {
       await stageFiles(repoPath, unstaged, true);
+      await get().refreshStatus();
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = errorMessage(e);
       set({ stagedPaths: get().stagedPaths, composerError: message });
+      toastError("Stage all failed", message);
     }
   },
 
@@ -217,9 +253,11 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     set({ stagedPaths: new Set(), composerError: null });
     try {
       await stageFiles(repoPath, paths, false);
+      await get().refreshStatus();
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = errorMessage(e);
       set({ stagedPaths: new Set(paths), composerError: message });
+      toastError("Unstage all failed", message);
     }
   },
 
@@ -232,8 +270,9 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       set({ composerOpen: false, stagedPaths: new Set(), activeDiff: null });
       await get().refresh();
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = errorMessage(e);
       set({ composerError: message });
+      toastError("Commit failed", message);
     }
   },
 
@@ -247,7 +286,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       const diff = await fetchDiff(repoPath, hash, path, staged);
       set({ diffCache: { ...diffCache, [key]: diff } });
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = errorMessage(e);
       console.error("openDiff failed:", { hash, path, staged, message });
       // Surface the error in the diff view instead of silent failure.
       set({

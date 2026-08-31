@@ -66,11 +66,11 @@
 
   /* font sizes — single column-friendly scale. Terminal text reads best
      at 12–13px on hidpi; we keep the small end for meta data. */
-  --fs-xs: 11px;
-  --fs-sm: 12px;
-  --fs-md: 13px;
-  --fs-lg: 14px;
-  --fs-xl: 16px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 14px;
+  --fs-lg: 15px;
+  --fs-xl: 17px;
 
   /* motion — kept brief; TUI transitions are blink-and-miss. */
   --ease: cubic-bezier(0.2, 0, 0, 1);
@@ -265,6 +265,7 @@ body {
 /* ---------- scrollbars (BaseUI ScrollArea) ---------- */
 .scrollbarTrack {
   display: flex;
+  flex-direction: column;
   background: var(--bg-inset);
   width: 8px;
   padding: 0;
@@ -276,7 +277,14 @@ body {
 .scrollbarTrack[data-orientation="horizontal"] {
   width: auto;
   height: 8px;
-  flex-direction: column;
+  flex-direction: row;
+}
+
+/* The corner square where the two tracks meet. BaseUI sizes it from the
+   measured scrollbars; give it the same track background so the horizontal
+   bar visibly ends at the vertical one instead of leaving a transparent gap. */
+.scrollbarTrack + .scrollbarTrack + :where([class*="Corner"]) {
+  background: var(--bg-inset);
 }
 
 /* Reserve layout space for the absolutely-positioned custom scrollbar so
@@ -293,6 +301,24 @@ body {
   flex: 0 0 auto;
   min-height: 0;
   min-width: 0;
+  width: 100%;
+}
+
+/* BaseUI sets `data-has-overflow-y`/`data-has-overflow-x` on the scrollbar
+   only when the content overflows that axis. keepMounted keeps the element
+   in the DOM regardless, so hide the track when its axis has no overflow —
+   otherwise a non-scrollable region shows an empty gutter. */
+.scrollbarTrack[data-orientation="vertical"]:not([data-has-overflow-y]) {
+  visibility: hidden;
+}
+
+.scrollbarTrack[data-orientation="horizontal"]:not([data-has-overflow-x]) {
+  visibility: hidden;
+}
+
+.scrollbarTrack[data-orientation="horizontal"] .scrollbarThumb {
+  width: auto;
+  height: 100%;
 }
 
 .scrollbarThumb:hover {

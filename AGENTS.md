@@ -33,6 +33,7 @@ src/
     toolbar/            # top toolbar (repo/branch + pull/push/stash/settings)
   shared/
     components/         # FileTree, StatusIcon, ui/ kit (used by 2+ features)
+    compositions/       # use* hooks (useAppSettings)
     utils/              # time, hash, status, error, fileTree
     types/              # git.ts
   state/                # zustand store + tauri invoke wrappers

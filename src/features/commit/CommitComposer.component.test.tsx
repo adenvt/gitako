@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CommitComposer } from "./CommitComposer";
+import { Toaster, toastManager } from "@/shared/components/Toaster";
+import { Toast } from "@base-ui/react/toast";
 import { useRepoStore } from "@/state/store";
 import type { StatusEntry } from "@/shared/utils/status";
 
@@ -21,13 +23,15 @@ function entry(overrides: Partial<StatusEntry>): StatusEntry {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useRepoStore.setState({
-    repoPath: "/r",
-    statusEntries: [],
-    stagedPaths: new Set(),
-    composerOpen: true,
-    composerError: null,
-  });
+  toastManager.close(); // reset any toasts left over from previous tests
+  // Full reset: earlier tests replace store actions with mocks via setState,
+  // so restore the pristine store (actions included).
+  useRepoStore.setState(useRepoStore.getInitialState(), true);
+  useRepoStore.setState({ repoPath: "/r", composerOpen: true });
+});
+
+afterEach(() => {
+  toastManager.close();
 });
 
 describe("CommitComposer", () => {
@@ -98,10 +102,27 @@ describe("CommitComposer", () => {
     expect(unstageAll).toHaveBeenCalled();
   });
 
-  it("shows the composer error when the store has one", () => {
-    useRepoStore.setState({ composerError: "pre-commit hook failed" });
-    render(<CommitComposer />);
-    expect(screen.getByText("pre-commit hook failed")).toBeInTheDocument();
+  it("shows a toast when a store action fails", async () => {
+    // Simulate a failed unstage-all: the backend stageFiles rejects, so the
+    // store's unstageAll catch fires the error toast.
+    const { stageFiles } = await import("@/state/git");
+    vi.mocked(stageFiles).mockRejectedValueOnce(new Error("conflict"));
+    useRepoStore.setState({
+      stagedPaths: new Set(["a.ts"]),
+      statusEntries: [entry({ path: "a.ts", index: "M" })],
+      composerError: null,
+    });
+    const user = userEvent.setup();
+    render(
+      <Toast.Provider toastManager={toastManager}>
+        <CommitComposer />
+        <Toaster />
+      </Toast.Provider>,
+    );
+    await user.click(screen.getByRole("button", { name: /unstage all/i }));
+    // The store action fired the error toast.
+    const toasts = await screen.findAllByText(/unstage all failed/i);
+    expect(toasts.length).toBeGreaterThan(0);
   });
 
   it("renders the rename label as 'old -> new' (the source uses U+2192)", () => {

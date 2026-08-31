@@ -14,6 +14,8 @@ interface FileTreeProps {
   onFileAction?: (node: FileTreeNode) => void;
   /** Label for the hover action button. */
   actionLabel?: string;
+  /** Color the action button to signal its effect: stage = green, unstage = yellow. */
+  actionVariant?: "stage" | "unstage";
   /** Optional click-to-open (e.g. open the diff for a file). */
   onFileOpen?: (node: FileTreeNode) => void;
 }
@@ -26,6 +28,7 @@ interface TreeRowProps {
   onToggle: (path: string) => void;
   onFileAction?: (node: FileTreeNode) => void;
   actionLabel?: string;
+  actionVariant?: "stage" | "unstage";
   onFileOpen?: (node: FileTreeNode) => void;
 }
 
@@ -37,6 +40,7 @@ function TreeRow({
   onToggle,
   onFileAction,
   actionLabel,
+  actionVariant,
   onFileOpen,
 }: TreeRowProps) {
   if (!node.isFile) {
@@ -73,6 +77,7 @@ function TreeRow({
                 onToggle={onToggle}
                 onFileAction={onFileAction}
                 actionLabel={actionLabel}
+                actionVariant={actionVariant}
                 onFileOpen={onFileOpen}
               />
             ))}
@@ -95,7 +100,7 @@ function TreeRow({
       {onFileAction && actionLabel && (
         <Button
           variant="none"
-          className={s.treeFileAction}
+          className={clsx(s.treeFileAction, actionVariant === "unstage" && s.treeFileActionUnstage)}
           onClick={(e) => {
             e.stopPropagation();
             onFileAction(node);
@@ -108,7 +113,13 @@ function TreeRow({
   );
 }
 
-export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTreeProps) {
+export function FileTree({
+  root,
+  onFileAction,
+  actionLabel,
+  actionVariant,
+  onFileOpen,
+}: FileTreeProps) {
   const dirPaths = useMemo(() => collectDirPaths(root), [root]);
 
   // Top-level directories start expanded; deeper ones collapsed.
@@ -164,6 +175,7 @@ export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTr
                 onToggle={toggle}
                 onFileAction={onFileAction}
                 actionLabel={actionLabel}
+                actionVariant={actionVariant}
                 onFileOpen={onFileOpen}
               />
             ))}

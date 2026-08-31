@@ -92,6 +92,11 @@
 
 .treeFileAction {
   margin-left: auto;
+  /* Pin to the visible right edge of the tree even if a row's content is
+     wider than the viewport, so the button is always reachable on hover.
+     Offset clears the 8px scrollbar track with breathing room. */
+  position: sticky;
+  right: 12px;
   background: none;
   border: 1px solid var(--border);
   color: var(--text-dim);
@@ -104,6 +109,7 @@
   transition:
     opacity var(--dur-fast) var(--ease),
     background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
     color var(--dur-fast) var(--ease);
   flex-shrink: 0;
 }
@@ -113,9 +119,29 @@
   opacity: 1;
 }
 
+/* Stage actions read as "add to index" — green. Hover deepens the tint
+   (background + stronger text/border) instead of dropping to neutral gray. */
+.treeFileAction {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 45%, var(--border));
+}
+
 .treeFileAction:hover:not(:disabled):not([data-disabled]) {
-  background: var(--bg-hover);
-  color: var(--text);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ok) 70%, var(--border));
+  color: var(--accent-strong);
+}
+
+/* Unstage actions read as "remove from index" — yellow (reversible, not destructive). */
+.treeFileActionUnstage {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+}
+
+.treeFileActionUnstage:hover:not(:disabled):not([data-disabled]) {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 70%, var(--border));
+  color: color-mix(in srgb, var(--warn) 70%, var(--text));
 }
 
 .treeArrow {
@@ -159,6 +185,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Allow the name to shrink below its content width so a long filename
+     truncates with an ellipsis instead of pushing the hover action button
+     (margin-left: auto) off the visible right edge. */
+  min-width: 0;
 }
 
 .treeChildren {

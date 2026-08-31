@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { FilePenLine, FilePlus, FileX, GitBranch } from "lucide-react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
@@ -61,6 +61,8 @@ export function CommitList() {
   const draggingRef = useRef(false);
   /** Maximum graph band width: the auto gutter that fits all lanes statically. */
   const maxGraphBandRef = useRef(0);
+  /** Selected index within the visual rows (WIP row = 0, then commits). */
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
 
   // Drag the boundary between the graph band and the message column. Dragging
   // left shrinks the graph band (message grows); dragging right grows the graph
@@ -98,6 +100,21 @@ export function CommitList() {
   const hasWorkingRow = counts.added + counts.deleted + counts.modified > 0;
   const offset = hasWorkingRow ? 1 : 0;
 
+  // Row indexing: the WIP row, when present, is visual index 0 and each
+  // commit follows in graph order (newest first). Both selectors point at the
+  // same visual row so keyboard navigation and click selection stay in sync.
+  const commitIndex = useMemo(() => {
+    const byHash = new Map(commits.map((c, i) => [c.hash, i]));
+    return byHash;
+  }, [commits]);
+  const selectedIndex = useMemo(() => {
+    if (workingSelected) return 0;
+    if (selectedHash == null) return null;
+    const i = commitIndex.get(selectedHash);
+    return i == null ? null : i + offset;
+  }, [workingSelected, selectedHash, commitIndex, offset]);
+  const totalRows = commits.length + offset;
+
   // Update the visible row window on scroll/resize.
   const layoutNonNull = layout;
   useEffect(() => {
@@ -121,6 +138,85 @@ export function CommitList() {
       ro.disconnect();
     };
   }, [layoutNonNull, hasWorkingRow]);
+
+  // Keyboard focus follows whatever is selected (click or arrow). The list
+  // itself carries the focus so arrow keys work from anywhere in the pane.
+  useEffect(() => {
+    setFocusIndex(selectedIndex);
+  }, [selectedIndex]);
+
+  // Give the scroll viewport focus on mount so arrow keys work immediately,
+  // and refocus it whenever the working row is selected by keyboard (it holds
+  // no focusable element of its own).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && document.activeElement === document.body) el.focus();
+  });
+  useEffect(() => {
+    if (workingSelected) scrollRef.current?.focus();
+  }, [workingSelected]);
+
+  // Navigate the selection with the keyboard. ArrowUp/Down move one visual
+  // row; PageUp/PageDown move by a viewport; Home/End jump to the first/last
+  // row. Moving up onto the WIP row selects it and opens the composer (same as
+  // clicking it); moving down from it selects the newest commit.
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.defaultPrevented || draggingRef.current) return;
+      const el = scrollRef.current;
+      if (!el || totalRows === 0) return;
+      const current = focusIndex ?? selectedIndex;
+      let next: number;
+      switch (e.key) {
+        case "ArrowDown":
+          next = (current ?? -1) + 1;
+          break;
+        case "ArrowUp":
+          next = (current ?? totalRows) - 1;
+          break;
+        case "PageDown": {
+          const page = Math.max(1, Math.floor(el.clientHeight / ROW_HEIGHT) - 1);
+          next = Math.min(totalRows - 1, (current ?? -1) + page);
+          break;
+        }
+        case "PageUp": {
+          const page = Math.max(1, Math.floor(el.clientHeight / ROW_HEIGHT) - 1);
+          next = Math.max(0, (current ?? totalRows) - page);
+          break;
+        }
+        case "Home":
+          next = 0;
+          break;
+        case "End":
+          next = totalRows - 1;
+          break;
+        default:
+          return;
+      }
+      if (next < 0 || next >= totalRows) return;
+      e.preventDefault();
+      // Keep the highlighted row visible: scroll it to the top edge when it
+      // moves above the viewport, or to the bottom edge when it moves below.
+      const rowTop = next * ROW_HEIGHT;
+      const rowBottom = rowTop + ROW_HEIGHT;
+      const viewTop = el.scrollTop;
+      const viewBottom = viewTop + el.clientHeight;
+      if (rowTop < viewTop) {
+        el.scrollTo({ top: rowTop, behavior: "auto" });
+      } else if (rowBottom > viewBottom) {
+        el.scrollTo({ top: rowBottom - el.clientHeight, behavior: "auto" });
+      }
+      setFocusIndex(next);
+      if (next === 0 && hasWorkingRow) {
+        setWorkingSelected(true);
+        openComposer();
+      } else {
+        const c = commits[next - (hasWorkingRow ? 1 : 0)];
+        if (c) select(c.hash);
+      }
+    },
+    [totalRows, focusIndex, selectedIndex, hasWorkingRow, commits, select, setWorkingSelected, openComposer],
+  );
 
   if (!layout || layout.commits.length === 0) {
     return (
@@ -163,7 +259,12 @@ export function CommitList() {
         title="Drag to resize the graph column"
       />
       <ScrollArea.Root className={s.commitScroll}>
-        <ScrollArea.Viewport ref={scrollRef} className={s.commitScrollViewport}>
+        <ScrollArea.Viewport
+          ref={scrollRef}
+          className={s.commitScrollViewport}
+          tabIndex={0}
+          onKeyDown={onKeyDown}
+        >
           <ScrollArea.Content>
             <div style={{ height: totalHeight, position: "relative" }}>
               <div className={s.commitRows}>
@@ -175,6 +276,7 @@ export function CommitList() {
                       top: WORKING_ROW * ROW_HEIGHT,
                       height: ROW_HEIGHT,
                       left: textLeft,
+                      ["--row-left" as string]: `${textLeft}px`,
                     }}
                     onClick={() => {
                       // Select the WIP row (deselects any commit) + open composer.
@@ -223,7 +325,7 @@ export function CommitList() {
                     <div key={c.hash}>
                       {hasVisibleRefs && (
                         <div
-                          className={s.commitTagCell}
+                          className={clsx(s.commitTagCell, isSelected && s.selected)}
                           style={{ top, height: ROW_HEIGHT, width: TAG_WIDTH }}
                           onClick={() => select(c.hash)}
                         >
@@ -250,6 +352,7 @@ export function CommitList() {
                           top,
                           height: ROW_HEIGHT,
                           left: textLeft,
+                          ["--row-left" as string]: `${textLeft}px`,
                         }}
                         onClick={() => select(c.hash)}
                       >

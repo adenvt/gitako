@@ -24,13 +24,31 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   border-bottom: 1px solid var(--border);
 }
 
-.stagingSection:last-of-type {
+/* The staged section is last among the staging sections; drop its border
+   (the composer form below provides the visual separator). */
+.stagingStaged {
   border-bottom: none;
+}
+
+/* Section titles carry their intent: Unstaged = "will be added" (green),
+   Staged = "can be removed" (yellow). */
+.stagingUnstaged .stagingTitle {
+  color: var(--ok);
+}
+
+.stagingStaged .stagingTitle {
+  color: var(--warn);
+}
+
+.stagingSection .fileTree {
+  margin: 0;
+  border: none;
+  border-radius: 0;
 }
 
 .stagingHeader {
@@ -42,7 +60,10 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-dim);
-  padding: 6px 12px;
+  /* Fixed height so the "Stage all"/"Unstage all" button appearing or
+     disappearing doesn't shift the header (and thus the tree) vertically. */
+  height: 28px;
+  padding: 0 12px;
   background: var(--bg-raised);
   border-bottom: 1px solid var(--border);
 }
@@ -60,12 +81,33 @@
   letter-spacing: 0;
   transition:
     background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
     color var(--dur-fast) var(--ease);
 }
 
-.stagingBulk:hover {
-  background: var(--bg-hover);
-  color: var(--text);
+/* Bulk actions match the section intent: "Stage all" green, "Unstage all"
+   yellow. Hover deepens the tint (like the per-file actions) instead of
+   dropping to neutral gray. */
+.stagingUnstaged .stagingBulk {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 45%, var(--border));
+}
+
+.stagingUnstaged .stagingBulk:hover:not(:disabled):not([data-disabled]) {
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ok) 70%, var(--border));
+  color: var(--accent-strong);
+}
+
+.stagingStaged .stagingBulk {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+}
+
+.stagingStaged .stagingBulk:hover:not(:disabled):not([data-disabled]) {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 70%, var(--border));
+  color: color-mix(in srgb, var(--warn) 70%, var(--text));
 }
 
 .composerForm {
@@ -105,13 +147,6 @@
   min-height: 48px;
   max-height: 96px;
   line-height: 1.5;
-}
-
-.composerError {
-  color: var(--err);
-  font-size: var(--fs-sm);
-  margin: 0;
-  word-break: break-word;
 }
 
 .composerCommit {

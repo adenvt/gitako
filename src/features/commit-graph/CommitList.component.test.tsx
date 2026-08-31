@@ -176,6 +176,78 @@ describe("CommitList", () => {
     expect(select).toHaveBeenCalledWith(c.hash);
   });
 
+  it("navigates the selection with the arrow keys", async () => {
+    const select = vi.fn();
+    const [a, b, c] = ["aaaa", "bbbb", "cccc"].map((hash, i) =>
+      commit({ hash, subject: `Commit ${i + 1}`, parents: i === 0 ? [] : [`${"0".repeat(40)}`] }),
+    );
+    useRepoStore.setState({
+      commits: [a, b, c],
+      layout: layout([{ hash: "aaaa", parents: [] }, { hash: "bbbb", parents: [] }, { hash: "cccc", parents: [] }]),
+      statusEntries: [],
+      select,
+    });
+    const user = userEvent.setup();
+    render(<CommitList />);
+    // ArrowDown from nothing selects the newest commit (index 0).
+    await user.keyboard("{ArrowDown}");
+    expect(select).toHaveBeenCalledWith("aaaa");
+    // ArrowDown/ArrowUp move one row at a time.
+    await user.keyboard("{ArrowDown}");
+    expect(select).toHaveBeenCalledWith("bbbb");
+    await user.keyboard("{ArrowUp}");
+    expect(select).toHaveBeenCalledWith("aaaa");
+  });
+
+  it("navigates the working-tree row and a commit with arrow keys", async () => {
+    const select = vi.fn();
+    const setWorkingSelected = vi.fn();
+    const openComposer = vi.fn();
+    const c = commit({ hash: "aaaa", subject: "Newest commit" });
+    useRepoStore.setState({
+      commits: [c],
+      layout: layout([{ hash: c.hash, parents: [] }]),
+      statusEntries: [{ index: ".", worktree: "M", path: "a.ts", oldPath: null }],
+      select,
+      setWorkingSelected,
+      openComposer,
+    });
+    const user = userEvent.setup();
+    render(<CommitList />);
+    // ArrowDown from nothing lands on the WIP row (row 0), same as clicking it.
+    await user.keyboard("{ArrowDown}");
+    expect(setWorkingSelected).toHaveBeenCalledWith(true);
+    expect(openComposer).toHaveBeenCalled();
+    // ArrowDown again selects the newest commit.
+    await user.keyboard("{ArrowDown}");
+    expect(select).toHaveBeenCalledWith(c.hash);
+    // ArrowUp moves back onto the WIP row.
+    await user.keyboard("{ArrowUp}");
+    expect(setWorkingSelected).toHaveBeenCalledWith(true);
+    expect(openComposer).toHaveBeenCalled();
+  });
+
+  it("Home/End jump to the first and last rows", async () => {
+    const select = vi.fn();
+    const commits = ["aaaa", "bbbb", "cccc"].map((hash, i) =>
+      commit({ hash, subject: `Commit ${i + 1}`, parents: i === 0 ? [] : [`${"0".repeat(40)}`] }),
+    );
+    useRepoStore.setState({
+      commits,
+      layout: layout([{ hash: "aaaa", parents: [] }, { hash: "bbbb", parents: [] }, { hash: "cccc", parents: [] }]),
+      statusEntries: [],
+      select,
+    });
+    const user = userEvent.setup();
+    render(<CommitList />);
+    // Start from the newest commit, jump to the oldest, then to the newest.
+    await user.keyboard("{ArrowDown}");
+    await user.keyboard("{End}");
+    expect(select).toHaveBeenCalledWith("cccc");
+    await user.keyboard("{Home}");
+    expect(select).toHaveBeenCalledWith("aaaa");
+  });
+
   it("clamps the graphBand to [MIN_GRAPH_BAND, maxBand] on resize", async () => {
     // Trigger a pointerdown on the resize handle and dispatch pointermove
     // events with a clientX far past the max -> store receives the max.

@@ -174,6 +174,19 @@ describe("refresh", () => {
     expect(mockFetchRefs).toHaveBeenCalledWith("/r");
     expect(mockFetchStatus).toHaveBeenCalledWith("/r");
   });
+
+  it("populates stagedPaths from pre-staged files in the status", async () => {
+    useRepoStore.setState({ repoPath: "/r" });
+    mockFetchLog.mockResolvedValueOnce([]);
+    mockFetchRefs.mockResolvedValueOnce([]);
+    // Files staged before the app opened (index column non-".").
+    mockFetchStatus.mockResolvedValueOnce("A  new.ts\nM  mod.ts\n M work.ts\n?? untracked.ts\n");
+
+    await useRepoStore.getState().refresh();
+
+    const s = useRepoStore.getState();
+    expect([...s.stagedPaths].sort()).toEqual(["mod.ts", "new.ts"]);
+  });
 });
 
 describe("select", () => {
@@ -279,6 +292,8 @@ describe("toggleStage", () => {
 
   it("optimistically adds a path when staging and calls stageFiles with staged=true", async () => {
     mockStageFiles.mockResolvedValueOnce();
+    // After staging, git confirms the file as staged in the index.
+    mockFetchStatus.mockResolvedValueOnce("A  a.ts\n");
     await useRepoStore.getState().toggleStage("a.ts", true);
     expect(useRepoStore.getState().stagedPaths.has("a.ts")).toBe(true);
     expect(mockStageFiles).toHaveBeenCalledWith("/r", ["a.ts"], true);
@@ -287,6 +302,8 @@ describe("toggleStage", () => {
   it("optimistically removes a path when unstaging and calls stageFiles with staged=false", async () => {
     useRepoStore.setState({ stagedPaths: new Set(["a.ts"]) });
     mockStageFiles.mockResolvedValueOnce();
+    // After unstaging, git no longer marks the file in the index.
+    mockFetchStatus.mockResolvedValueOnce(" M a.ts\n");
     await useRepoStore.getState().toggleStage("a.ts", false);
     expect(useRepoStore.getState().stagedPaths.has("a.ts")).toBe(false);
     expect(mockStageFiles).toHaveBeenCalledWith("/r", ["a.ts"], false);
@@ -323,6 +340,8 @@ describe("stageAll", () => {
 
   it("stages every unstaged path and calls the backend once with the full list", async () => {
     mockStageFiles.mockResolvedValueOnce();
+    // After stage-all, git confirms all three as staged in the index.
+    mockFetchStatus.mockResolvedValueOnce("M  a.ts\nA  b.ts\nA  c.ts\n");
     await useRepoStore.getState().stageAll();
     const s = useRepoStore.getState();
     expect([...s.stagedPaths]).toEqual(expect.arrayContaining(["a.ts", "b.ts", "c.ts"]));
@@ -355,6 +374,8 @@ describe("unstageAll", () => {
       stagedPaths: new Set(["a.ts", "b.ts"]),
     });
     mockStageFiles.mockResolvedValueOnce();
+    // After unstage-all, git moves both back to the worktree.
+    mockFetchStatus.mockResolvedValueOnce(" M a.ts\n M b.ts\n");
     await useRepoStore.getState().unstageAll();
     expect(useRepoStore.getState().stagedPaths.size).toBe(0);
     expect(mockStageFiles).toHaveBeenCalledWith("/r", ["a.ts", "b.ts"], false);

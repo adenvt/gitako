@@ -47,6 +47,14 @@
   min-height: 0;
 }
 
+/* Scroll viewport is focusable so arrow keys work, but suppress the
+   browser focus ring — keyboard navigation is signaled by the row's
+   selected state instead of a viewport outline. */
+.commitScrollViewport:focus,
+.commitScrollViewport:focus-visible {
+  outline: none;
+}
+
 .commitRows {
   position: relative;
 }
@@ -58,22 +66,44 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 10px;
+  padding: 0 18px 0 10px;
   border-radius: 0;
   cursor: pointer;
   pointer-events: auto;
-  overflow: hidden;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
+}
+
+/* Full-row highlight: the row content starts at the graph band (textLeft),
+   but the selection background should span the entire row width — tag
+   column, graph band, and message column. The ::before stretches from the
+   container's left edge (using the negative of the row's left offset) to
+   the row's right edge. It paints at z-index -1 so it sits behind the
+   graph canvas (the commit dots/lines stay visible) and behind the row
+   content, which is stacked relative above it. */
+.commitRow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--row-left, 0px));
+  right: 0;
+  background: transparent;
+  z-index: -1;
   transition: background var(--dur-fast) var(--ease);
 }
 
-.commitRow:hover {
+.commitRow:hover::before {
   background: var(--bg-hover);
 }
 
-.selected {
+.commitRow.selected::before {
   background: var(--selected);
+}
+
+/* Keep row content above the ::before highlight. */
+.commitRow > * {
+  position: relative;
 }
 
 .selected .commitSubject {
@@ -81,13 +111,10 @@
   font-weight: 700;
 }
 
-/* Working-directory row above the newest commit. */
+/* Working-directory row above the newest commit. Hover is handled by the
+   ::before highlight (see .commitRow:hover::before). */
 .workingRow {
   cursor: pointer;
-}
-
-.workingRow:hover {
-  background: var(--bg-hover);
 }
 
 .wipLabel {
@@ -154,12 +181,11 @@
   overflow: hidden;
   pointer-events: auto;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
   white-space: nowrap;
-}
-
-.commitTagCell:hover {
-  background: var(--bg-hover);
+  /* Transparent so the row's full-width ::before highlight shows through,
+     but stacked above it so the badges stay visible. */
+  background: transparent;
+  z-index: 1;
 }
 
 /* Empty-state pane (no commits). */

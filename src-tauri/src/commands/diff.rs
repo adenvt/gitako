@@ -101,8 +101,8 @@ pub fn git_diff(
         // Old side = index (git show :path), new side = working tree (disk).
         None => {
             if staged {
-                let head = resolve_parent(&repo, "HEAD")?;
-                let old = git::run_tolerate(&repo, &["show", &format!("{head}:{path}")])?;
+                // Index vs HEAD: old side is HEAD's blob, new side is the index.
+                let old = git::run_tolerate(&repo, &["show", &format!("HEAD:{path}")])?;
                 let new = git::run_tolerate(&repo, &["show", &format!(":{path}")])?;
                 (old.stdout, new.stdout)
             } else {
@@ -168,5 +168,193 @@ fn is_untracked(repo: &std::path::Path, path: &str) -> bool {
         out.stdout.lines().any(|l| l.starts_with("??"))
     } else {
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::process::Command;
+
+    /// Build a throwaway repo with one committed file + a new file that is
+    /// staged (or left untracked).
+    fn repo_with_staged_new_file() -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "gitako-diff-test-{}-{:?}",
+            std::process::id(),
+            std::thread::current().name().unwrap_or("t")
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let run = |args: &[&str]| {
+            let out = Command::new("git")
+                .args(args)
+                .current_dir(&dir)
+                .output()
+                .unwrap();
+            assert!(out.status.success(), "git {:?} failed: {}", args, String::from_utf8_lossy(&out.stderr));
+        };
+        run(&["init", "-q"]);
+        run(&["config", "user.email", "t@t"]);
+        run(&["config", "user.name", "t"]);
+        std::fs::write(dir.join("tracked.ts"), "old\n").unwrap();
+        run(&["add", "tracked.ts"]);
+        run(&["commit", "-qm", "init"]);
+        std::fs::write(dir.join("new.ts"), "const a = 1;\nconst b = 2;\n").unwrap();
+        run(&["add", "new.ts"]);
+        dir
+    }
+
+    #[test]
+    fn staged_new_file_diff() {
+        let repo = repo_with_staged_new_file();
+        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).unwrap();
+        assert_eq!(d.status, "M");
+        assert!(d.old_lines.is_empty(), "old_lines should be empty for a new file");
+        assert_eq!(d.new_lines, vec!["const a = 1;", "const b = 2;"]);
+        assert_eq!(d.hunks.len(), 1);
+        let h = &d.hunks[0];
+        assert_eq!(h.old_start, 0);
+        assert_eq!(h.new_start, 1);
+        assert_eq!(h.lines.len(), 2);
+        assert!(h.lines.iter().all(|l| l.kind == "add"));
+    }
+
+    #[test]
+    fn staged_new_file_diff_with_parent_commit() {
+        let repo = repo_with_staged_new_file();
+        // Unstage new.ts so the following commits don't accidentally include it,
+        // then re-stage it after — new.ts must never enter HEAD.
+        let run = |args: &[&str]| {
+            let out = Command::new("git").args(args).current_dir(&repo).output().unwrap();
+            assert!(out.status.success(), "git {:?} failed: {}", args, String::from_utf8_lossy(&out.stderr));
+        };
+        run(&["reset", "-q", "new.ts"]);
+        std::fs::write(repo.join("tracked.ts"), "old\nchanged\n").unwrap();
+        run(&["add", "tracked.ts"]);
+        run(&["commit", "-qm", "second"]);
+        std::fs::write(repo.join("another.ts"), "x\n").unwrap();
+        run(&["add", "another.ts"]);
+        run(&["commit", "-qm", "third"]);
+        // Re-stage the new file (the user's action) and diff it.
+        run(&["add", "new.ts"]);
+
+        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).unwrap();
+        assert!(d.old_lines.is_empty(), "old_lines should be empty (new.ts never in HEAD)");
+        assert_eq!(d.new_lines, vec!["const a = 1;", "const b = 2;"]);
+        let h = &d.hunks[0];
+        assert_eq!(h.old_start, 0);
+        assert_eq!(h.lines.len(), 2);
+        assert!(h.lines.iter().all(|l| l.kind == "add"));
+        // The full `git diff --cached` output has header lines (diff --git,
+        // new file mode, index, ---/+++) — make sure none leak into the hunk.
+        assert!(h.lines.iter().all(|l| l.text.starts_with("const")));
+    }
+
+    /// A staged new file without a trailing newline must still render: the
+    /// `\ No newline at end of file` marker is skipped and old_lines stays
+    /// empty.
+    #[test]
+    fn staged_new_file_no_trailing_newline() {
+        let repo = repo_with_staged_new_file();
+        // Rewrite new.ts without a trailing newline and re-stage.
+        std::fs::write(repo.join("new.ts"), "const a = 1;\nconst b = 2;").unwrap();
+        let out = Command::new("git").args(["add", "new.ts"]).current_dir(&repo).output().unwrap();
+        assert!(out.status.success());
+        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).unwrap();
+        assert!(d.old_lines.is_empty());
+        assert_eq!(d.new_lines, vec!["const a = 1;", "const b = 2;"]);
+        let h = &d.hunks[0];
+        assert_eq!(h.lines.len(), 2);
+        assert!(h.lines.iter().all(|l| l.kind == "add"));
+        assert!(h.lines.iter().all(|l| !l.text.contains("No newline")));
+    }
+
+    /// Serialize the DiffFile to JSON and check the exact camelCase field
+    /// names the frontend reads (oldLines/newLines/oldStart/...).
+    #[test]
+    fn staged_new_file_json_shape() {
+        let repo = repo_with_staged_new_file();
+        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).unwrap();
+        let json = serde_json::to_value(&d).unwrap();
+        let obj = json.as_object().unwrap();
+        eprintln!("JSON KEYS: {:?}", obj.keys().collect::<Vec<_>>());
+        assert!(obj.contains_key("oldLines"), "frontend expects oldLines");
+        assert!(obj.contains_key("newLines"), "frontend expects newLines");
+        assert!(obj.contains_key("tooLarge"), "frontend expects tooLarge");
+        let h = obj.get("hunks").unwrap().as_array().unwrap()[0].as_object().unwrap();
+        assert!(h.contains_key("oldStart"), "frontend expects oldStart");
+        assert!(h.contains_key("newStart"), "frontend expects newStart");
+        assert!(h.contains_key("oldLines"), "frontend expects hunk oldLines");
+        assert!(h.contains_key("newLines"), "frontend expects hunk newLines");
+    }
+
+    /// git_stage with staged=false (unstage) on a staged new file must
+    /// succeed — this is the "Unstage All" path.
+    #[test]
+    fn unstage_new_file_via_git_stage() {
+        let repo = repo_with_staged_new_file();
+        let repo_str = repo.to_str().unwrap().to_string();
+        // Sanity: the file is staged.
+        let before = git_diff(repo_str.clone(), String::new(), "new.ts".to_string(), true).unwrap();
+        assert!(!before.old_lines.is_empty() || !before.hunks.is_empty());
+        // Unstage it exactly as the app does.
+        super::super::commit::git_stage(repo_str.clone(), vec!["new.ts".to_string()], false).unwrap();
+        // Now a staged diff should show no hunks / empty.
+        let after = git_diff(repo_str, String::new(), "new.ts".to_string(), true).unwrap();
+        assert!(after.hunks.is_empty(), "unstaged file has no cached diff");
+    }
+
+    /// A staged diff of a file that already exists in HEAD must use HEAD's
+    /// blob as the old side (not HEAD^). The hunks come from `git diff
+    /// --cached` (HEAD vs index), so the full old content must match that
+    /// baseline or the side-by-side alignment drifts on unchanged regions.
+    #[test]
+    fn staged_diff_of_existing_file_uses_head_blob_as_old() {
+        let dir = std::env::temp_dir().join(format!(
+            "gitako-diff-staged-exists-{}-{:?}",
+            std::process::id(),
+            std::thread::current().name().unwrap_or("t")
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let run = |args: &[&str]| {
+            let out = Command::new("git")
+                .args(args)
+                .current_dir(&dir)
+                .output()
+                .unwrap();
+            assert!(out.status.success(), "git {:?} failed: {}", args, String::from_utf8_lossy(&out.stderr));
+        };
+        run(&["init", "-q"]);
+        run(&["config", "user.email", "t@t"]);
+        run(&["config", "user.name", "t"]);
+        // Commit 1: "alpha" then commit 2 appends "beta" (so HEAD has both).
+        std::fs::write(dir.join("f.txt"), "alpha\n").unwrap();
+        run(&["add", "f.txt"]);
+        run(&["commit", "-qm", "one"]);
+        std::fs::write(dir.join("f.txt"), "alpha\nbeta\n").unwrap();
+        run(&["add", "f.txt"]);
+        run(&["commit", "-qm", "two"]);
+        // Stage an insertion after "alpha".
+        std::fs::write(dir.join("f.txt"), "alpha\ninserted\nbeta\n").unwrap();
+        run(&["add", "f.txt"]);
+
+        let d = git_diff(dir.to_str().unwrap().to_string(), String::new(), "f.txt".to_string(), true).unwrap();
+        // Old side must be HEAD's content (alpha + beta), NOT HEAD^ (alpha).
+        assert_eq!(d.old_lines, vec!["alpha", "beta"], "old side must be the HEAD blob");
+        assert_eq!(d.new_lines, vec!["alpha", "inserted", "beta"]);
+        // One hunk inserting one line between alpha and beta.
+        assert_eq!(d.hunks.len(), 1);
+        let h = &d.hunks[0];
+        assert_eq!(h.old_start, 1);
+        assert_eq!(h.new_start, 1);
+        assert_eq!(h.lines.len(), 3); // context alpha, add inserted, context beta
+        assert_eq!(h.lines[0].kind, "context");
+        assert_eq!(h.lines[0].text, "alpha");
+        assert_eq!(h.lines[1].kind, "add");
+        assert_eq!(h.lines[1].text, "inserted");
+        assert_eq!(h.lines[2].kind, "context");
+        assert_eq!(h.lines[2].text, "beta");
     }
 }

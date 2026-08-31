@@ -1,4 +1,4 @@
-import { Globe, Laptop, Tag } from "lucide-react";
+import { Check, Globe, Laptop, Tag } from "lucide-react";
 import { SiBitbucket, SiGithub, SiGitlab } from "react-icons/si";
 import clsx from "clsx";
 import type { RefInfo } from "@/shared/types/git";
@@ -61,10 +61,11 @@ export function RefBadge({ refInfo, color }: RefBadgeProps) {
   const fullName = refFullName(refInfo);
   return (
     <span
-      className={s.commitRefBadge}
+      className={clsx(s.commitRefBadge, refInfo.kind === "head" && s.activeRef)}
       title={fullName}
       style={color ? ({ "--badge-color": color } as React.CSSProperties) : undefined}
     >
+      {refInfo.kind === "head" && <Check size={11} className={s.activeRefCheck} aria-hidden />}
       <span className={s.refName}>{refInfo.name}</span>
       <RefIcon refInfo={refInfo} />
     </span>
@@ -86,12 +87,14 @@ interface RefBadgeGroupProps {
 export function RefBadgeGroup({ refs, color }: RefBadgeGroupProps) {
   const name = refs[0]?.name ?? "";
   const label = refs.map(refFullName).join(", ");
+  const isActive = refs.some((r) => r.kind === "head");
   return (
     <span
-      className={clsx(s.commitRefBadge, s.refBadgeGroup)}
+      className={clsx(s.commitRefBadge, s.refBadgeGroup, isActive && s.activeRef)}
       title={label}
       style={color ? ({ "--badge-color": color } as React.CSSProperties) : undefined}
     >
+      {isActive && <Check size={11} className={s.activeRefCheck} aria-hidden />}
       <span className={s.refName}>{name}</span>
       <span className={s.refGroupIcons}>
         {refs.map((r) => (

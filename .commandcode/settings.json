@@ -17,7 +17,8 @@
       "Shell(ps:*)",
       "Shell(awk:*)",
       "Shell(npx vitest run *",
-      "Shell(npx tsc:*"
+      "Shell(npx tsc:*",
+      "Shell(export:*)"
     ],
     "deny": [],
     "defaultMode": "default"
