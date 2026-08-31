@@ -1,6 +1,6 @@
 /* Commit composer (root extends the shared .detail-pane layout). */
 .composer {
-  gap: var(--space-3);
+  gap: 0;
   min-height: 0;
 }
 
@@ -8,45 +8,56 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
 }
 
 .composerHead h3 {
-  margin-bottom: 0;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
 }
 
 .stagingSection {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 0;
   flex: 1;
   min-height: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.stagingSection:last-of-type {
+  border-bottom: none;
 }
 
 .stagingHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: var(--fs-xs);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   color: var(--text-dim);
-}
-
-.stagingTitle {
-  /* original: styling inherited from .staging-header; kept for parity */
+  padding: 6px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
 }
 
 .stagingBulk {
   background: none;
   border: 1px solid var(--border);
-  border-radius: var(--radius-m);
   color: var(--text-dim);
   font-size: var(--fs-xs);
-  padding: 2px 6px;
+  padding: 1px 6px;
   cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
-  font-family: inherit;
   transition:
     background var(--dur-fast) var(--ease),
     color var(--dur-fast) var(--ease);
@@ -60,18 +71,20 @@
 .composerForm {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-top: auto;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-raised);
 }
 
-/* Duplicate of .ui-input kept for exact visual parity. */
+/* Inputs in the composer share the .ui-input shape via the shared kit,
+   but we still want monospaced, denser styling. Override a few knobs. */
 .composerSubject {
-  background: var(--bg-raised);
+  background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: var(--radius-l);
-  padding: 8px 10px;
-  font-size: var(--fs-md);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
   font-family: inherit;
 }
 
@@ -79,20 +92,19 @@
 .composerDescription:focus-visible {
   outline: none;
   border-color: var(--accent-border);
-  box-shadow: 0 0 0 2px rgba(255, 94, 200, 0.18);
 }
 
 .composerDescription {
-  background: var(--bg-raised);
+  background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: var(--radius-l);
-  padding: 8px 10px;
-  font-size: var(--fs-md);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
   font-family: inherit;
   resize: vertical;
   min-height: 48px;
   max-height: 96px;
+  line-height: 1.5;
 }
 
 .composerError {
@@ -106,15 +118,13 @@
   background: var(--accent);
   border: 1px solid var(--accent);
   color: var(--on-accent);
-  border-radius: var(--radius-l);
-  padding: 8px 16px;
-  font-size: var(--fs-md);
-  font-weight: 600;
+  padding: 6px 14px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
   font-family: inherit;
   cursor: pointer;
   transition:
-    background var(--dur-fast) var(--ease),
-    transform var(--dur-fast) var(--ease);
+    background var(--dur-fast) var(--ease);
 }
 
 .composerCommit:hover:not(:disabled):not([data-disabled]) {
@@ -122,12 +132,8 @@
   border-color: var(--accent-strong);
 }
 
-.composerCommit:active:not(:disabled):not([data-disabled]) {
-  transform: translateY(1px);
-}
-
 .composerCommit:disabled,
 .composerCommit[data-disabled] {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }

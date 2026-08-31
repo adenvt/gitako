@@ -1,11 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "@/app/App";
-// Self-hosted fonts (Geist Sans / Geist Mono via @fontsource).
-import "@fontsource/geist-sans/400.css";
-import "@fontsource/geist-sans/500.css";
-import "@fontsource/geist-sans/600.css";
-import "@fontsource/geist-mono/400.css";
+import "./styles/fonts.css";
 import "./styles/index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

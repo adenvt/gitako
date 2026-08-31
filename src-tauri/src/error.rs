@@ -46,11 +46,6 @@ impl GitError {
         Self::new(GitErrorKind::Other, message)
     }
 
-    pub fn with_code(mut self, code: i32) -> Self {
-        self.code = Some(code);
-        self
-    }
-
     fn kind_label(&self) -> &'static str {
         match self.kind {
             GitErrorKind::NotFound => "not found",

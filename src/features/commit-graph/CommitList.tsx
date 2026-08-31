@@ -1,17 +1,43 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { FilePenLine, FilePlus, FileX, GitBranch } from "lucide-react";
-import { GraphCanvas, ROW_HEIGHT, WORKING_ROW, graphGutter, TAG_WIDTH, MIN_GRAPH_BAND } from "./GraphCanvas";
+import {
+  GraphCanvas,
+  ROW_HEIGHT,
+  WORKING_ROW,
+  graphGutter,
+  TAG_WIDTH,
+  MIN_GRAPH_BAND,
+} from "./GraphCanvas";
 import { laneColor } from "./colors";
 import { RefBadge, RefBadgeGroup } from "./refBadge";
 import { useRepoStore } from "@/state/store";
 import { timeAgo } from "@/shared/utils/time";
 import { countByKind } from "@/shared/utils/status";
+import type { RefInfo } from "@/shared/types/git";
 import s from "./commitList.module.css";
 
 const OVERSCAN = 8;
 /** Drag handle hit width around the boundary between graph and text. */
 const HANDLE_HIT = 5;
+
+/**
+ * Group refs by their base `name` for badge rendering. The remote `HEAD`
+ * pointer (e.g. `origin/HEAD`) is filtered out — it's a convenience
+ * annotation, not a real ref to show.
+ *
+ * Example: refs `[main, origin/main, v1.0]` -> `[[main, origin/main], [v1.0]]`.
+ */
+export function groupRefsForBadging(refs: RefInfo[]): RefInfo[][] {
+  const visible = refs.filter((r) => !(r.kind === "remoteBranch" && r.name === "HEAD"));
+  const groups = new Map<string, RefInfo[]>();
+  for (const r of visible) {
+    const list = groups.get(r.name) ?? [];
+    list.push(r);
+    groups.set(r.name, list);
+  }
+  return [...groups.values()];
+}
 
 /** Virtualized commit list: canvas graph + DOM text labels, one scroll container. */
 export function CommitList() {
@@ -109,7 +135,10 @@ export function CommitList() {
   // The graph band is resizable: use the user-set width, else the auto gutter.
   const gutter = graphGutter(layout.maxLane);
   maxGraphBandRef.current = gutter;
-  const graphBand = Math.min(Math.max(graphWidth > 0 ? graphWidth : gutter, MIN_GRAPH_BAND), gutter);
+  const graphBand = Math.min(
+    Math.max(graphWidth > 0 ? graphWidth : gutter, MIN_GRAPH_BAND),
+    gutter,
+  );
   const textLeft = TAG_WIDTH + graphBand;
   // Handle sits at the boundary between graph band and message column.
   const handleLeft = textLeft - HANDLE_HIT;
@@ -152,22 +181,22 @@ export function CommitList() {
                 title="Open commit composer"
               >
                 <span className={clsx(s.commitSubject, s.wipLabel)}>
-                  WIP
+                  *
                   {counts.modified > 0 && (
                     <span className={s.wipCount}>
-                      <FilePenLine size={13} className={s.wipModified} aria-hidden />
+                      <FilePenLine size={11} className={s.wipModified} aria-hidden />
                       {counts.modified}
                     </span>
                   )}
                   {counts.added > 0 && (
                     <span className={s.wipCount}>
-                      <FilePlus size={13} className={s.wipAdded} aria-hidden />
+                      <FilePlus size={11} className={s.wipAdded} aria-hidden />
                       {counts.added}
                     </span>
                   )}
                   {counts.deleted > 0 && (
                     <span className={s.wipCount}>
-                      <FileX size={13} className={s.wipDeleted} aria-hidden />
+                      <FileX size={11} className={s.wipDeleted} aria-hidden />
                       {counts.deleted}
                     </span>
                   )}
@@ -179,29 +208,23 @@ export function CommitList() {
               const c = commits[i];
               if (!c) return null;
               const isSelected = c.hash === selectedHash;
-              // Hide remote convenience pointers like origin/HEAD.
-              const refInfos = (refsByCommit[c.hash] ?? []).filter(
-                (r) => !(r.kind === "remoteBranch" && r.name === "HEAD"),
-              );
-              // Group refs by base name so `main` + `origin/main` share one badge.
-              const groups = new Map<string, typeof refInfos>();
-              for (const r of refInfos) {
-                const list = groups.get(r.name) ?? [];
-                list.push(r);
-                groups.set(r.name, list);
-              }
+              // Hide remote convenience pointers like origin/HEAD and group
+              // refs by base name so `main` + `origin/main` share one badge.
+              const refInfos = refsByCommit[c.hash] ?? [];
+              const groups = groupRefsForBadging(refInfos);
+              const hasVisibleRefs = groups.length > 0;
               const top = (i + offset) * ROW_HEIGHT;
               const lane = layout.commits[i]?.lane ?? 0;
               const badgeColor = laneColor(lane);
               return (
                 <div key={c.hash}>
-                  {refInfos.length > 0 && (
+                  {hasVisibleRefs && (
                     <div
                       className={s.commitTagCell}
                       style={{ top, height: ROW_HEIGHT, width: TAG_WIDTH }}
                       onClick={() => select(c.hash)}
                     >
-                      {[...groups.values()].map((group) =>
+                      {groups.map((group) =>
                         group.length > 1 ? (
                           <RefBadgeGroup key={group[0].fullName} refs={group} color={badgeColor} />
                         ) : (
@@ -224,6 +247,7 @@ export function CommitList() {
                     </span>
                     <span className={s.commitMeta}>
                       <span>{c.authorName}</span>
+                      <span className={s.commitMetaSep}>·</span>
                       <span>{timeAgo(c.authorTime)}</span>
                     </span>
                   </div>

@@ -83,7 +83,7 @@ Rules:
   `CommitComposer`).
 - Cross-cutting one-word utilities (`mono`, `muted`, `section-label`) stay
   global via `base.css` and can be appended alongside module classes:
-  `` className={`${s.someClass} mono`} ``.
+  ``className={`${s.someClass} mono`}``.
 
 Backend mirror:
 

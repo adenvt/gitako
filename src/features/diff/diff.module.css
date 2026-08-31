@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: 8px 12px;
+  padding: 4px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-raised);
 }
@@ -23,7 +23,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
 }
 
 .diffClose {
@@ -36,7 +36,7 @@
   align-items: center;
   justify-content: center;
   color: var(--text-dim);
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
   padding: var(--space-5);
   text-align: center;
 }
@@ -74,19 +74,19 @@
   flex-shrink: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  height: 14px;
+  height: 10px;
   border-top: 1px solid var(--border);
   background: var(--bg-inset);
 }
 
 .diffScrollbar::-webkit-scrollbar {
-  height: 12px;
+  height: 8px;
 }
 
 .diffScrollbar::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 6px;
-  border: 2px solid var(--bg-inset);
+  border-radius: 0;
+  border: 1px solid var(--bg-inset);
 }
 
 .diffScrollbar::-webkit-scrollbar-track {
@@ -107,13 +107,15 @@
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
   background: var(--bg-raised);
+  font-family: var(--font-display);
 }
 
 .diffColHeader {
   padding: 4px 12px;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--text-dim);
 }
 
@@ -131,14 +133,14 @@
   background: var(--bg-hover);
 }
 
+/* Tighter gutter — terminal diff viewers use minimal columns. */
 .diffGutter {
   flex-shrink: 0;
   position: sticky;
   left: 0;
   z-index: 1;
   padding: 0 6px;
-  /* Fits up to 6-digit line numbers + sign column. */
-  min-width: 64px;
+  min-width: 56px;
   text-align: right;
   color: var(--text-faint);
   user-select: none;
@@ -152,6 +154,7 @@
   width: 1ch;
   text-align: center;
   color: var(--text-faint);
+  font-weight: 700;
 }
 
 .diffSign.remove {
@@ -167,22 +170,23 @@
   white-space: pre;
 }
 
+/* Diff cell tints: dim, terminal-feel. Not bright blocks. */
 .add .diffCell {
-  background: rgba(63, 185, 80, 0.12);
+  background: rgba(126, 192, 124, 0.12);
 }
 
 .remove .diffCell {
-  background: rgba(248, 81, 73, 0.12);
+  background: rgba(224, 108, 117, 0.12);
 }
 
 /* The side with no counterpart (added/removed lines). */
 .diffEmpty {
   background: repeating-linear-gradient(
-    64deg,
+    90deg,
     transparent,
     transparent 4px,
-    rgba(255, 255, 255, 0.025) 4px,
-    rgba(255, 255, 255, 0.025) 8px
+    var(--bg-inset) 4px,
+    var(--bg-inset) 8px
   );
   width: 100%;
 }

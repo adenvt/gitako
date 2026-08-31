@@ -1,5 +1,3 @@
-#![allow(dead_code)] // Phase 1: helpers reserved for Phase 2+ (status, diff, remote ops)
-
 mod commands;
 mod error;
 mod git;
