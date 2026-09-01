@@ -21,9 +21,16 @@ mod tests {
     use super::*;
     use crate::git::run;
     use std::process::Command;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
+    // Tests run in parallel; suffix the temp dir with the test name plus a
+    // monotonic counter to avoid collisions on shared paths.
     fn tmp_repo() -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("gitako-ck-{}", std::process::id()));
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let dir = std::env::temp_dir().join(format!("gitako-ck-{nanos}"));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         for args in [
