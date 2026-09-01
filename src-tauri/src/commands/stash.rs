@@ -42,8 +42,16 @@ mod tests {
     use super::*;
     use std::process::Command;
 
-    fn dirty_repo() -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("gitako-stash-{}", std::process::id()));
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    // Tests run in parallel; suffix the temp dir with the test name plus a
+    // monotonic counter to avoid collisions on shared paths.
+    fn dirty_repo(label: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let dir = std::env::temp_dir().join(format!("gitako-stash-{label}-{nanos}"));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         for args in [
@@ -60,14 +68,14 @@ mod tests {
 
     #[test]
     fn stash_save_returns_ref_when_dirty() {
-        let dir = dirty_repo();
+        let dir = dirty_repo("dirty");
         let r = git_stash_save(dir.to_string_lossy().into_owned(), "wip".into()).unwrap();
         assert_eq!(r, "stash@{0}");
     }
 
     #[test]
     fn stash_save_returns_empty_when_clean() {
-        let dir = dirty_repo();
+        let dir = dirty_repo("clean");
         // Reset to remove the dirty file from the index entirely.
         Command::new("git")
             .args(["reset", "--hard", "HEAD"])
@@ -81,7 +89,7 @@ mod tests {
 
     #[test]
     fn stash_pop_restores_work() {
-        let dir = dirty_repo();
+        let dir = dirty_repo("pop");
         let stash_ref = git_stash_save(dir.to_string_lossy().into_owned(), "wip".into()).unwrap();
         assert!(!stash_ref.is_empty());
         git_stash_pop(dir.to_string_lossy().into_owned(), stash_ref).unwrap();
@@ -90,7 +98,7 @@ mod tests {
 
     #[test]
     fn stash_pop_empty_ref_is_noop() {
-        let dir = dirty_repo();
+        let dir = dirty_repo("noop");
         // No prior save — empty ref must not error.
         git_stash_pop(dir.to_string_lossy().into_owned(), "".into()).unwrap();
     }

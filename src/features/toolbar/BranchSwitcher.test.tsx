@@ -3,37 +3,55 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BranchSwitcher } from "./BranchSwitcher";
 import { useRepoStore } from "@/state/store";
-import type { RefInfo } from "@/shared/types/git";
+import type { RefInfo, Commit } from "@/shared/types/git";
 
-function ref(name: string, kind: RefInfo["kind"], isHead = false): RefInfo {
-  return { name, kind, fullName: name, isHead };
+const HEAD_HASH = "abcdef0123456789";
+
+function ref(name: string, kind: RefInfo["kind"], commitHash = ""): RefInfo {
+  return { name, kind, fullName: name, commit: commitHash, target: commitHash, remote: null, remoteUrl: null };
 }
 
-function setRefs(refs: RefInfo[]) {
-  useRepoStore.setState({ refs });
+function headCommit(): Commit {
+  return {
+    hash: HEAD_HASH,
+    parents: [],
+    authorName: "Test",
+    authorEmail: "t@e",
+    authorTime: 0,
+    subject: "subject",
+    refs: ["main"],
+  };
+}
+
+function seed(refs: RefInfo[], commits: Commit[] = [headCommit()]) {
+  useRepoStore.setState({ refs, commits });
 }
 
 beforeEach(() => {
-  setRefs([]);
+  useRepoStore.setState({ refs: [], commits: [] });
   vi.clearAllMocks();
 });
 
 describe("BranchSwitcher", () => {
   it("renders the current branch from refs", () => {
-    setRefs([ref("main", "branch", true), ref("origin/main", "remoteBranch"), ref("feature", "branch")]);
+    seed([
+      ref("main", "branch", HEAD_HASH),
+      ref("origin/main", "remoteBranch"),
+      ref("feature", "branch"),
+    ]);
     render(<BranchSwitcher />);
     expect(screen.getByText(/^on main$/)).toBeInTheDocument();
   });
 
-  it("shows 'detached HEAD' when no branch ref is current", () => {
-    setRefs([ref("origin/main", "remoteBranch")]);
+  it("shows 'detached HEAD' when no branch ref points at HEAD", () => {
+    seed([ref("origin/main", "remoteBranch")]);
     render(<BranchSwitcher />);
     expect(screen.getByText(/^on detached HEAD$/)).toBeInTheDocument();
   });
 
   it("opens the menu and lists only local branches", async () => {
-    setRefs([
-      ref("main", "branch", true),
+    seed([
+      ref("main", "branch", HEAD_HASH),
       ref("feature", "branch"),
       ref("origin/main", "remoteBranch"),
       ref("v1.0.0", "tag"),
@@ -49,7 +67,7 @@ describe("BranchSwitcher", () => {
   });
 
   it("shows 'No local branches' when only remote branches exist", async () => {
-    setRefs([ref("origin/main", "remoteBranch")]);
+    seed([ref("origin/main", "remoteBranch")]);
     const user = userEvent.setup();
     render(<BranchSwitcher />);
     await user.click(screen.getByRole("button", { name: /detached HEAD/i }));
@@ -59,7 +77,8 @@ describe("BranchSwitcher", () => {
   it("selects a branch: calls checkout and closes the menu", async () => {
     const checkout = vi.fn().mockResolvedValue(undefined);
     useRepoStore.setState({
-      refs: [ref("main", "branch", true), ref("feature", "branch")],
+      refs: [ref("main", "branch", HEAD_HASH), ref("feature", "branch")],
+      commits: [headCommit()],
     });
     (useRepoStore.getState() as unknown as { checkout: typeof checkout }).checkout = checkout;
     const user = userEvent.setup();
@@ -72,7 +91,10 @@ describe("BranchSwitcher", () => {
 
   it("does not call checkout when picking the current branch", async () => {
     const checkout = vi.fn().mockResolvedValue(undefined);
-    useRepoStore.setState({ refs: [ref("main", "branch", true), ref("feature", "branch")] });
+    useRepoStore.setState({
+      refs: [ref("main", "branch", HEAD_HASH), ref("feature", "branch")],
+      commits: [headCommit()],
+    });
     (useRepoStore.getState() as unknown as { checkout: typeof checkout }).checkout = checkout;
     const user = userEvent.setup();
     render(<BranchSwitcher />);
@@ -83,7 +105,7 @@ describe("BranchSwitcher", () => {
   });
 
   it("closes on Escape", async () => {
-    setRefs([ref("main", "branch", true), ref("feature", "branch")]);
+    seed([ref("main", "branch", HEAD_HASH), ref("feature", "branch")]);
     const user = userEvent.setup();
     render(<BranchSwitcher />);
     await user.click(screen.getByRole("button", { name: /current branch: main/i }));
@@ -93,7 +115,7 @@ describe("BranchSwitcher", () => {
   });
 
   it("closes on click outside", async () => {
-    setRefs([ref("main", "branch", true), ref("feature", "branch")]);
+    seed([ref("main", "branch", HEAD_HASH), ref("feature", "branch")]);
     const user = userEvent.setup();
     render(
       <div>

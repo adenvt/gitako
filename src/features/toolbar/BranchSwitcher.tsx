@@ -15,10 +15,14 @@ export function BranchSwitcher() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const commits = useRepoStore((st) => st.commits);
   const current = useMemo(() => {
-    const head = refs.find((r) => r.isHead && r.kind === "branch");
+    const headHash = commits[0]?.hash;
+    const head = headHash
+      ? refs.find((r) => r.kind === "branch" && r.commit === headHash)
+      : undefined;
     return head?.name ?? "detached HEAD";
-  }, [refs]);
+  }, [refs, commits]);
 
   const branches = useMemo(
     () =>
