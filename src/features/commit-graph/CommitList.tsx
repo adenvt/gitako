@@ -54,6 +54,7 @@ export function CommitList() {
     refsByCommit,
     graphWidth,
     setGraphWidth,
+    checkout,
   } = useRepoStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 50 });
@@ -94,6 +95,18 @@ export function CommitList() {
       window.addEventListener("pointerup", onUp);
     },
     [setGraphWidth],
+  );
+
+  // Double-clicking a local branch badge switches HEAD to that branch. The
+  // badge component already gates on `kind === "branch"`, so this is a
+  // straight pass-through; the store's smart-checkout handles dirty trees.
+  const onCheckout = useCallback(
+    (name: string) => {
+      void checkout(name).catch(() => {
+        // store already set `error`; nothing to do.
+      });
+    },
+    [checkout],
   );
 
   const counts = countByKind(statusEntries);
@@ -335,12 +348,14 @@ export function CommitList() {
                                 key={group[0].fullName}
                                 refs={group}
                                 color={badgeColor}
+                                onCheckout={onCheckout}
                               />
                             ) : (
                               <RefBadge
                                 key={group[0].fullName}
                                 refInfo={group[0]}
                                 color={badgeColor}
+                                onCheckout={onCheckout}
                               />
                             ),
                           )}
