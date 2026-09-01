@@ -7,6 +7,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            commands::checkout::git_checkout,
+            commands::stash::git_stash_save,
+            commands::stash::git_stash_pop,
             commands::commit::git_stage,
             commands::commit::git_commit,
             commands::diff::git_diff,
