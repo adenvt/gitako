@@ -22,11 +22,15 @@ export function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
 }
 
 export function CommitDetail() {
-  const { commits, layout, selectedHash, filesByCommit, loadCommitFiles, openDiff } =
+  const { commits, layout, selectedHash, filesByCommit, loadCommitFiles, openDiff, refsByCommit } =
     useRepoStore();
 
   const commit = commits.find((c) => c.hash === selectedHash);
   const files = commit ? filesByCommit[commit.hash] : undefined;
+  // Full ref info (vs. `commit.refs` which is just names) — needed because
+  // a local branch and its remote tracking ref share a `name` (e.g. `main`
+  // + `origin/main`) and we need a unique React key.
+  const refInfos = commit ? (refsByCommit[commit.hash] ?? []) : [];
   // Match ref badge color to the commit's graph node (lane color).
   const badgeColor = (() => {
     if (!commit || !layout) return undefined;
@@ -76,13 +80,13 @@ export function CommitDetail() {
               <dd className="mono">{commit.parents.map((p) => shortHash(p)).join(", ")}</dd>
             </>
           )}
-          {commit.refs.length > 0 && (
+          {refInfos.length > 0 && (
             <>
               <dt>Refs</dt>
               <dd>
-                {commit.refs.map((r) => (
+                {refInfos.map((r) => (
                   <span
-                    key={r}
+                    key={r.fullName}
                     className={badge.commitRefBadge}
                     style={
                       badgeColor
@@ -90,7 +94,7 @@ export function CommitDetail() {
                         : undefined
                     }
                   >
-                    {r}
+                    {r.name}
                   </span>
                 ))}
               </dd>
