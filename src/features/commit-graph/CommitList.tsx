@@ -97,12 +97,14 @@ export function CommitList() {
     [setGraphWidth],
   );
 
-  // Double-clicking a local branch badge switches HEAD to that branch. The
-  // badge component already gates on `kind === "branch"`, so this is a
-  // straight pass-through; the store's smart-checkout handles dirty trees.
+  // Double-clicking a ref badge checks out the ref. The badge
+  // component gates by `kind`, but remote-tracking refs also need to
+  // resolve to their full name (`origin/feature`) so the store can
+  // route them through `git checkout --track` instead of plain
+  // `git checkout`.
   const onCheckout = useCallback(
-    (name: string) => {
-      void checkout(name).catch(() => {
+    (name: string, kind: "branch" | "remoteBranch") => {
+      void checkout(name, kind).catch(() => {
         // store already set `error`; nothing to do.
       });
     },

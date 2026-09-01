@@ -105,6 +105,19 @@ export async function checkoutBranch(repoPath: string, branch: string): Promise<
   }
 }
 
+/**
+ * Track a remote-tracking branch. Creates a local branch at the same
+ * name, set up to track the given upstream (e.g. `origin/feature`).
+ * Returns the new local branch name.
+ */
+export async function checkoutTrack(repoPath: string, remoteBranch: string): Promise<string> {
+  try {
+    return await invoke<string>("git_checkout_track", { repoPath, remoteBranch });
+  } catch (e) {
+    throw toGitError(e);
+  }
+}
+
 /** `git stash push -u -m <message>`. Returns the new stash ref, or empty
  *  string if the worktree is clean. */
 export async function stashSave(

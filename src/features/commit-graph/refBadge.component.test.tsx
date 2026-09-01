@@ -188,17 +188,17 @@ describe("RefBadgeGroup", () => {
 });
 
 describe("double-click to checkout", () => {
-  it("calls onCheckout with the local branch name on double-click", () => {
+  it("calls onCheckout with the local branch name + kind on double-click", () => {
     const onCheckout = vi.fn();
     const { container } = render(
       <RefBadge refInfo={makeRef({ name: "feature", kind: "branch" })} onCheckout={onCheckout} />,
     );
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
-    expect(onCheckout).toHaveBeenCalledWith("feature");
+    expect(onCheckout).toHaveBeenCalledWith("feature", "branch");
   });
 
-  it("does not call onCheckout for a remote branch", () => {
+  it("calls onCheckout with the full name and remoteBranch kind for a remote branch", () => {
     const onCheckout = vi.fn();
     const { container } = render(
       <RefBadge
@@ -213,7 +213,7 @@ describe("double-click to checkout", () => {
     );
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
-    expect(onCheckout).not.toHaveBeenCalled();
+    expect(onCheckout).toHaveBeenCalledWith("origin/main", "remoteBranch");
   });
 
   it("does not call onCheckout for a tag", () => {
@@ -251,10 +251,10 @@ describe("double-click to checkout", () => {
     );
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
-    expect(onCheckout).toHaveBeenCalledWith("main");
+    expect(onCheckout).toHaveBeenCalledWith("main", "branch");
   });
 
-  it("RefBadgeGroup does not fire onCheckout when only remote branches are present", () => {
+  it("RefBadgeGroup falls back to the remote branch's full name when no local branch is in the group", () => {
     const onCheckout = vi.fn();
     const refs = [
       makeRef({
@@ -269,6 +269,6 @@ describe("double-click to checkout", () => {
     );
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
-    expect(onCheckout).not.toHaveBeenCalled();
+    expect(onCheckout).toHaveBeenCalledWith("origin/main", "remoteBranch");
   });
 });

@@ -10,6 +10,7 @@ import {
   stageFiles,
   commitChanges,
   checkoutBranch,
+  checkoutTrack,
   stashSave,
   stashPop,
   fetchHeadBranch,
@@ -61,7 +62,14 @@ interface RepoState {
 
   openRepo: (path: string) => Promise<void>;
   refresh: () => Promise<void>;
-  checkout: (branch: string) => Promise<void>;
+  /**
+   * Switch HEAD to a branch. For local branches, passes the name
+   * straight to `git checkout`. For remote-tracking refs (`origin/feature`),
+   * creates a local branch with the same name tracking the upstream
+   * (smart switch + stash pop still apply, since the resulting checkout
+   * may need to move HEAD).
+   */
+  checkout: (branch: string, kind?: "branch" | "remoteBranch") => Promise<void>;
   refreshStatus: () => Promise<void>;
   select: (hash: string | null) => void;
   loadCommitFiles: (hash: string) => Promise<void>;
@@ -162,7 +170,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
    * and the user is notified via toast; the checkout itself is still
    * considered successful.
    */
-  async checkout(branch: string) {
+  async checkout(branch: string, kind: "branch" | "remoteBranch" = "branch") {
     const { repoPath, statusEntries } = get();
     if (!repoPath) return;
     const dirty = statusEntries.length > 0;
@@ -172,7 +180,13 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       if (dirty) {
         stashedRef = await stashSave(repoPath, `auto: pre-checkout ${branch}`);
       }
-      await checkoutBranch(repoPath, branch);
+      if (kind === "remoteBranch") {
+        // Create the local branch tracking the remote; HEAD moves to it
+        // implicitly (just like `git checkout`).
+        await checkoutTrack(repoPath, branch);
+      } else {
+        await checkoutBranch(repoPath, branch);
+      }
       if (stashedRef) {
         try {
           await stashPop(repoPath, stashedRef);

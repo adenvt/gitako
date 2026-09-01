@@ -54,15 +54,28 @@ interface RefBadgeProps {
   refInfo: RefInfo;
   /** Lane color of the commit, used to tint the badge to match the node. */
   color?: string;
-  /** Called on double-click when the ref can be checked out. */
-  onCheckout?: (name: string) => void;
+  /**
+   * Called on double-click. Receives the name to pass to `git checkout`
+   * (a local branch name) and the kind so the store can route remote
+   * refs to `git checkout --track` automatically.
+   */
+  onCheckout?: (name: string, kind: "branch" | "remoteBranch") => void;
 }
 
 /** A single ref badge (used when refs have distinct names). */
 export function RefBadge({ refInfo, color, onCheckout }: RefBadgeProps) {
   const fullName = refFullName(refInfo);
-  const handleDoubleClick =
-    onCheckout && refInfo.kind === "branch" ? () => onCheckout(refInfo.name) : undefined;
+  const canCheckout =
+    onCheckout && (refInfo.kind === "branch" || refInfo.kind === "remoteBranch");
+  const handleDoubleClick = canCheckout
+    ? () => {
+        // Remote branches are addressed by their full `origin/feature`
+        // name; the store routes them to `checkoutTrack` based on kind.
+        const name = refInfo.kind === "remoteBranch" ? fullName : refInfo.name;
+        const kind = refInfo.kind === "remoteBranch" ? "remoteBranch" : "branch";
+        onCheckout(name, kind);
+      }
+    : undefined;
   return (
     <span
       className={clsx(s.commitRefBadge, refInfo.kind === "head" && s.activeRef)}
@@ -82,8 +95,11 @@ interface RefBadgeGroupProps {
   refs: RefInfo[];
   /** Lane color of the commit, used to tint the badge to match the node. */
   color?: string;
-  /** Called on double-click when a local branch is in the group. */
-  onCheckout?: (name: string) => void;
+  /**
+   * Called on double-click. Prefers the local branch (plain `git checkout`);
+   * falls back to the remote-tracking ref's full name (`origin/feature`).
+   */
+  onCheckout?: (name: string, kind: "branch" | "remoteBranch") => void;
 }
 
 /**
@@ -96,8 +112,17 @@ export function RefBadgeGroup({ refs, color, onCheckout }: RefBadgeGroupProps) {
   const label = refs.map(refFullName).join(", ");
   const isActive = refs.some((r) => r.kind === "head");
   const localBranch = refs.find((r) => r.kind === "branch");
+  const remoteBranch = refs.find((r) => r.kind === "remoteBranch");
   const handleDoubleClick =
-    onCheckout && localBranch ? () => onCheckout(localBranch.name) : undefined;
+    onCheckout && (localBranch || remoteBranch)
+      ? () => {
+          if (localBranch) {
+            onCheckout(localBranch.name, "branch");
+          } else if (remoteBranch) {
+            onCheckout(refFullName(remoteBranch), "remoteBranch");
+          }
+        }
+      : undefined;
   return (
     <span
       className={clsx(s.commitRefBadge, s.refBadgeGroup, isActive && s.activeRef)}
