@@ -9,6 +9,9 @@ import {
   fetchDiff,
   stageFiles,
   commitChanges,
+  checkoutBranch,
+  stashSave,
+  stashPop,
 } from "./git";
 import { parsePorcelain, type StatusEntry } from "@/shared/utils/status";
 import { errorMessage } from "@/shared/utils/error";
@@ -54,6 +57,7 @@ interface RepoState {
 
   openRepo: (path: string) => Promise<void>;
   refresh: () => Promise<void>;
+  checkout: (branch: string) => Promise<void>;
   refreshStatus: () => Promise<void>;
   select: (hash: string | null) => void;
   loadCommitFiles: (hash: string) => Promise<void>;
@@ -139,6 +143,44 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     } catch (e) {
       const message = errorMessage(e);
       set({ error: message });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  /**
+   * Switch HEAD to a local branch. **Smart switch**: if the worktree is
+   * dirty, stash push -u -> checkout -> stash pop so the user never sees
+   * a "would overwrite" error. On pop conflict the stash is preserved
+   * and the user is notified via toast; the checkout itself is still
+   * considered successful.
+   */
+  async checkout(branch: string) {
+    const { repoPath, statusEntries } = get();
+    if (!repoPath) return;
+    const dirty = statusEntries.length > 0;
+    set({ loading: true, error: null });
+    let stashedRef = "";
+    try {
+      if (dirty) {
+        stashedRef = await stashSave(repoPath, `auto: pre-checkout ${branch}`);
+      }
+      await checkoutBranch(repoPath, branch);
+      if (stashedRef) {
+        try {
+          await stashPop(repoPath, stashedRef);
+        } catch (popErr) {
+          // Pop conflict — stash is preserved; surface to the user.
+          toastError(
+            `Stash pop conflict on ${branch}`,
+            `Your changes are safe in ${stashedRef}`,
+          );
+        }
+      }
+      await get().refresh();
+    } catch (e) {
+      set({ error: errorMessage(e) });
+      throw e;
     } finally {
       set({ loading: false });
     }
