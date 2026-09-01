@@ -1,101 +1,84 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import clsx from "clsx";
+import { useMemo } from "react";
 import { Check, ChevronDown } from "lucide-react";
+import { Combobox } from "@base-ui/react/combobox";
 import { useRepoStore } from "@/state/store";
 import s from "./BranchSwitcher.module.css";
 
 /**
- * Local-branch dropdown. Click the trigger to open, click a branch to
- * select, click outside or press Escape to close. Remote branches and
- * tags are intentionally hidden — those land in follow-up PRs.
+ * Local-branch dropdown with search. Click the trigger to open a popup
+ * with a filter input; type to narrow, arrow + Enter to pick, Escape or
+ * click outside to dismiss. Picking a different local branch calls
+ * `checkout(name)`. Remote branches and tags are intentionally hidden —
+ * those land in follow-up PRs.
  */
 export function BranchSwitcher() {
   const refs = useRepoStore((st) => st.refs);
   const checkout = useRepoStore((st) => st.checkout);
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const headBranch = useRepoStore((st) => st.headBranch);
 
-  const commits = useRepoStore((st) => st.commits);
-  const current = useMemo(() => {
-    const headHash = commits[0]?.hash;
-    const head = headHash
-      ? refs.find((r) => r.kind === "branch" && r.commit === headHash)
-      : undefined;
-    return head?.name ?? "detached HEAD";
-  }, [refs, commits]);
+  // `headBranch` is set by the store from `git symbolic-ref --short HEAD`
+  // (or a short hash for detached HEAD). It's authoritative — don't infer
+  // from the log because topo order doesn't guarantee HEAD is first.
+  const current = headBranch ?? "detached HEAD";
 
   const branches = useMemo(
-    () =>
-      refs
-        .filter((r) => r.kind === "branch")
-        .map((r) => r.name),
+    // The backend marks the current branch with `kind: "head"` (rather than
+    // `"branch"`) so the graph can show a "you are here" check on it.
+    // We need both kinds here so the current branch is in the list and
+    // the ItemIndicator has a matching item to render the check next to.
+    () => refs.filter((r) => r.kind === "branch" || r.kind === "head").map((r) => r.name),
     [refs],
   );
 
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  const pick = (name: string) => {
-    setOpen(false);
-    if (name === current) return;
-    void checkout(name).catch(() => {
-      // store already set `error`; UI reads it. nothing to do.
-    });
-  };
-
   return (
-    <div className={s.root} ref={rootRef}>
-      <button
-        type="button"
+    <Combobox.Root<string>
+      items={branches}
+      // Pin the combobox's selection to the current branch so the
+      // ItemIndicator (the check icon) auto-renders next to it.
+      value={headBranch ?? null}
+      onValueChange={(name) => {
+        if (!name || name === headBranch) return;
+        void checkout(name).catch(() => {
+          // store already set `error`; UI reads it. nothing to do.
+        });
+      }}
+    >
+      <Combobox.Trigger
         className={s.trigger}
-        data-open={open || undefined}
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
         aria-label={`Current branch: ${current}. Open branch switcher.`}
         title={current}
       >
         on {current}
-        <ChevronDown size={12} aria-hidden />
-      </button>
-      {open && (
-        <ul className={s.menu} role="listbox" aria-label="Branches">
-          {branches.length === 0 ? (
-            <li className={s.empty}>No local branches</li>
-          ) : (
-            branches.map((name) => {
-              const isCurrent = name === current;
-              return (
-                <li
-                  key={name}
-                  role="option"
-                  aria-selected={isCurrent}
-                  aria-current={isCurrent ? "true" : undefined}
-                  className={clsx(s.item, isCurrent && s.itemCurrent)}
-                  onClick={() => pick(name)}
-                  title={name}
-                >
-                  <Check size={12} className={s.check} aria-hidden />
-                  {name}
-                </li>
-              );
-            })
-          )}
-        </ul>
-      )}
-    </div>
+        <ChevronDown size={12} className={s.triggerIcon} aria-hidden />
+      </Combobox.Trigger>
+      <Combobox.Portal>
+        <Combobox.Positioner align="start" sideOffset={2} className={s.positioner}>
+          <Combobox.Popup className={s.popup} aria-label="Branches">
+            <div className={s.inputGroup}>
+              <Combobox.Input
+                placeholder="Filter branches…"
+                className={s.input}
+                aria-label="Filter branches"
+              />
+            </div>
+            <Combobox.List className={s.list}>
+              {(branch: string) => (
+                <Combobox.Item key={branch} value={branch} className={s.item}>
+                  <Combobox.ItemIndicator
+                    keepMounted
+                    className={s.itemIndicator}
+                    render={<Check size={12} aria-hidden />}
+                  />
+                  <span>{branch}</span>
+                </Combobox.Item>
+              )}
+            </Combobox.List>
+            <Combobox.Empty className={s.empty}>
+              {branches.length === 0 ? "No local branches" : "No branches match"}
+            </Combobox.Empty>
+          </Combobox.Popup>
+        </Combobox.Positioner>
+      </Combobox.Portal>
+    </Combobox.Root>
   );
 }

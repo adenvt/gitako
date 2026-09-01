@@ -1,9 +1,5 @@
-/* BranchSwitcher: local-branch dropdown replacing the static branch text. */
-.root {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
+/* BranchSwitcher: Base UI Combobox styled to match the TUI aesthetic.
+   Class names mirror the Base UI anatomy. */
 
 .trigger {
   display: inline-flex;
@@ -14,7 +10,7 @@
   font-weight: 700;
   background: none;
   border: 1px solid transparent;
-  border-radius: var(--radius-m);
+  border-radius: var(--radius);
   padding: 1px 6px;
   cursor: pointer;
   max-width: 240px;
@@ -28,24 +24,64 @@
   background: var(--bg-hover);
 }
 
-.trigger[data-open] {
+.trigger[data-popup-open] {
   background: var(--bg-hover);
   border-color: var(--border);
 }
 
-.menu {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
+.triggerIcon {
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.positioner {
+  outline: 0;
   z-index: 20;
-  min-width: 200px;
-  max-height: 280px;
-  overflow-y: auto;
+}
+
+.popup {
   background: var(--bg-raised);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-l);
+  border-radius: var(--radius);
+  min-width: 240px;
   box-shadow: var(--overlay-shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.inputGroup {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 2px 6px;
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  padding: 4px 0;
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
   padding: var(--space-1);
+  max-height: 280px;
+  overflow-y: auto;
+  outline: 0;
+}
+
+.list[data-empty] {
+  padding: 0;
 }
 
 .item {
@@ -53,7 +89,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  border-radius: var(--radius-m);
+  border-radius: var(--radius);
   font-size: var(--fs-sm);
   color: var(--text);
   cursor: pointer;
@@ -61,24 +97,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
   list-style: none;
+  user-select: none;
 }
 
-.item:hover {
+.item[data-highlighted] {
   background: var(--bg-hover);
+  outline: 0;
 }
 
-.itemCurrent {
+.item[data-selected] {
   font-weight: 700;
-  color: var(--text);
 }
 
-.check {
+.itemIndicator {
   flex-shrink: 0;
   color: var(--accent);
+  display: inline-flex;
+  /* The ItemIndicator is always mounted (keepMounted) so it occupies its
+     layout slot even when not selected. Hide it visually except when the
+     parent item is the combobox's selected value (i.e. the current branch). */
   visibility: hidden;
 }
 
-.itemCurrent .check {
+.item[data-selected] .itemIndicator {
   visibility: visible;
 }
 

@@ -17,6 +17,7 @@ vi.mock("@/state/git", () => ({
   checkoutBranch: vi.fn().mockResolvedValue(""),
   stashSave: vi.fn().mockResolvedValue(""),
   stashPop: vi.fn().mockResolvedValue(undefined),
+  fetchHeadBranch: vi.fn().mockResolvedValue("main"),
 }));
 
 import type { Commit, RefInfo } from "@/shared/types/git";
@@ -53,6 +54,7 @@ describe("Toolbar", () => {
       repoPath: "/home/user/projects/myrepo",
       commits: [commit({ hash: "abcdef0123456789", refs: ["main", "origin/main"] })],
       refs: makeRefs(),
+      headBranch: "main",
     });
     render(<Toolbar />);
     expect(screen.getByText("myrepo")).toBeInTheDocument();
@@ -62,11 +64,12 @@ describe("Toolbar", () => {
     expect(screen.getByText("abcdef0")).toBeInTheDocument();
   });
 
-  it("falls back to 'detached HEAD' when no local branch matches HEAD", () => {
+  it("falls back to 'detached HEAD' when headBranch is null", () => {
     setStore({
       repoPath: "/repo",
       commits: [commit({ refs: ["origin/main", "upstream/main"] })],
       refs: [{ name: "origin/main", fullName: "origin/main", kind: "remoteBranch", commit: "xxxxxxxxxxxxxxxx", target: "xxxxxxxxxxxxxxxx", remote: "origin", remoteUrl: null }],
+      headBranch: null,
     });
     render(<Toolbar />);
     expect(screen.getByText(/detached/)).toBeInTheDocument();
