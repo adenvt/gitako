@@ -13,6 +13,7 @@ vi.mock("@/state/git", () => ({
   fetchDiff: vi.fn(),
   stageFiles: vi.fn(),
   commitChanges: vi.fn(),
+  fetchHeadBranch: vi.fn().mockResolvedValue("main"),
 }));
 
 function makeDiff(overrides: Partial<DiffFile> = {}): DiffFile {

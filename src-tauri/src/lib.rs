@@ -16,6 +16,7 @@ pub fn run() {
             commands::log::git_log,
             commands::refs::git_refs,
             commands::repo::git_rev_parse,
+            commands::repo::git_head_branch,
             commands::status::git_status,
             commands::repo::git_repo_root,
             commands::show::git_show_files,

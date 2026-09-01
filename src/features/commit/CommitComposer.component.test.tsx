@@ -15,6 +15,7 @@ vi.mock("@/state/git", () => ({
   fetchDiff: vi.fn(),
   stageFiles: vi.fn().mockResolvedValue(undefined),
   commitChanges: vi.fn().mockResolvedValue("newhash"),
+  fetchHeadBranch: vi.fn().mockResolvedValue("main"),
 }));
 
 function entry(overrides: Partial<StatusEntry>): StatusEntry {

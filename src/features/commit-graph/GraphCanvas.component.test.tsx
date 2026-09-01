@@ -12,6 +12,7 @@ vi.mock("@/state/git", () => ({
   fetchDiff: vi.fn(),
   stageFiles: vi.fn(),
   commitChanges: vi.fn(),
+  fetchHeadBranch: vi.fn().mockResolvedValue("main"),
 }));
 
 /** Install a mock 2D context on every HTMLCanvasElement in the test env.

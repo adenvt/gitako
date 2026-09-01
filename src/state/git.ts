@@ -126,3 +126,16 @@ export async function stashPop(repoPath: string, stashRef: string): Promise<void
     throw toGitError(e);
   }
 }
+
+/**
+ * Return the local branch name HEAD is on, or a short hash for detached
+ * HEAD. Authoritative — don't infer from the log because topo order
+ * doesn't guarantee HEAD is the first commit shown.
+ */
+export async function fetchHeadBranch(repoPath: string): Promise<string> {
+  try {
+    return await invoke<string>("git_head_branch", { repoPath });
+  } catch (e) {
+    throw toGitError(e);
+  }
+}

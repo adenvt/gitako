@@ -12,6 +12,7 @@ import {
   checkoutBranch,
   stashSave,
   stashPop,
+  fetchHeadBranch,
 } from "./git";
 import { parsePorcelain, type StatusEntry } from "@/shared/utils/status";
 import { errorMessage } from "@/shared/utils/error";
@@ -53,6 +54,9 @@ interface RepoState {
   diffCache: Record<string, DiffFile>;
   /** True while a refresh is in flight. */
   loading: boolean;
+  /** Local branch name HEAD is on, or short hash for detached HEAD.
+   *  Authoritative — the log's first commit is not guaranteed to be HEAD. */
+  headBranch: string | null;
   error: string | null;
 
   openRepo: (path: string) => Promise<void>;
@@ -94,6 +98,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   graphWidth: 0, // 0 = auto (fits lane count)
   diffCache: {},
   loading: false,
+  headBranch: null,
   error: null,
 
   async openRepo(path) {
@@ -110,10 +115,11 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     if (!repoPath) return;
     set({ loading: true, error: null });
     try {
-      const [commits, refs, status] = await Promise.all([
+      const [commits, refs, status, headBranch] = await Promise.all([
         fetchLog(repoPath),
         fetchRefs(repoPath),
         fetchStatus(repoPath).catch(() => ""),
+        fetchHeadBranch(repoPath).catch(() => null),
       ]);
       // Join refs onto commits for badge display.
       const refByCommit = new Map<string, RefInfo[]>();
@@ -135,6 +141,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
         refsByCommit,
         layout: computeLayout(withRefs),
         statusEntries,
+        headBranch,
         // A repo can open with files already staged (e.g. staged in a
         // terminal before launching the app) — mirror the real index so the
         // composer's staged/unstaged split is correct from the start.
