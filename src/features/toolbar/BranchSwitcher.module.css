@@ -1,0 +1,91 @@
+/* BranchSwitcher: local-branch dropdown replacing the static branch text. */
+.root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  font-weight: 700;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-m);
+  padding: 1px 6px;
+  cursor: pointer;
+  max-width: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: inherit;
+}
+
+.trigger:hover {
+  background: var(--bg-hover);
+}
+
+.trigger[data-open] {
+  background: var(--bg-hover);
+  border-color: var(--border);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 20;
+  min-width: 200px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-l);
+  box-shadow: var(--overlay-shadow);
+  padding: var(--space-1);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-m);
+  font-size: var(--fs-sm);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  list-style: none;
+}
+
+.item:hover {
+  background: var(--bg-hover);
+}
+
+.itemCurrent {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.check {
+  flex-shrink: 0;
+  color: var(--accent);
+  visibility: hidden;
+}
+
+.itemCurrent .check {
+  visibility: visible;
+}
+
+.empty {
+  padding: 8px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  text-align: center;
+  list-style: none;
+}
