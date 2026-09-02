@@ -242,9 +242,10 @@ export function AiSettingsPage({ onBack }: { onBack?: () => void }) {
               update("model", value);
               setModelMissing(false);
             }}
-            items={(models.length > 0 ? models : [currentProvider.defaultModel]).map(
-              (m) => ({ value: m, label: m }),
-            )}
+            items={(models.length > 0 ? models : [currentProvider.defaultModel]).map((m) => ({
+              value: m,
+              label: m,
+            }))}
             itemToStringValue={(item) => (item as unknown as { value: string }).value}
           >
             <Combobox.InputGroup className={s.comboInputGroup}>

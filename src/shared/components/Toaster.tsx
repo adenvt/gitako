@@ -82,9 +82,7 @@ export function Toaster() {
                 </Toast.Description>
               )}
             </div>
-            {toast.actionProps && (
-              <Toast.Action className={s.toastAction} {...toast.actionProps} />
-            )}
+            {toast.actionProps && <Toast.Action className={s.toastAction} {...toast.actionProps} />}
             <Toast.Close className={s.toastClose} aria-label="Dismiss">
               <XIcon size={14} aria-hidden />
             </Toast.Close>

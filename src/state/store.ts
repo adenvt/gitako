@@ -100,9 +100,7 @@ interface RepoState {
 }
 
 function computeLayout(commits: Commit[]): LayoutResult {
-  return layout(
-    commits.map((c) => ({ hash: c.hash, parents: c.parents, isStash: c.isStash })),
-  );
+  return layout(commits.map((c) => ({ hash: c.hash, parents: c.parents, isStash: c.isStash })));
 }
 
 export const useRepoStore = create<RepoState>((set, get) => ({

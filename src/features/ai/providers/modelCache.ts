@@ -89,9 +89,7 @@ export function writeModelCache(settings: AiSettings, models: string[]): void {
 export function pruneModelCache(activeSettings: AiSettings[]): void {
   if (activeSettings.length === 0) return;
   const store = readStore();
-  const activeKeys = new Set(
-    activeSettings.map((s) => cacheKey(s.baseUrl, s.apiKey)),
-  );
+  const activeKeys = new Set(activeSettings.map((s) => cacheKey(s.baseUrl, s.apiKey)));
   let changed = false;
   for (const k of Object.keys(store)) {
     if (!activeKeys.has(k)) {

@@ -42,9 +42,7 @@ export function createOpenAiProvider(opts: OpenAiProviderOptions = {}): AiProvid
             // `response_format` when the caller actually provided one;
             // some non-OpenAI endpoints (Ollama, LM Studio) reject an
             // empty/unknown value.
-            ...(req.responseFormat !== undefined
-              ? { response_format: req.responseFormat }
-              : {}),
+            ...(req.responseFormat !== undefined ? { response_format: req.responseFormat } : {}),
           }),
           // Forward the abort signal so callers (e.g. a "Cancel" button
           // on a loading toast) can cancel the in-flight request. When

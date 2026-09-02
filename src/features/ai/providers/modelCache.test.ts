@@ -1,10 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import {
-  MODEL_CACHE_TTL_MS,
-  pruneModelCache,
-  readModelCache,
-  writeModelCache,
-} from "./modelCache";
+import { MODEL_CACHE_TTL_MS, pruneModelCache, readModelCache, writeModelCache } from "./modelCache";
 import type { AiSettings } from "@/shared/utils/aiSettings";
 
 const baseSettings: AiSettings = {

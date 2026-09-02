@@ -56,9 +56,7 @@ describe("openai-compatible provider", () => {
       baseUrl: "https://my-proxy.example.com/api/v1",
     });
     await provider.chat(baseReq, "sk-test");
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      "https://my-proxy.example.com/api/v1/chat/completions",
-    );
+    expect(fetchMock.mock.calls[0][0]).toBe("https://my-proxy.example.com/api/v1/chat/completions");
   });
 
   it("uses https://api.openai.com/v1 as the default base URL", async () => {
@@ -142,9 +140,9 @@ describe("openai-compatible provider", () => {
       return Promise.reject(abortError);
     });
     const provider = createOpenAiProvider();
-    await expect(
-      provider.chat({ ...baseReq, signal: controller.signal }, "sk-test"),
-    ).rejects.toBe(abortError);
+    await expect(provider.chat({ ...baseReq, signal: controller.signal }, "sk-test")).rejects.toBe(
+      abortError,
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ signal: controller.signal }),

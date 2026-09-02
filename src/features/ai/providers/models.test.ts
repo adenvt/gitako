@@ -62,9 +62,7 @@ describe("fetchOpenAiModels", () => {
       baseUrl: "https://my-proxy.example.com/api/v1",
       apiKey: "sk",
     });
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      "https://my-proxy.example.com/api/v1/models",
-    );
+    expect(fetchMock.mock.calls[0][0]).toBe("https://my-proxy.example.com/api/v1/models");
   });
 
   it("throws AiError on 401, surfacing the provider message", async () => {

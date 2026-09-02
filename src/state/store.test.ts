@@ -220,7 +220,15 @@ describe("refresh", () => {
     mockFetchRefs.mockResolvedValueOnce([
       makeRef("main", "tip"),
       // The stash ref points at the WIP commit with fullName = "refs/stash".
-      { name: "refs/stash", fullName: "refs/stash", kind: "other", target: "wip", commit: "wip", remote: null, remoteUrl: null },
+      {
+        name: "refs/stash",
+        fullName: "refs/stash",
+        kind: "other",
+        target: "wip",
+        commit: "wip",
+        remote: null,
+        remoteUrl: null,
+      },
     ]);
     mockFetchStatus.mockResolvedValueOnce("");
 
