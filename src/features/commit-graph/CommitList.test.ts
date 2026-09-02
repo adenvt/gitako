@@ -72,6 +72,18 @@ describe("groupRefsForBadging", () => {
     expect(groups[0]?.map((r) => r.name)).toEqual(["main"]);
   });
 
+  it("hides the stash ref (fullName 'refs/stash') so stash commits don't show a badge", () => {
+    // The stash entry is the only thing pointing at the WIP commit; we
+    // don't want a "refs/stash" pill cluttering the row.
+    const refs = [
+      makeRef({ name: "main", fullName: "main", kind: "branch" }),
+      makeRef({ name: "refs/stash", fullName: "refs/stash", kind: "other" }),
+    ];
+    const groups = groupRefsForBadging(refs);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.map((r) => r.name)).toEqual(["main"]);
+  });
+
   it("does NOT hide a local HEAD (kind=head, name=HEAD)", () => {
     // Only the *remote* HEAD is filtered — the local HEAD ref should be
     // visible so detached-HEAD state is recognisable in the UI.

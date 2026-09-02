@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Toolbar } from "./Toolbar";
@@ -18,6 +18,9 @@ vi.mock("@/state/git", () => ({
   stashSave: vi.fn().mockResolvedValue(""),
   stashPop: vi.fn().mockResolvedValue(undefined),
   fetchHeadBranch: vi.fn().mockResolvedValue("main"),
+  pushBranch: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "ok" }),
+  fetchAll: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "" }),
+  pullBranch: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "ok" }),
 }));
 
 import type { Commit, RefInfo } from "@/shared/types/git";
@@ -38,9 +41,33 @@ function commit(overrides: Partial<Commit> = {}): Commit {
 
 function makeRefs(headHash = "abcdef0123456789"): RefInfo[] {
   return [
-    { name: "main", fullName: "main", kind: "branch", commit: headHash, target: headHash, remote: null, remoteUrl: null },
-    { name: "feature", fullName: "feature", kind: "branch", commit: "deadbeef00000000", target: "deadbeef00000000", remote: null, remoteUrl: null },
-    { name: "origin/main", fullName: "origin/main", kind: "remoteBranch", commit: "1111111111111111", target: "1111111111111111", remote: "origin", remoteUrl: null },
+    {
+      name: "main",
+      fullName: "main",
+      kind: "branch",
+      commit: headHash,
+      target: headHash,
+      remote: null,
+      remoteUrl: null,
+    },
+    {
+      name: "feature",
+      fullName: "feature",
+      kind: "branch",
+      commit: "deadbeef00000000",
+      target: "deadbeef00000000",
+      remote: null,
+      remoteUrl: null,
+    },
+    {
+      name: "origin/main",
+      fullName: "origin/main",
+      kind: "remoteBranch",
+      commit: "1111111111111111",
+      target: "1111111111111111",
+      remote: "origin",
+      remoteUrl: null,
+    },
   ];
 }
 
@@ -49,6 +76,13 @@ function setStore(updates: Partial<ReturnType<typeof useRepoStore.getState>>): v
 }
 
 describe("Toolbar", () => {
+  // The zustand store is a singleton — previous tests can leave
+  // loading/pushing/pulling true. Reset the flag fields before every test
+  // so the pull button isn't disabled by leftover state.
+  beforeEach(() => {
+    useRepoStore.setState({ loading: false, pushing: false, pulling: false });
+  });
+
   it("shows the local branch and short hash for the HEAD commit", () => {
     setStore({
       repoPath: "/home/user/projects/myrepo",
@@ -68,7 +102,17 @@ describe("Toolbar", () => {
     setStore({
       repoPath: "/repo",
       commits: [commit({ refs: ["origin/main", "upstream/main"] })],
-      refs: [{ name: "origin/main", fullName: "origin/main", kind: "remoteBranch", commit: "xxxxxxxxxxxxxxxx", target: "xxxxxxxxxxxxxxxx", remote: "origin", remoteUrl: null }],
+      refs: [
+        {
+          name: "origin/main",
+          fullName: "origin/main",
+          kind: "remoteBranch",
+          commit: "xxxxxxxxxxxxxxxx",
+          target: "xxxxxxxxxxxxxxxx",
+          remote: "origin",
+          remoteUrl: null,
+        },
+      ],
       headBranch: null,
     });
     render(<Toolbar />);
@@ -118,34 +162,71 @@ describe("Toolbar", () => {
     expect(screen.queryByTitle("/home/user/projects/myrepo")).toBeNull();
   });
 
-  it("shows a transient notice when Push is clicked, then auto-clears", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    try {
-      setStore({ repoPath: "/r", commits: [commit()], refs: makeRefs() });
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      render(<Toolbar />);
-      await user.click(screen.getByRole("button", { name: /push/i }));
-      expect(screen.getByText(/not yet implemented/i)).toBeInTheDocument();
-      await vi.advanceTimersByTimeAsync(2600);
-      expect(screen.queryByText(/not yet implemented/i)).toBeNull();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("calls refresh() when the Pull button is clicked", async () => {
-    const refresh = vi.fn().mockResolvedValue(undefined);
-    setStore({ repoPath: "/r", commits: [commit()], refresh, refs: makeRefs() });
+  it("calls push() when the Push button is clicked", async () => {
+    const push = vi.fn().mockResolvedValue(undefined);
+    setStore({ repoPath: "/r", commits: [commit()], push, refs: makeRefs() });
     const user = userEvent.setup();
     render(<Toolbar />);
-    await user.click(screen.getByRole("button", { name: /pull/i }));
-    expect(refresh).toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: /^push$/i }));
+    expect(push).toHaveBeenCalled();
+  });
+
+  it("disables the Push button while pushing", () => {
+    setStore({ repoPath: "/r", commits: [commit()], pushing: true, refs: makeRefs() });
+    render(<Toolbar />);
+    expect(screen.getByRole("button", { name: /push…/i })).toBeDisabled();
+  });
+
+  it("calls pull('ff') when the Pull button is clicked", async () => {
+    const pull = vi.fn().mockResolvedValue(undefined);
+    setStore({ repoPath: "/r", commits: [commit()], pull, refs: makeRefs() });
+    const user = userEvent.setup();
+    render(<Toolbar />);
+    await user.click(screen.getByRole("button", { name: /^pull$/i }));
+    expect(pull).toHaveBeenCalledWith("ff");
   });
 
   it("disables the Pull button while loading", () => {
     setStore({ repoPath: "/r", commits: [commit()], loading: true, refs: makeRefs() });
     render(<Toolbar />);
-    expect(screen.getByRole("button", { name: /pull…/i })).toBeDisabled();
+    // The main pull button is the one with the pull icon + "pull" label.
+    // When `loading` is true, its label becomes "pull…".
+    const pullButton = screen.getByTitle("Pull (fast-forward if possible)");
+    expect(pullButton).toBeDisabled();
+  });
+
+  it("opens the pull dropdown when the caret is clicked", async () => {
+    const pull = vi.fn().mockResolvedValue(undefined);
+    const fetch = vi.fn().mockResolvedValue(undefined);
+    setStore({ repoPath: "/r", commits: [commit()], pull, fetch, refs: makeRefs() });
+    const user = userEvent.setup();
+    render(<Toolbar />);
+    await user.click(screen.getByLabelText(/more pull options/i));
+    expect(screen.getByRole("menuitem", { name: /fetch all/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /fast-forward if possible/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /fast-forward only/i })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /rebase/i })).toBeInTheDocument();
+  });
+
+  it("calls fetch() when 'Fetch all' is chosen from the dropdown", async () => {
+    const pull = vi.fn().mockResolvedValue(undefined);
+    const fetch = vi.fn().mockResolvedValue(undefined);
+    setStore({ repoPath: "/r", commits: [commit()], pull, fetch, refs: makeRefs() });
+    const user = userEvent.setup();
+    render(<Toolbar />);
+    await user.click(screen.getByLabelText(/more pull options/i));
+    await user.click(screen.getByRole("menuitem", { name: /fetch all/i }));
+    expect(fetch).toHaveBeenCalled();
+  });
+
+  it("calls pull('rebase') when 'Pull (rebase)' is chosen from the dropdown", async () => {
+    const pull = vi.fn().mockResolvedValue(undefined);
+    setStore({ repoPath: "/r", commits: [commit()], pull, refs: makeRefs() });
+    const user = userEvent.setup();
+    render(<Toolbar />);
+    await user.click(screen.getByLabelText(/more pull options/i));
+    await user.click(screen.getByRole("menuitem", { name: /^pull \(rebase\)$/i }));
+    expect(pull).toHaveBeenCalledWith("rebase");
   });
 
   it("shows a Stash notice when the Stash button is clicked", async () => {
@@ -156,11 +237,17 @@ describe("Toolbar", () => {
     expect(screen.getByText(/stash.*not yet implemented/i)).toBeInTheDocument();
   });
 
-  it("shows a Settings notice when the Settings button is clicked", async () => {
-    setStore({ repoPath: "/r", commits: [commit()], refs: makeRefs() });
+  it("opens the AI settings overlay when the Settings button is clicked", async () => {
+    const openOverlay = vi.fn();
+    setStore({
+      repoPath: "/r",
+      commits: [commit()],
+      refs: makeRefs(),
+      openOverlay,
+    });
     const user = userEvent.setup();
     render(<Toolbar />);
     await user.click(screen.getByRole("button", { name: /settings/i }));
-    expect(screen.getByText(/settings.*not yet implemented/i)).toBeInTheDocument();
+    expect(openOverlay).toHaveBeenCalledWith("ai-settings");
   });
 });

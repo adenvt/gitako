@@ -207,6 +207,34 @@ describe("refresh", () => {
     const s = useRepoStore.getState();
     expect([...s.stagedPaths].sort()).toEqual(["mod.ts", "new.ts"]);
   });
+
+  it("tags commits pointed at by refs/stash with isStash", async () => {
+    useRepoStore.setState({ repoPath: "/r" });
+    // Simulate a git log output that includes the WIP stash commit. The
+    // `index on` pseudo-commit is filtered out by the backend, so it never
+    // reaches the frontend.
+    mockFetchLog.mockResolvedValueOnce([
+      makeCommit("wip", ["tip"], "On main: WIP on main: abc1234 Save work"),
+      makeCommit("tip", [], "feat: prior commit"),
+    ]);
+    mockFetchRefs.mockResolvedValueOnce([
+      makeRef("main", "tip"),
+      // The stash ref points at the WIP commit with fullName = "refs/stash".
+      { name: "refs/stash", fullName: "refs/stash", kind: "other", target: "wip", commit: "wip", remote: null, remoteUrl: null },
+    ]);
+    mockFetchStatus.mockResolvedValueOnce("");
+
+    await useRepoStore.getState().refresh();
+
+    const s = useRepoStore.getState();
+    const wip = s.commits.find((c) => c.hash === "wip");
+    const tip = s.commits.find((c) => c.hash === "tip");
+    expect(wip?.isStash).toBe(true);
+    expect(tip?.isStash).toBe(false);
+    // isStash must flow through to the layout for the renderer to see it.
+    const wipLayout = s.layout?.commits.find((c) => c.hash === "wip");
+    expect(wipLayout?.isStash).toBe(true);
+  });
 });
 
 describe("select", () => {

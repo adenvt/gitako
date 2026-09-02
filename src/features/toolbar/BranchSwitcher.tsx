@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { CheckIcon, ChevronDownIcon } from "@primer/octicons-react";
 import { Combobox } from "@base-ui/react/combobox";
 import { useRepoStore } from "@/state/store";
 import s from "./BranchSwitcher.module.css";
@@ -49,7 +49,7 @@ export function BranchSwitcher() {
         title={current}
       >
         on {current}
-        <ChevronDown size={12} className={s.triggerIcon} aria-hidden />
+        <ChevronDownIcon size={12} className={s.triggerIcon} aria-hidden />
       </Combobox.Trigger>
       <Combobox.Portal>
         <Combobox.Positioner align="start" sideOffset={2} className={s.positioner}>
@@ -67,7 +67,7 @@ export function BranchSwitcher() {
                   <Combobox.ItemIndicator
                     keepMounted
                     className={s.itemIndicator}
-                    render={<Check size={12} aria-hidden />}
+                    render={<CheckIcon size={12} aria-hidden />}
                   />
                   <span>{branch}</span>
                 </Combobox.Item>

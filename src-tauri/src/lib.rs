@@ -15,12 +15,16 @@ pub fn run() {
             commands::commit::git_commit,
             commands::diff::git_diff,
             commands::log::git_log,
+            commands::pull::git_fetch,
+            commands::pull::git_pull,
+            commands::push::git_push,
             commands::refs::git_refs,
             commands::repo::git_rev_parse,
             commands::repo::git_head_branch,
             commands::status::git_status,
             commands::repo::git_repo_root,
             commands::show::git_show_files,
+            commands::staged_diff::git_staged_diff,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

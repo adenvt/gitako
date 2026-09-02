@@ -34,6 +34,10 @@
 export interface RawCommit {
   hash: string;
   parents: string[];
+  /** Forwarded from the `Commit` wire type. The layout algorithm doesn't
+   * look at it; the renderer uses it to draw stash entries with an outline
+   * + dashed edges. */
+  isStash?: boolean;
 }
 
 export interface LayoutCommit extends RawCommit {

@@ -8,6 +8,10 @@ export interface Commit {
   authorTime: number;
   subject: string;
   refs: string[];
+  /** True for stash entries ("On <branch>: WIP on <branch>: ..."). Set in the
+   * store on fetch; used by the graph renderer to draw an outline + dashed
+   * edges instead of the default filled dot. */
+  isStash?: boolean;
 }
 
 /** A file changed by a commit, from `git show --name-status`. */
@@ -35,6 +39,23 @@ export interface GitErrorPayload {
   kind: "notFound" | "notARepo" | "conflict" | "other";
   message: string;
   code: number | null;
+}
+
+/** Mirrors the Rust `PushResult` returned by `git_push`. */
+export interface PushResult {
+  remote: string;
+  branch: string;
+  summary: string;
+}
+
+/** Pull strategy, mirrors the Rust `PullMode` enum. */
+export type PullMode = "ff" | "ffOnly" | "rebase";
+
+/** Mirrors the Rust `PullResult` returned by `git_fetch` / `git_pull`. */
+export interface PullResult {
+  remote: string;
+  branch: string;
+  summary: string;
 }
 
 /** Mirrors the Rust git::diff structs. */

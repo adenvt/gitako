@@ -66,7 +66,9 @@ describe("DiffMinimap", () => {
     });
     const { container } = render(<DiffView />);
     makeScrollable(container);
-    const strips = container.querySelectorAll("[class*='diffMinimap']:not([class*='diffMinimapBar'])");
+    const strips = container.querySelectorAll(
+      "[class*='diffMinimap']:not([class*='diffMinimapBar'])",
+    );
     // One minimap per pane.
     expect(strips.length).toBe(2);
     const bars = container.querySelectorAll("[class*='diffMinimapBar']");

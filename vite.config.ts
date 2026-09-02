@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 
 // Tauri expects a fixed port and no clearing of the terminal.
 export default defineConfig({
+  fmt: {
+    ignorePatterns: [],
+  },
   plugins: [react()],
   resolve: {
     alias: {

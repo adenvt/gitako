@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { X } from "lucide-react";
+import { XIcon } from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
 import { langForPath } from "@/shared/utils/highlight";
 import { Button } from "@/shared/components/ui";
@@ -61,7 +61,7 @@ export function DiffView() {
           {path}
         </span>
         <Button variant="ghost" className={s.diffClose} onClick={closeDiff} aria-label="Close diff">
-          <X size={16} aria-hidden />
+          <XIcon size={16} aria-hidden />
         </Button>
       </div>
 

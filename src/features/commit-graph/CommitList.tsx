@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { FilePenLine, FilePlus, FileX, GitBranch } from "lucide-react";
+import {
+  FileAddedIcon,
+  FileDiffIcon,
+  FileRemovedIcon,
+  GitBranchIcon,
+} from "@primer/octicons-react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import {
   GraphCanvas,
@@ -24,13 +29,15 @@ const HANDLE_HIT = 5;
 
 /**
  * Group refs by their base `name` for badge rendering. The remote `HEAD`
- * pointer (e.g. `origin/HEAD`) is filtered out — it's a convenience
- * annotation, not a real ref to show.
+ * pointer (e.g. `origin/HEAD`) and the stash ref (`refs/stash`) are filtered
+ * out — they're convenience pointers, not real branch/tag badges.
  *
  * Example: refs `[main, origin/main, v1.0]` -> `[[main, origin/main], [v1.0]]`.
  */
 export function groupRefsForBadging(refs: RefInfo[]): RefInfo[][] {
-  const visible = refs.filter((r) => !(r.kind === "remoteBranch" && r.name === "HEAD"));
+  const visible = refs.filter(
+    (r) => !(r.kind === "remoteBranch" && r.name === "HEAD") && r.fullName !== "refs/stash",
+  );
   const groups = new Map<string, RefInfo[]>();
   for (const r of visible) {
     const list = groups.get(r.name) ?? [];
@@ -230,13 +237,22 @@ export function CommitList() {
         if (c) select(c.hash);
       }
     },
-    [totalRows, focusIndex, selectedIndex, hasWorkingRow, commits, select, setWorkingSelected, openComposer],
+    [
+      totalRows,
+      focusIndex,
+      selectedIndex,
+      hasWorkingRow,
+      commits,
+      select,
+      setWorkingSelected,
+      openComposer,
+    ],
   );
 
   if (!layout || layout.commits.length === 0) {
     return (
       <div className={clsx(s.commitList, s.empty)}>
-        <GitBranch size={22} aria-hidden />
+        <GitBranchIcon size={22} aria-hidden />
         <span>No commits yet</span>
         <span className="muted">Commits will appear here after your first commit.</span>
       </div>
@@ -304,19 +320,19 @@ export function CommitList() {
                       *
                       {counts.modified > 0 && (
                         <span className={s.wipCount}>
-                          <FilePenLine size={11} className={s.wipModified} aria-hidden />
+                          <FileDiffIcon size={11} className={s.wipModified} aria-hidden />
                           {counts.modified}
                         </span>
                       )}
                       {counts.added > 0 && (
                         <span className={s.wipCount}>
-                          <FilePlus size={11} className={s.wipAdded} aria-hidden />
+                          <FileAddedIcon size={11} className={s.wipAdded} aria-hidden />
                           {counts.added}
                         </span>
                       )}
                       {counts.deleted > 0 && (
                         <span className={s.wipCount}>
-                          <FileX size={11} className={s.wipDeleted} aria-hidden />
+                          <FileRemovedIcon size={11} className={s.wipDeleted} aria-hidden />
                           {counts.deleted}
                         </span>
                       )}

@@ -44,7 +44,7 @@ Legend: ✅ done · 🔨 in progress · ⬜ planned
 
 ## Phase 5 — Remote operations ⬜
 
-- [ ] Push / pull / fetch with progress feedback
+- [x] Push / pull / fetch with progress feedback
 - [ ] Remote management (add/remove remotes)
 - [ ] Remote branch tracking indicators on the graph
 - [ ] Clone a repository from a URL
@@ -58,6 +58,7 @@ Legend: ✅ done · 🔨 in progress · ⬜ planned
 - [ ] Model/provider selection + API key settings (per-repo / global)
 
 ## Phase 7 — Project
+
 - [ ] Allow open multiple project using Tab
 
 ## Phase 8 — Polish ⬜
