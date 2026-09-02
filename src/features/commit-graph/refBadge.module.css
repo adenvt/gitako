@@ -25,7 +25,7 @@
 
 .activeRefCheck {
   flex-shrink: 0;
-  color: var(--badge-color, var(--text));
+  color: var(--text);
 }
 
 .refName {

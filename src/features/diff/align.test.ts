@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRows } from "./DiffView";
+import { buildRows } from "./align";
 import type { DiffFile, DiffHunk } from "@/shared/types/git";
 
 /** Shorthand to build a hunk from a sequence of [kind, text] line tuples. */
