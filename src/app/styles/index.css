@@ -1,12 +1,7 @@
 /*
  * Global styles, split by area.
- * Order matters: base first, then feature areas.
+ * base.css holds design tokens + shared control kit (ui-*), utilities.
+ * Feature styles are colocated CSS Modules next to their components.
  */
+@import "modern-normalize/modern-normalize.css";
 @import "./base.css";
-@import "./repo.css";
-@import "./workspace.css";
-@import "./commit-list.css";
-@import "./detail.css";
-@import "./file-tree.css";
-@import "./composer.css";
-@import "./diff.css";

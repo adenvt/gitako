@@ -1,15 +1,21 @@
-/** Lane color palette. Colors are recycled once lanes exceed the palette. */
+/**
+ * Lane color palette. Colors are recycled once lanes exceed the palette.
+ * Night-neon theme: electric, saturated hues tuned to pop on the dark
+ * background, kept distinct from the teal UI accent (--accent).
+ * Opens with the pinkish-purple arc (pinkish purple -> neon purple ->
+ * neon blue -> neon green), then fills around the hue wheel.
+ */
 export const LANE_COLORS = [
-  "#e8a33d", // orange
-  "#4db6ac", // teal
-  "#e57373", // red
-  "#64b5f6", // blue
-  "#ba68c8", // purple
-  "#81c784", // green
-  "#f06292", // pink
-  "#ffd54f", // yellow
-  "#4dd0e1", // cyan
-  "#a1887f", // brown
+  "#ff5ec8", // pinkish purple (~320°)
+  "#c64ff0", // neon purple (~280°)
+  "#5f8bff", // neon blue (~224°)
+  "#2dd4bf", // neon mint (~172°)
+  "#4ade80", // neon green (~142°)
+  "#22d3ee", // electric cyan (~188°)
+  "#ffe14d", // neon yellow (~50°)
+  "#ff7a1a", // neon orange (~25°)
+  "#ff3d8b", // neon pink (~336°)
+  "#ff2e4d", // hot red (~351°)
 ];
 
 export function laneColor(lane: number): string {

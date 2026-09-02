@@ -1,13 +1,81 @@
+/* ---------- design tokens ---------- */
 :root {
-  --bg: #1e232b;
-  --bg-elev: #262d37;
-  --bg-hover: #2d3540;
-  --border: #333c48;
-  --text: #d7dce3;
-  --text-dim: #8b95a3;
-  --accent: #4da6ff;
-  --selected: #2a3a4d;
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  /* Terminal-ground surfaces (kept dark; near-black phosphor ground).
+     These exact hex values are intentionally duplicated in
+     features/commit-graph/drawGraph.ts — keep them in sync if you
+     change them. */
+  --bg: #0f1319; /* terminal ground */
+  --bg-raised: #161b23; /* panels / toolbar / inputs */
+  --bg-hover: #1d242e; /* row / button hover */
+  --bg-active: #222b36; /* pressed */
+  --bg-inset: #0b0e13; /* wells / scrollbar track */
+  --bg-selected: #1f3324; /* selected row — green-tinted, ANSI selection */
+  --border: #2a323e; /* hairline (slightly brighter so 1px rules hold up) */
+  --border-strong: #3a4452;
+
+  /* Phosphor-cool text. Cooler than the warm off-white used previously so
+     it reads as terminal output, not paper. */
+  --text: #d6dde6;
+  --text-dim: #7e8a99;
+  --text-faint: #525a66;
+
+  /* ANSI accent set — each color carries a semantic role. Avoid drifting
+     into neon/saturated hues; TUI palettes stay calm. */
+  --ok: #7ec07c; /* ansi green */
+  --err: #e06c75; /* ansi red */
+  --warn: #e5c07b; /* ansi yellow */
+  --info: #61afef; /* ansi blue */
+
+  /* Single accent — same hue as --ok (ANSI green), since the accent role
+     is "you-are-here / current-line / cursor", and the green cursor is
+     the canonical TUI signal. */
+  --accent: #7ec07c;
+  --accent-strong: #9ed09c;
+  --accent-dim: #1f3324; /* selected-row tint, matches --bg-selected */
+  --accent-border: #4a7a4c;
+  --on-accent: #0f1319; /* text on accent fills */
+
+  /* Selection — also green-tinted, mirrors how vim / tig shade the active
+     row without inverting the whole line. */
+  --selected: #1f3324;
+
+  /* No shadows in a TUI. */
+  --overlay-shadow: none;
+
+  /* TUI = zero corner-radius. The previous 3/5/7 scale collapses to one
+     value to enforce the aesthetic. The s/m/l names are kept as aliases
+     so colocated modules that already reference them don't break. */
+  --radius: 0;
+  --radius-s: 0;
+  --radius-m: 0;
+  --radius-l: 0;
+
+  /* spacing — tighter than the previous scale, to support higher density. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Single type family for everything. IoskeleyMono is monospaced, so
+     there is no display/body split — only weight + case carry role. */
+  --font-ui: "IoskeleyMono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-mono: "IoskeleyMono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-display: "IoskeleyMono SC", "IoskeleyMono", ui-monospace, monospace;
+
+  /* font sizes — single column-friendly scale. Terminal text reads best
+     at 12–13px on hidpi; we keep the small end for meta data. */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 14px;
+  --fs-lg: 15px;
+  --fs-xl: 17px;
+
+  /* motion — kept brief; TUI transitions are blink-and-miss. */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 80ms;
+  --dur-med: 120ms;
 }
 
 * {
@@ -25,23 +93,255 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  font-feature-settings:
+    "calt" 0,
+    "liga" 0; /* no contextual ligatures in a TUI */
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+::selection {
+  background: var(--accent-dim);
+  color: var(--text);
 }
 
 /* ---------- shared utility classes ---------- */
 .muted {
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .mono {
-  font-family: "JetBrains Mono", "Fira Code", monospace;
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+
+/* Section header: uppercase, tracked, dim. */
+.section-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+/* ---------- shared control primitives ---------- */
+
+/* Button — single-line rectangular control with a 1px hairline border.
+   Default variant ("solid") is the dim raised look. No rounded corners,
+   no shadow. Hover = one shade up, focus = accent border. */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.ui-btn:hover:not(:disabled):not([data-disabled]) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.ui-btn:active:not(:disabled):not([data-disabled]) {
+  background: var(--bg-active);
+}
+
+.ui-btn:disabled,
+.ui-btn[data-disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Primary button — green fill, dark text. The "do this" button. */
+.ui-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.ui-btn-primary:hover:not(:disabled):not([data-disabled]) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+/* Text input — flat panel with hairline border, monospace font for that
+   terminal-prompt feel. */
+.ui-input {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+}
+
+.ui-input:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  /* No box-shadow in a TUI — use a thin inner caret-style outline instead. */
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.ui-input::placeholder {
+  color: var(--text-faint);
+}
+
+.ui-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Multi-line input. */
+.ui-textarea {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  resize: vertical;
+  min-height: 0;
+  line-height: 1.5;
+}
+
+.ui-textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.ui-textarea::placeholder {
+  color: var(--text-faint);
+}
+
+.ui-textarea:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Ghost icon button — text-only, no border, tight padding. */
+.ui-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.ui-ghost:hover:not(:disabled):not([data-disabled]) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* ---------- focus ---------- */
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* ---------- scrollbars (BaseUI ScrollArea) ---------- */
+.scrollbarTrack {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-inset);
+  width: 8px;
+  padding: 0;
+  border-radius: 0;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.scrollbarTrack[data-orientation="horizontal"] {
+  width: auto;
+  height: 8px;
+  flex-direction: row;
+}
+
+/* The corner square where the two tracks meet. BaseUI sizes it from the
+   measured scrollbars; give it the same track background so the horizontal
+   bar visibly ends at the vertical one instead of leaving a transparent gap. */
+.scrollbarTrack + .scrollbarTrack + :where([class*="Corner"]) {
+  background: var(--bg-inset);
+}
+
+/* Reserve layout space for the absolutely-positioned custom scrollbar so
+   content doesn't shift when overflow appears/disappears. The Viewport
+   has `overflow: scroll` with native bars hidden by BaseUI's injected
+   `.base-ui-disable-scrollbar`, so the gutter is empty unless we claim it. */
+:where([class*="Viewport"]) {
+  scrollbar-gutter: stable;
+}
+
+.scrollbarThumb {
+  background: var(--text-dim);
+  border-radius: 0;
+  flex: 0 0 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+/* BaseUI sets `data-has-overflow-y`/`data-has-overflow-x` on the scrollbar
+   only when the content overflows that axis. keepMounted keeps the element
+   in the DOM regardless, so hide the track when its axis has no overflow —
+   otherwise a non-scrollable region shows an empty gutter. */
+.scrollbarTrack[data-orientation="vertical"]:not([data-has-overflow-y]) {
+  visibility: hidden;
+}
+
+.scrollbarTrack[data-orientation="horizontal"]:not([data-has-overflow-x]) {
+  visibility: hidden;
+}
+
+.scrollbarTrack[data-orientation="horizontal"] .scrollbarThumb {
+  width: auto;
+  height: 100%;
+}
+
+.scrollbarThumb:hover {
+  background: var(--text);
+}
+
+/* ---------- app shell ---------- */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  user-select: none;
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

@@ -1,0 +1,108 @@
+/* PullMenu: split button with a dropdown menu.
+   Class names mirror the Base UI anatomy. */
+
+/* Container — no border, no padding; just a flex row that holds the
+   main button flush against the caret trigger. The visual "single button"
+   effect comes from the shared border on the main button plus a border-left
+   on the caret. */
+.split {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+/* The main (left) button. Override the kit's right border-radius so the
+   inner edge is square, and trim its right border so the caret's left
+   border takes over (no double border between them). */
+.main {
+  padding: 2px 4px 2px 8px !important;
+  font-size: var(--fs-sm);
+  border-right: 0 !important;
+}
+
+/* The caret (right) button. Same flat look as the main button but slimmer
+   — just enough room for the chevron. */
+.caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-left-width: 0px;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.caret:hover:not(:disabled):not([data-disabled]) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.caret:active:not(:disabled):not([data-disabled]) {
+  background: var(--bg-active);
+}
+
+.caret:disabled,
+.caret[data-disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.caret[data-popup-open] {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+/* Dropdown positioning layer — no border, no background, no padding. */
+.positioner {
+  outline: 0;
+  z-index: 20;
+}
+
+/* The visible popup panel. */
+.popup {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  min-width: 220px;
+  padding: var(--space-1);
+  box-shadow: var(--overlay-shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  outline: 0;
+}
+
+.item[data-highlighted] {
+  background: var(--bg-hover);
+}
+
+.item[data-disabled] {
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+.separator {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}

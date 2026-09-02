@@ -1,0 +1,7 @@
+/* Commit graph canvas, pinned behind the scroll content. */
+.graphCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}

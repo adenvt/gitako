@@ -24,15 +24,16 @@ shell lives in `src/app/`. Global state lives in `src/state/`.
 
 ```
 src/
-  app/                  # app shell: App.tsx, main.tsx, styles/index.css
+  app/                  # app shell: App.tsx, main.tsx, styles/ (base.css tokens+kit, index.css)
   features/
     commit-graph/       # graph + commit list (canvas, layout, colors)
     commit-detail/      # detail panel (CommitDetail)
     commit/             # commit composer (CommitComposer)
     repo/               # open-repo flow
-    status-bar/         # StatusBar
+    toolbar/            # top toolbar (repo/branch + pull/push/stash/settings)
   shared/
-    components/         # FileTree, StatusIcon (used by 2+ features)
+    components/         # FileTree, StatusIcon, ui/ kit (used by 2+ features)
+    compositions/       # use* hooks (useAppSettings)
     utils/              # time, hash, status, error, fileTree
     types/              # git.ts
   state/                # zustand store + tauri invoke wrappers
@@ -51,6 +52,44 @@ Rules:
   No relative imports across feature boundaries (sibling imports within one
   feature folder are fine).
 - Never create new top-level folders in `src/` without updating this section.
+- Design constraints (visual): single accent token (`--accent`), single corner-radius
+  scale (3/5/7px), fonts via `--font-ui`/`--font-mono`; never add a second accent or
+  radius system. All shared control styles (`.ui-btn`, `.ui-input`, `.ui-textarea`,
+  `.ui-ghost`, `.section-label`) live in `src/app/styles/base.css`. Canvas-drawn
+  neutrals in `GraphCanvas.tsx` are hardcoded constants that must be kept in sync
+  with the base.css tokens.
+
+## Styling: Base UI + CSS Modules
+
+This project uses Base UI. Its documentation can be found at base-ui.com/llms.txt.
+Base UI components do not have the same API as Radix UI; this includes props, data attributes, or components.
+There is no asChild prop on any component; instead, the render prop is used. Read Base UI's composition guide for details on how to use render: base-ui.com/react/handbook/composition.md.
+Always consult the Base UI llms.txt doc before building components with Base UI to ensure the correct patterns are being used.
+
+Controls come from the shared kit in `src/shared/components/ui/` — `Button`,
+`Input`, `Textarea` — which wraps **Base UI** (`@base-ui/react`) primitives.
+Do not use raw `<button>`/`<input>` for shared-looking controls; use the kit
+(`Button` variants: `solid` (default) / `primary` / `ghost` / `none`).
+`Textarea` is a styled native element (Base UI ships no textarea part).
+
+Rules:
+
+- Feature styles are **colocated CSS Modules** (`<Component>.module.css` next to
+  the component; auto-scoped, hashed classnames). `base.css` is the only global
+  stylesheet: design tokens, the `ui-*` control kit, and the utilities
+  `mono` / `muted` / `section-label`.
+- Import as `import s from "./x.module.css"` and reference `s.someClass`.
+  Never build classnames dynamically with template literals (`diff-${kind}`,
+  `file-status-${s}`) — CSS Modules hash names, so dynamic strings break.
+  Use a static lookup map instead (see `StatusIcon.tsx`, `DiffView.tsx`,
+  `CommitList.tsx` WIP icons for the pattern).
+- Rules needed by 2+ components live in the owning component's module and are
+  imported there (e.g. `.commitRefBadge` from `refBadge.module.css` is reused by
+  `CommitDetail`; `.detailPane` from `detail.module.css` is reused by
+  `CommitComposer`).
+- Cross-cutting one-word utilities (`mono`, `muted`, `section-label`) stay
+  global via `base.css` and can be appended alongside module classes:
+  ``className={`${s.someClass} mono`}``.
 
 Backend mirror:
 

@@ -1,0 +1,89 @@
+/* Ref badge: used by commit list tag cells and the commit detail refs row.
+   The badge reads like a `git log --decorate` decoration chip — minimal,
+   square, lane-tinted. */
+.commitRefBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text);
+  border: 1px solid var(--badge-color, var(--border));
+  background: transparent;
+  border-radius: 0;
+  padding: 0 4px;
+  white-space: nowrap;
+  max-width: 100%;
+  line-height: 1.6;
+}
+
+/* Current branch (HEAD): checked icon on the left + a stronger lane-tinted
+   fill so the active ref reads as the focused/current one at a glance. */
+.activeRef {
+  background: color-mix(in srgb, var(--badge-color, var(--border)) 38%, var(--bg));
+}
+
+.activeRefCheck {
+  flex-shrink: 0;
+  color: var(--text);
+}
+
+.refName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 96px;
+}
+
+/* Grouped badge: shared name + multiple icons, dropdown on hover. */
+.refBadgeGroup {
+  position: relative;
+  cursor: default;
+}
+
+.refGroupIcons {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.refGroupIcons svg {
+  display: block;
+}
+
+.refDropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 1px);
+  left: 0;
+  z-index: 20;
+  min-width: 140px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  padding: 2px;
+}
+
+.refBadgeGroup:hover .refDropdown {
+  display: block;
+}
+
+.refDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.refDropdownItem:hover {
+  background: var(--bg-hover);
+}
+
+.refDropdownName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

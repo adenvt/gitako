@@ -1,0 +1,250 @@
+/* ---------- diff view ---------- */
+.diffView {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.diffTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 4.75px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.diffPath {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+}
+
+.diffClose {
+  flex-shrink: 0;
+}
+
+.diffPlaceholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+/* Two independent panes side-by-side, each its own scroll container. */
+.diffBody {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.diffPane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.diffPane + .diffPane {
+  border-left: 1px solid var(--border);
+}
+
+.diffPaneRoot {
+  flex: 1;
+  min-height: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.diffTableViewport {
+  flex: 1;
+  min-height: 0;
+}
+
+.diffContent {
+  /* Width to the longest line so this pane scrolls horizontally; the
+     viewport clips the overflow at the pane edge (no bleed into the sibling). */
+  min-width: max-content;
+  min-height: 100%;
+  /* Bottom padding so the last line can scroll clear of the horizontal
+     scroll track instead of hiding underneath it. */
+  padding-bottom: 16px;
+}
+
+.diffCol {
+  min-width: 0;
+}
+
+/* Per-pane header label, fixed above its scroll content. */
+.diffColHeaders {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+  font-family: var(--font-display);
+}
+
+.diffColHeader {
+  padding: 4px 12px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.diffLine {
+  display: flex;
+  align-items: stretch;
+  white-space: pre;
+}
+
+/* Hover only on context rows so it can't wash out the change tints. */
+.diffLine:not(.add):not(.remove):hover {
+  background: var(--bg-hover);
+}
+
+/* Full-row change backgrounds: the code area is tinted; the gutter stays
+   a fixed neutral so the line numbers read consistently on every row. */
+.diffLine.add {
+  background: rgba(126, 192, 124, 0.12);
+}
+
+.diffLine.remove {
+  background: rgba(224, 108, 117, 0.12);
+}
+
+/* Stronger intra-line emphasis on the changed words. */
+.diffWord.add {
+  background: rgba(126, 192, 124, 0.3);
+}
+
+.diffWord.remove {
+  background: rgba(224, 108, 117, 0.3);
+}
+
+/* Tighter gutter — terminal diff viewers use minimal columns. */
+.diffGutter {
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  padding: 0 6px;
+  min-width: 56px;
+  text-align: right;
+  color: var(--text-faint);
+  user-select: none;
+  white-space: pre;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+}
+
+.diffSign {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+  color: var(--text-faint);
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.diffSign.remove {
+  color: var(--err);
+}
+
+.diffSign.add {
+  color: var(--ok);
+}
+
+.diffCell {
+  padding: 0 8px;
+  white-space: pre;
+}
+
+/* The side with no counterpart (added/removed lines). */
+.diffEmpty {
+  background: var(--bg-hover);
+  width: 100%;
+}
+
+/* ---------- scroll minimap ---------- */
+
+/* The old pane's vertical scrollbar hosts the minimap (BaseUI Scrollbar
+   renders the track as a flex column). Full height, same inset track
+   background as the app-wide scrollbar, zero radius per the TUI token. */
+.diffScrollTrack {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-inset);
+  width: 8px;
+  padding: 0;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  z-index: 1;
+  position: relative;
+}
+
+/* The drag thumb sits on top of the minimap markers; semi-transparent so the
+   change bars stay readable beneath it, full opacity on hover. */
+.diffScrollThumb {
+  position: relative;
+  background: color-mix(in srgb, var(--text-dim) 45%, transparent);
+  border-radius: var(--radius);
+  flex: 0 0 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  z-index: 2;
+}
+
+.diffScrollThumb:hover {
+  background: color-mix(in srgb, var(--text) 75%, transparent);
+}
+
+/* Hide the track when the content doesn't overflow that axis (same signal as
+   the app-wide scrollbar) — a short file shouldn't show an empty gutter. */
+.diffScrollTrack[data-orientation="vertical"]:not([data-has-overflow-y]) {
+  visibility: hidden;
+}
+
+/* Change markers laid out inside the scrollbar track. Purely passive: the
+   thumb (ScrollArea) handles all pointer interaction; markers only paint. */
+.diffMinimap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* One absolutely-positioned bar per aligned diff row; top/height come from
+   the component as percentages of the scrollable content. Colors come from a
+   static map via data-kind, not dynamic classnames. */
+.diffMinimapBar {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  opacity: 0.8;
+}
+
+.diffMinimapBar[data-kind="add"] {
+  background: var(--ok);
+}
+
+.diffMinimapBar[data-kind="remove"] {
+  background: var(--err);
+}

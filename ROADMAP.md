@@ -31,10 +31,6 @@ Legend: ✅ done · 🔨 in progress · ⬜ planned
 - [x] Click a changed file to open its diff (commit detail + composer)
 - [x] Change highlighting + hunk-only fallback + too-large guard
 - [x] Working-tree diff from the composer's staged/unstaged trees
-- [ ] File content preview for added/removed files
-- [ ] Commit search / filter by author, message, hash
-- [ ] Better horizontal-scroll UX in the diff view (two panes that scroll
-      independently is hard; needs a cleaner editor-like scroll model)
 
 ## Phase 4 — Branching & history ⬜
 
@@ -48,7 +44,7 @@ Legend: ✅ done · 🔨 in progress · ⬜ planned
 
 ## Phase 5 — Remote operations ⬜
 
-- [ ] Push / pull / fetch with progress feedback
+- [x] Push / pull / fetch with progress feedback
 - [ ] Remote management (add/remove remotes)
 - [ ] Remote branch tracking indicators on the graph
 - [ ] Clone a repository from a URL
@@ -61,7 +57,11 @@ Legend: ✅ done · 🔨 in progress · ⬜ planned
 - [ ] Generate pull request title + description from the branch's commits
 - [ ] Model/provider selection + API key settings (per-repo / global)
 
-## Phase 7 — Polish ⬜
+## Phase 7 — Project
+
+- [ ] Allow open multiple project using Tab
+
+## Phase 8 — Polish ⬜
 
 - [ ] Amend commits from the composer
 - [ ] Keyboard shortcuts (commit, stage, search…)

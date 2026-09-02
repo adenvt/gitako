@@ -1,0 +1,103 @@
+/* Commit detail pane (shared pane base with the composer). */
+.detailPane {
+  width: 360px;
+  padding: 0;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-sm);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.detailPane h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.panePlaceholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+/* Subject block at the top of the pane, separated by a hairline. */
+.detailSubject {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin: 0;
+  padding: 10px 12px;
+  line-height: 1.45;
+  word-break: break-word;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.detailMeta {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 4px 12px;
+  font-size: var(--fs-sm);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.detailMeta dt {
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.detailMeta dd {
+  word-break: break-word;
+  color: var(--text);
+}
+
+.detailFiles {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.detailFiles h4 {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+/* File stat block: single row of `M 3 modified` etc., monospaced counts. */
+.fileStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: 8px 12px;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+
+.fileStat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+}

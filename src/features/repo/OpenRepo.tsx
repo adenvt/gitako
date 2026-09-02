@@ -1,17 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-import { FolderOpen, Search, X } from "lucide-react";
+import {
+  FileDirectoryOpenFillIcon,
+  GitBranchIcon,
+  SearchIcon,
+  XIcon,
+} from "@primer/octicons-react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
 import { open } from "@tauri-apps/plugin-dialog";
 import { homeDir } from "@tauri-apps/api/path";
 import { useRepoStore } from "@/state/store";
 import { repoRoot } from "@/state/git";
+import { Button, Input } from "@/shared/components/ui";
 import {
   addRecentRepo,
   loadRecentRepos,
   removeRecentRepo,
   type RecentRepo,
 } from "@/shared/utils/recentRepos";
+import s from "./repo.module.css";
 
-async function repoDisplayPath(path: string): Promise<string> {
+export async function repoDisplayPath(path: string): Promise<string> {
   try {
     const home = await homeDir();
     return path.startsWith(home) ? `~${path.slice(home.length)}` : path;
@@ -25,6 +33,7 @@ export function OpenRepo() {
   const [query, setQuery] = useState("");
   const [recent, setRecent] = useState<RecentRepo[]>(() => loadRecentRepos());
   const [displayPaths, setDisplayPaths] = useState<Record<string, string>>({});
+  const [banner, setBanner] = useState<string | null>(null);
 
   // Resolve ~/ display paths once per session (homeDir is async; the path
   // plugin must be registered in the Rust backend).
@@ -56,7 +65,7 @@ export function OpenRepo() {
       await openRepo(root);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      alert(`Cannot open repository: ${msg}`);
+      setBanner(`Cannot open repository: ${msg}`);
     }
   };
 
@@ -73,7 +82,7 @@ export function OpenRepo() {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      alert(`Failed to open picker: ${msg}`);
+      setBanner(`Failed to open picker: ${msg}`);
     }
   };
 
@@ -91,64 +100,102 @@ export function OpenRepo() {
   };
 
   return (
-    <div className="welcome">
-      <div className="welcome-header">
-        <div>
-          <h1>Repositories</h1>
-        </div>
-        <div className="welcome-actions">
-          <button className="welcome-btn" onClick={() => void handleBrowse()}>
-            <FolderOpen size={15} aria-hidden />
-            Open
-          </button>
+    <div className={s.welcome}>
+      <div className={s.welcomeBrand}>
+        <GitBranchIcon size={18} className={s.welcomeBrandIcon} aria-hidden />
+        <span className={s.welcomeBrandName}>GiTako</span>
+      </div>
+
+      <div className={s.welcomeHeader}>
+        <h1>
+          <span style={{ color: "var(--text-faint)" }}>~/repos$</span> open
+        </h1>
+        <div className={s.welcomeActions}>
+          <Button variant="solid" className={s.welcomeBtn} onClick={() => void handleBrowse()}>
+            <FileDirectoryOpenFillIcon size={13} aria-hidden />
+            open
+          </Button>
         </div>
       </div>
 
-      <div className="welcome-search">
-        <Search size={14} className="welcome-search-icon" aria-hidden />
-        <input
+      <div className={s.welcomeSearch}>
+        <SearchIcon size={14} className={s.welcomeSearchIcon} aria-hidden />
+        <Input
           type="text"
+          className={s.welcomeSearchInput}
           placeholder="Search repositories"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         {query && (
-          <button className="welcome-clear" onClick={() => setQuery("")} aria-label="Clear search">
-            <X size={13} aria-hidden />
-          </button>
+          <Button
+            variant="ghost"
+            className={s.welcomeClear}
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+          >
+            <XIcon size={13} aria-hidden />
+          </Button>
         )}
       </div>
 
       {recent.length > 0 ? (
-        <div className="welcome-recents">
-          <div className="welcome-section-label">Recent</div>
-          <ul className="welcome-list">
-            {filtered.map((r) => (
-              <li key={r.path} className="welcome-item" onClick={() => void handleOpenPath(r.path)}>
-                <div className="welcome-item-name">{r.name}</div>
-                <div className="welcome-item-path">{displayPaths[r.path] ?? r.path}</div>
-                <button
-                  className="welcome-item-remove"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    remove(r.path);
-                  }}
-                  aria-label={`Remove ${r.name} from recent`}
-                >
-                  <X size={13} aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ScrollArea.Root className={s.welcomeRecents}>
+          <ScrollArea.Viewport className={s.welcomeRecentsViewport}>
+            <ScrollArea.Content className={s.welcomeRecentsContent}>
+              <div className={`${s.welcomeSectionLabel} section-label`}>Recent</div>
+              <ul className={s.welcomeList}>
+                {filtered.map((r) => (
+                  <li
+                    key={r.path}
+                    className={s.welcomeItem}
+                    onClick={() => void handleOpenPath(r.path)}
+                  >
+                    <div className={s.welcomeItemName}>{r.name}</div>
+                    <div className={`${s.welcomeItemPath} mono`}>
+                      {displayPaths[r.path] ?? r.path}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      className={s.welcomeItemRemove}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        remove(r.path);
+                      }}
+                      aria-label={`Remove ${r.name} from recent`}
+                    >
+                      <XIcon size={13} aria-hidden />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea.Content>
+          </ScrollArea.Viewport>
+          <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
+            <ScrollArea.Thumb className="scrollbarThumb" />
+          </ScrollArea.Scrollbar>
+        </ScrollArea.Root>
       ) : (
-        <div className="welcome-empty">
+        <div className={s.welcomeEmpty}>
+          <GitBranchIcon size={22} className={s.welcomeEmptyIcon} aria-hidden />
           <p className="muted">No repositories yet.</p>
-          <p className="muted">Click Open to pick a git repository folder.</p>
+          <p className="muted">Pick a git repository folder to get started.</p>
+          <Button
+            variant="primary"
+            className={s.welcomeEmptyBtn}
+            onClick={() => void handleBrowse()}
+          >
+            <FileDirectoryOpenFillIcon size={13} aria-hidden />
+            open
+          </Button>
         </div>
       )}
 
-      {error && <p className="error">{error}</p>}
+      {(error || banner) && (
+        <div className={s.welcomeError} role="alert">
+          {error ?? banner}
+        </div>
+      )}
     </div>
   );
 }

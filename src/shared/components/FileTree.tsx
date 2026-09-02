@@ -1,9 +1,18 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import { ChevronRight, Folder, FolderOpen, ListCollapse, ListTree } from "lucide-react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
+import {
+  ChevronRightIcon,
+  FileDirectoryIcon,
+  FileDirectoryOpenFillIcon,
+  ListOrderedIcon,
+  ListUnorderedIcon,
+} from "@primer/octicons-react";
 import { collectDirPaths, type FileTreeNode } from "@/shared/utils/fileTree";
 import { statusLabel } from "@/shared/utils/status";
 import { StatusIcon } from "@/shared/components/StatusIcon";
+import { Button } from "@/shared/components/ui";
+import s from "./fileTree.module.css";
 
 interface FileTreeProps {
   root: FileTreeNode;
@@ -11,6 +20,8 @@ interface FileTreeProps {
   onFileAction?: (node: FileTreeNode) => void;
   /** Label for the hover action button. */
   actionLabel?: string;
+  /** Color the action button to signal its effect: stage = green, unstage = yellow. */
+  actionVariant?: "stage" | "unstage";
   /** Optional click-to-open (e.g. open the diff for a file). */
   onFileOpen?: (node: FileTreeNode) => void;
 }
@@ -23,6 +34,7 @@ interface TreeRowProps {
   onToggle: (path: string) => void;
   onFileAction?: (node: FileTreeNode) => void;
   actionLabel?: string;
+  actionVariant?: "stage" | "unstage";
   onFileOpen?: (node: FileTreeNode) => void;
 }
 
@@ -34,27 +46,33 @@ function TreeRow({
   onToggle,
   onFileAction,
   actionLabel,
+  actionVariant,
   onFileOpen,
 }: TreeRowProps) {
   if (!node.isFile) {
     return (
       <>
-        <button
-          className="tree-row tree-dir"
+        <Button
+          variant="none"
+          className={clsx(s.treeRow, s.treeDir)}
           style={{ paddingLeft: 6 + depth * 14 }}
           onClick={() => onToggle(node.path)}
           aria-expanded={open}
         >
-          <ChevronRight size={14} className={clsx("tree-arrow", open && "open")} aria-hidden />
+          <ChevronRightIcon
+            size={14}
+            className={clsx(s.treeArrow, open && s.treeArrowOpen)}
+            aria-hidden
+          />
           {open ? (
-            <FolderOpen size={14} className="tree-folder-icon" aria-hidden />
+            <FileDirectoryOpenFillIcon size={14} className={s.treeFolderIcon} aria-hidden />
           ) : (
-            <Folder size={14} className="tree-folder-icon" aria-hidden />
+            <FileDirectoryIcon size={14} className={s.treeFolderIcon} aria-hidden />
           )}
-          <span className="tree-name">{node.name || "/"}</span>
-        </button>
+          <span className={s.treeName}>{node.name || "/"}</span>
+        </Button>
         {open && (
-          <div className="tree-children">
+          <div className={s.treeChildren}>
             {node.children.map((c) => (
               <TreeRow
                 key={c.path}
@@ -65,6 +83,7 @@ function TreeRow({
                 onToggle={onToggle}
                 onFileAction={onFileAction}
                 actionLabel={actionLabel}
+                actionVariant={actionVariant}
                 onFileOpen={onFileOpen}
               />
             ))}
@@ -76,30 +95,37 @@ function TreeRow({
 
   return (
     <div
-      className={clsx("tree-row tree-file", onFileOpen && "clickable")}
+      className={clsx(s.treeRow, s.treeFile, onFileOpen && s.clickable)}
       style={{ paddingLeft: 6 + depth * 14 }}
       title={`${statusLabel(node.status)}: ${node.path}`}
       onClick={onFileOpen ? () => onFileOpen(node) : undefined}
     >
-      <span className="tree-spacer" aria-hidden />
+      <span className={s.treeSpacer} aria-hidden />
       <StatusIcon status={node.status} />
-      <span className="tree-name mono">{node.name}</span>
+      <span className={`${s.treeName} mono`}>{node.name}</span>
       {onFileAction && actionLabel && (
-        <button
-          className="tree-file-action"
+        <Button
+          variant="none"
+          className={clsx(s.treeFileAction, actionVariant === "unstage" && s.treeFileActionUnstage)}
           onClick={(e) => {
             e.stopPropagation();
             onFileAction(node);
           }}
         >
           {actionLabel}
-        </button>
+        </Button>
       )}
     </div>
   );
 }
 
-export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTreeProps) {
+export function FileTree({
+  root,
+  onFileAction,
+  actionLabel,
+  actionVariant,
+  onFileOpen,
+}: FileTreeProps) {
   const dirPaths = useMemo(() => collectDirPaths(root), [root]);
 
   // Top-level directories start expanded; deeper ones collapsed.
@@ -126,37 +152,45 @@ export function FileTree({ root, onFileAction, actionLabel, onFileOpen }: FileTr
   const allExpanded = dirPaths.length > 0 && dirPaths.every((p) => expanded.has(p));
 
   return (
-    <div className="file-tree">
+    <div className={s.fileTree}>
       {dirPaths.length > 0 && (
-        <div className="file-tree-toolbar">
+        <div className={s.fileTreeToolbar}>
           {allExpanded ? (
-            <button className="tree-toolbar-btn" onClick={collapseAll}>
-              <ListCollapse size={13} aria-hidden />
+            <Button variant="none" className={s.treeToolbarBtn} onClick={collapseAll}>
+              <ListUnorderedIcon size={13} aria-hidden />
               Collapse all
-            </button>
+            </Button>
           ) : (
-            <button className="tree-toolbar-btn" onClick={expandAll}>
-              <ListTree size={13} aria-hidden />
+            <Button variant="none" className={s.treeToolbarBtn} onClick={expandAll}>
+              <ListOrderedIcon size={13} aria-hidden />
               Expand all
-            </button>
+            </Button>
           )}
         </div>
       )}
-      <div className="file-tree-rows">
-        {root.children.map((c) => (
-          <TreeRow
-            key={c.path}
-            node={c}
-            depth={0}
-            open={expanded.has(c.path)}
-            expanded={expanded}
-            onToggle={toggle}
-            onFileAction={onFileAction}
-            actionLabel={actionLabel}
-            onFileOpen={onFileOpen}
-          />
-        ))}
-      </div>
+      <ScrollArea.Root className={s.fileTreeRows}>
+        <ScrollArea.Viewport className={s.fileTreeRowsViewport}>
+          <ScrollArea.Content className={s.fileTreeRowsContent}>
+            {root.children.map((c) => (
+              <TreeRow
+                key={c.path}
+                node={c}
+                depth={0}
+                open={expanded.has(c.path)}
+                expanded={expanded}
+                onToggle={toggle}
+                onFileAction={onFileAction}
+                actionLabel={actionLabel}
+                actionVariant={actionVariant}
+                onFileOpen={onFileOpen}
+              />
+            ))}
+          </ScrollArea.Content>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
+          <ScrollArea.Thumb className="scrollbarThumb" />
+        </ScrollArea.Scrollbar>
+      </ScrollArea.Root>
     </div>
   );
 }

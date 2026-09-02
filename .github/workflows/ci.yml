@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - '**.md'
+      - "**.md"
   pull_request:
     paths-ignore:
-      - '**.md'
+      - "**.md"
   workflow_dispatch:
 
 permissions:
@@ -29,7 +29,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # GitHub Actions sets NODE_ENV=production by default, which makes
+      # `npm ci` skip devDependencies. Force development so devDeps
+      # (vitest, @testing-library/*, happy-dom, @vitest/coverage-v8) install.
+      # The vitest config also forces NODE_ENV=development at test time so
+      # React loads its development build (act() needs it).
       - name: Install dependencies
+        env:
+          NODE_ENV: development
         run: npm ci
 
       - name: Typecheck
@@ -38,8 +45,17 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Tests
+      - name: Unit tests
         run: npx vitest run
+
+      - name: Upload coverage report
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+          if-no-files-found: ignore
 
   backend:
     name: Backend (cargo test)

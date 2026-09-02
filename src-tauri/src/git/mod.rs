@@ -100,15 +100,8 @@ pub fn resolve_revision(repo: &Path, rev: &str) -> Result<String, GitError> {
     Ok(hash)
 }
 
-/// Read a file relative to the repo, or to the git dir for files like
-/// `.git/MERGE_HEAD`. Used to detect in-progress operations.
-pub fn read_git_file(repo: &Path, git_relative: &str) -> Option<String> {
-    let p = repo.join(git_relative);
-    std::fs::read_to_string(p).ok()
-}
-
 /// Convenience for printing progress output when piping a long-running git
-/// command. Not used by `run`; reserved for push/pull (Phase 2).
+/// command. Not used by `run`; reserved for push/pull (ROADMAP Phase 5).
 #[allow(dead_code)]
 pub fn run_streamed(
     repo_dir: &Path,

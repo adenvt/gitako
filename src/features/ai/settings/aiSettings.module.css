@@ -1,0 +1,309 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heading h2 {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.heading p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+/* Wrap an input + a small trailing button on the same row. */
+.fieldRow {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.fieldRow > input,
+.fieldRow > .inputWrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Input with an icon button embedded inside its border (right edge). */
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.inputWrap > input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 30px; /* leave room for the eye icon */
+}
+
+.eyeBtn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0;
+}
+
+.eyeBtn:hover {
+  color: var(--text);
+}
+
+.sideBtn {
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0 12px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.sideBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-border);
+}
+
+.sideBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.refreshBtn {
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 0 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* BaseUI Select trigger shares the .ui-input look. */
+.selectTrigger {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  text-align: left;
+  width: 100%;
+}
+
+.selectTrigger:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+}
+
+/* BaseUI Combobox: input + trigger share a single bordered shell so
+   it reads as one input. The trigger is icon-only on the right. */
+.comboInputGroup {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.comboInputGroup:focus-within {
+  border-color: var(--accent-border);
+}
+
+.comboInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  outline: none;
+}
+
+.comboTrigger {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comboTrigger:hover {
+  color: var(--text);
+}
+
+.comboEmpty {
+  padding: 6px 10px;
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+  font-style: italic;
+}
+
+.selectPopup {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  width: var(--anchor-width, 100%);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.selectItem {
+  padding: 6px 10px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.selectItem[data-highlighted] {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.selectItem[data-selected] {
+  color: var(--accent-strong);
+}
+
+.statusOk {
+  color: var(--ok);
+  font-size: var(--fs-sm);
+}
+
+.statusErr {
+  color: var(--err);
+  font-size: var(--fs-sm);
+}
+
+.statusIdle {
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+}
+
+.warning {
+  color: var(--warn);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.warningBtn {
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border));
+  color: var(--warn);
+  padding: 1px 6px;
+  font-size: var(--fs-xs);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.warningBtn:hover {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--text);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.disclosure {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  line-height: 1.5;
+  padding: 8px 12px;
+  border: 1px dashed var(--border);
+  background: var(--bg-inset);
+}
+
+.backLink {
+  align-self: flex-start;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+
+.backLink:hover {
+  color: var(--accent-strong);
+}

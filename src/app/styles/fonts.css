@@ -1,0 +1,49 @@
+/* Self-hosted IoskeleyMono — TUI type family.
+   Only the weights the app actually uses are registered, to keep the
+   initial font payload small. The SemiCondensed cut is registered for
+   pane titles (slightly tighter line width per character). */
+@font-face {
+  font-family: "IoskeleyMono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("@assets/IoskeleyMono-Web/WOFF2/IoskeleyMono-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IoskeleyMono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("@assets/IoskeleyMono-Web/WOFF2/IoskeleyMono-Medium.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IoskeleyMono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("@assets/IoskeleyMono-Web/WOFF2/IoskeleyMono-SemiBold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IoskeleyMono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("@assets/IoskeleyMono-Web/WOFF2/IoskeleyMono-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IoskeleyMono";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("@assets/IoskeleyMono-Web/WOFF2/IoskeleyMono-ExtraBold.woff2") format("woff2");
+}
+
+/* SemiCondensed cut: tighter advance for uppercase pane titles and the
+   log-header signature. */
+@font-face {
+  font-family: "IoskeleyMono SC";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("@assets/IoskeleyMono-Web/WOFF2/IoskeleyMono-SemiCondensedBold.woff2") format("woff2");
+}

@@ -1,17 +1,51 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { FilePenLine, FilePlus, FileX } from "lucide-react";
-import { GraphCanvas, ROW_HEIGHT, WORKING_ROW, graphGutter, TAG_WIDTH, LANE_PAD, GRAPH_PAD, LANE_WIDTH } from "./GraphCanvas";
+import {
+  FileAddedIcon,
+  FileDiffIcon,
+  FileRemovedIcon,
+  GitBranchIcon,
+} from "@primer/octicons-react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
+import {
+  GraphCanvas,
+  ROW_HEIGHT,
+  WORKING_ROW,
+  graphGutter,
+  TAG_WIDTH,
+  MIN_GRAPH_BAND,
+} from "./GraphCanvas";
+import { laneColor } from "./colors";
 import { RefBadge, RefBadgeGroup } from "./refBadge";
 import { useRepoStore } from "@/state/store";
 import { timeAgo } from "@/shared/utils/time";
 import { countByKind } from "@/shared/utils/status";
+import type { RefInfo } from "@/shared/types/git";
+import s from "./commitList.module.css";
 
 const OVERSCAN = 8;
 /** Drag handle hit width around the boundary between graph and text. */
 const HANDLE_HIT = 5;
-/** Smallest graph band: left pad + right pad (dots clamp to the right edge). */
-const MIN_GRAPH_BAND = LANE_PAD + (LANE_WIDTH / 2) + GRAPH_PAD;
+
+/**
+ * Group refs by their base `name` for badge rendering. The remote `HEAD`
+ * pointer (e.g. `origin/HEAD`) and the stash ref (`refs/stash`) are filtered
+ * out — they're convenience pointers, not real branch/tag badges.
+ *
+ * Example: refs `[main, origin/main, v1.0]` -> `[[main, origin/main], [v1.0]]`.
+ */
+export function groupRefsForBadging(refs: RefInfo[]): RefInfo[][] {
+  const visible = refs.filter(
+    (r) => !(r.kind === "remoteBranch" && r.name === "HEAD") && r.fullName !== "refs/stash",
+  );
+  const groups = new Map<string, RefInfo[]>();
+  for (const r of visible) {
+    const list = groups.get(r.name) ?? [];
+    list.push(r);
+    groups.set(r.name, list);
+  }
+  return [...groups.values()];
+}
 
 /** Virtualized commit list: canvas graph + DOM text labels, one scroll container. */
 export function CommitList() {
@@ -27,6 +61,7 @@ export function CommitList() {
     refsByCommit,
     graphWidth,
     setGraphWidth,
+    checkout,
   } = useRepoStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 50 });
@@ -34,6 +69,8 @@ export function CommitList() {
   const draggingRef = useRef(false);
   /** Maximum graph band width: the auto gutter that fits all lanes statically. */
   const maxGraphBandRef = useRef(0);
+  /** Selected index within the visual rows (WIP row = 0, then commits). */
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
 
   // Drag the boundary between the graph band and the message column. Dragging
   // left shrinks the graph band (message grows); dragging right grows the graph
@@ -67,9 +104,38 @@ export function CommitList() {
     [setGraphWidth],
   );
 
+  // Double-clicking a ref badge checks out the ref. The badge
+  // component gates by `kind`, but remote-tracking refs also need to
+  // resolve to their full name (`origin/feature`) so the store can
+  // route them through `git checkout --track` instead of plain
+  // `git checkout`.
+  const onCheckout = useCallback(
+    (name: string, kind: "branch" | "remoteBranch") => {
+      void checkout(name, kind).catch(() => {
+        // store already set `error`; nothing to do.
+      });
+    },
+    [checkout],
+  );
+
   const counts = countByKind(statusEntries);
   const hasWorkingRow = counts.added + counts.deleted + counts.modified > 0;
   const offset = hasWorkingRow ? 1 : 0;
+
+  // Row indexing: the WIP row, when present, is visual index 0 and each
+  // commit follows in graph order (newest first). Both selectors point at the
+  // same visual row so keyboard navigation and click selection stay in sync.
+  const commitIndex = useMemo(() => {
+    const byHash = new Map(commits.map((c, i) => [c.hash, i]));
+    return byHash;
+  }, [commits]);
+  const selectedIndex = useMemo(() => {
+    if (workingSelected) return 0;
+    if (selectedHash == null) return null;
+    const i = commitIndex.get(selectedHash);
+    return i == null ? null : i + offset;
+  }, [workingSelected, selectedHash, commitIndex, offset]);
+  const totalRows = commits.length + offset;
 
   // Update the visible row window on scroll/resize.
   const layoutNonNull = layout;
@@ -95,21 +161,118 @@ export function CommitList() {
     };
   }, [layoutNonNull, hasWorkingRow]);
 
+  // Keyboard focus follows whatever is selected (click or arrow). The list
+  // itself carries the focus so arrow keys work from anywhere in the pane.
+  useEffect(() => {
+    setFocusIndex(selectedIndex);
+  }, [selectedIndex]);
+
+  // Give the scroll viewport focus on mount so arrow keys work immediately,
+  // and refocus it whenever the working row is selected by keyboard (it holds
+  // no focusable element of its own).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && document.activeElement === document.body) el.focus();
+  });
+  useEffect(() => {
+    if (workingSelected) scrollRef.current?.focus();
+  }, [workingSelected]);
+
+  // Navigate the selection with the keyboard. ArrowUp/Down move one visual
+  // row; PageUp/PageDown move by a viewport; Home/End jump to the first/last
+  // row. Moving up onto the WIP row selects it and opens the composer (same as
+  // clicking it); moving down from it selects the newest commit.
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.defaultPrevented || draggingRef.current) return;
+      const el = scrollRef.current;
+      if (!el || totalRows === 0) return;
+      const current = focusIndex ?? selectedIndex;
+      let next: number;
+      switch (e.key) {
+        case "ArrowDown":
+          next = (current ?? -1) + 1;
+          break;
+        case "ArrowUp":
+          next = (current ?? totalRows) - 1;
+          break;
+        case "PageDown": {
+          const page = Math.max(1, Math.floor(el.clientHeight / ROW_HEIGHT) - 1);
+          next = Math.min(totalRows - 1, (current ?? -1) + page);
+          break;
+        }
+        case "PageUp": {
+          const page = Math.max(1, Math.floor(el.clientHeight / ROW_HEIGHT) - 1);
+          next = Math.max(0, (current ?? totalRows) - page);
+          break;
+        }
+        case "Home":
+          next = 0;
+          break;
+        case "End":
+          next = totalRows - 1;
+          break;
+        default:
+          return;
+      }
+      if (next < 0 || next >= totalRows) return;
+      e.preventDefault();
+      // Keep the highlighted row visible: scroll it to the top edge when it
+      // moves above the viewport, or to the bottom edge when it moves below.
+      const rowTop = next * ROW_HEIGHT;
+      const rowBottom = rowTop + ROW_HEIGHT;
+      const viewTop = el.scrollTop;
+      const viewBottom = viewTop + el.clientHeight;
+      if (rowTop < viewTop) {
+        el.scrollTo({ top: rowTop, behavior: "auto" });
+      } else if (rowBottom > viewBottom) {
+        el.scrollTo({ top: rowBottom - el.clientHeight, behavior: "auto" });
+      }
+      setFocusIndex(next);
+      if (next === 0 && hasWorkingRow) {
+        setWorkingSelected(true);
+        openComposer();
+      } else {
+        const c = commits[next - (hasWorkingRow ? 1 : 0)];
+        if (c) select(c.hash);
+      }
+    },
+    [
+      totalRows,
+      focusIndex,
+      selectedIndex,
+      hasWorkingRow,
+      commits,
+      select,
+      setWorkingSelected,
+      openComposer,
+    ],
+  );
+
   if (!layout || layout.commits.length === 0) {
-    return <div className="commit-list empty">No commits yet</div>;
+    return (
+      <div className={clsx(s.commitList, s.empty)}>
+        <GitBranchIcon size={22} aria-hidden />
+        <span>No commits yet</span>
+        <span className="muted">Commits will appear here after your first commit.</span>
+      </div>
+    );
   }
 
   const totalHeight = (layout.commits.length + offset) * ROW_HEIGHT;
   // The graph band is resizable: use the user-set width, else the auto gutter.
   const gutter = graphGutter(layout.maxLane);
   maxGraphBandRef.current = gutter;
-  const graphBand = Math.min(Math.max(graphWidth > 0 ? graphWidth : gutter, MIN_GRAPH_BAND), gutter);
+  const graphBand = Math.min(
+    Math.max(graphWidth > 0 ? graphWidth : gutter, MIN_GRAPH_BAND),
+    gutter,
+  );
   const textLeft = TAG_WIDTH + graphBand;
   // Handle sits at the boundary between graph band and message column.
   const handleLeft = textLeft - HANDLE_HIT;
 
   return (
-    <div className="commit-list">
+    <div className={s.commitList}>
       {/* Canvas pinned to the viewport (not the scroll content). */}
       <GraphCanvas
         layout={layout}
@@ -121,110 +284,131 @@ export function CommitList() {
       />
       {/* Drag handle at the boundary between graph band and message column. */}
       <div
-        className="graph-resize-handle"
+        className={s.graphResizeHandle}
         style={{ left: handleLeft }}
         onPointerDown={onPointerDown}
         title="Drag to resize the graph column"
       />
-      <div className="commit-scroll" ref={scrollRef}>
-        <div style={{ height: totalHeight, position: "relative" }}>
-          <div className="commit-rows">
-            {/* Working-directory row (row 0), only when there are changes. */}
-            {hasWorkingRow && (
-              <div
-                className={clsx("commit-row working-row", workingSelected && "selected")}
-                style={{
-                  top: WORKING_ROW * ROW_HEIGHT,
-                  height: ROW_HEIGHT,
-                  left: textLeft,
-                }}
-                onClick={() => {
-                  // Select the WIP row (deselects any commit) + open composer.
-                  setWorkingSelected(true);
-                  openComposer();
-                }}
-                title="Open commit composer"
-              >
-                <span className="commit-subject wip-label">
-                  WIP
-                  {counts.modified > 0 && (
-                    <span className="wip-count">
-                      <FilePenLine size={13} className="wip-icon modified" aria-hidden />
-                      {counts.modified}
-                    </span>
-                  )}
-                  {counts.added > 0 && (
-                    <span className="wip-count">
-                      <FilePlus size={13} className="wip-icon added" aria-hidden />
-                      {counts.added}
-                    </span>
-                  )}
-                  {counts.deleted > 0 && (
-                    <span className="wip-count">
-                      <FileX size={13} className="wip-icon deleted" aria-hidden />
-                      {counts.deleted}
-                    </span>
-                  )}
-                </span>
-              </div>
-            )}
-            {layout.commits.slice(range.start, range.end).map((_, offsetIdx) => {
-              const i = range.start + offsetIdx;
-              const c = commits[i];
-              if (!c) return null;
-              const isSelected = c.hash === selectedHash;
-              // Hide remote convenience pointers like origin/HEAD.
-              const refInfos = (refsByCommit[c.hash] ?? []).filter(
-                (r) => !(r.kind === "remoteBranch" && r.name === "HEAD"),
-              );
-              // Group refs by base name so `main` + `origin/main` share one badge.
-              const groups = new Map<string, typeof refInfos>();
-              for (const r of refInfos) {
-                const list = groups.get(r.name) ?? [];
-                list.push(r);
-                groups.set(r.name, list);
-              }
-              const top = (i + offset) * ROW_HEIGHT;
-              return (
-                <div key={c.hash}>
-                  {refInfos.length > 0 && (
-                    <div
-                      className="commit-tag-cell"
-                      style={{ top, height: ROW_HEIGHT, width: TAG_WIDTH }}
-                      onClick={() => select(c.hash)}
-                    >
-                      {[...groups.values()].map((group) =>
-                        group.length > 1 ? (
-                          <RefBadgeGroup key={group[0].fullName} refs={group} />
-                        ) : (
-                          <RefBadge key={group[0].fullName} refInfo={group[0]} />
-                        ),
-                      )}
-                    </div>
-                  )}
+      <ScrollArea.Root className={s.commitScroll}>
+        <ScrollArea.Viewport
+          ref={scrollRef}
+          className={s.commitScrollViewport}
+          tabIndex={0}
+          onKeyDown={onKeyDown}
+        >
+          <ScrollArea.Content>
+            <div style={{ height: totalHeight, position: "relative" }}>
+              <div className={s.commitRows}>
+                {/* Working-directory row (row 0), only when there are changes. */}
+                {hasWorkingRow && (
                   <div
-                    className={clsx("commit-row", isSelected && "selected")}
+                    className={clsx(s.commitRow, s.workingRow, workingSelected && s.selected)}
                     style={{
-                      top,
+                      top: WORKING_ROW * ROW_HEIGHT,
                       height: ROW_HEIGHT,
                       left: textLeft,
+                      ["--row-left" as string]: `${textLeft}px`,
                     }}
-                    onClick={() => select(c.hash)}
+                    onClick={() => {
+                      // Select the WIP row (deselects any commit) + open composer.
+                      setWorkingSelected(true);
+                      openComposer();
+                    }}
+                    title="Open commit composer"
                   >
-                    <span className="commit-subject" title={c.subject}>
-                      {c.subject}
-                    </span>
-                    <span className="commit-meta">
-                      <span className="commit-author">{c.authorName}</span>
-                      <span className="commit-time">{timeAgo(c.authorTime)}</span>
+                    <span className={clsx(s.commitSubject, s.wipLabel)}>
+                      *
+                      {counts.modified > 0 && (
+                        <span className={s.wipCount}>
+                          <FileDiffIcon size={11} className={s.wipModified} aria-hidden />
+                          {counts.modified}
+                        </span>
+                      )}
+                      {counts.added > 0 && (
+                        <span className={s.wipCount}>
+                          <FileAddedIcon size={11} className={s.wipAdded} aria-hidden />
+                          {counts.added}
+                        </span>
+                      )}
+                      {counts.deleted > 0 && (
+                        <span className={s.wipCount}>
+                          <FileRemovedIcon size={11} className={s.wipDeleted} aria-hidden />
+                          {counts.deleted}
+                        </span>
+                      )}
                     </span>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+                )}
+                {layout.commits.slice(range.start, range.end).map((_, offsetIdx) => {
+                  const i = range.start + offsetIdx;
+                  const c = commits[i];
+                  if (!c) return null;
+                  const isSelected = c.hash === selectedHash;
+                  // Hide remote convenience pointers like origin/HEAD and group
+                  // refs by base name so `main` + `origin/main` share one badge.
+                  const refInfos = refsByCommit[c.hash] ?? [];
+                  const groups = groupRefsForBadging(refInfos);
+                  const hasVisibleRefs = groups.length > 0;
+                  const top = (i + offset) * ROW_HEIGHT;
+                  const lane = layout.commits[i]?.lane ?? 0;
+                  const badgeColor = laneColor(lane);
+                  return (
+                    <div key={c.hash}>
+                      {hasVisibleRefs && (
+                        <div
+                          className={clsx(s.commitTagCell, isSelected && s.selected)}
+                          style={{ top, height: ROW_HEIGHT, width: TAG_WIDTH }}
+                          onClick={() => select(c.hash)}
+                        >
+                          {groups.map((group) =>
+                            group.length > 1 ? (
+                              <RefBadgeGroup
+                                key={group[0].fullName}
+                                refs={group}
+                                color={badgeColor}
+                                onCheckout={onCheckout}
+                              />
+                            ) : (
+                              <RefBadge
+                                key={group[0].fullName}
+                                refInfo={group[0]}
+                                color={badgeColor}
+                                onCheckout={onCheckout}
+                              />
+                            ),
+                          )}
+                        </div>
+                      )}
+                      <div
+                        className={clsx(s.commitRow, isSelected && s.selected)}
+                        style={{
+                          top,
+                          height: ROW_HEIGHT,
+                          left: textLeft,
+                          ["--row-left" as string]: `${textLeft}px`,
+                        }}
+                        onClick={() => select(c.hash)}
+                      >
+                        <span className={s.commitSubject} title={c.subject}>
+                          {c.subject}
+                        </span>
+                        <span className={s.commitMeta}>
+                          <span>{c.authorName}</span>
+                          <span className={s.commitMetaSep}>·</span>
+                          <span>{timeAgo(c.authorTime)}</span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </ScrollArea.Content>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
+          <ScrollArea.Thumb className="scrollbarThumb" />
+        </ScrollArea.Scrollbar>
+      </ScrollArea.Root>
     </div>
   );
 }

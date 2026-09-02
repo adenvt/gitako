@@ -1,184 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import clsx from "clsx";
-import { X } from "lucide-react";
+import { useCallback, useMemo, useRef } from "react";
+import { XIcon } from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
-import type { DiffFile } from "@/shared/types/git";
-import { highlightLines, langForPath, type Line } from "@/shared/utils/highlight";
-
-/** One aligned row in the side-by-side view. */
-interface DiffRow {
-  /** Kind of the change at this row, or null when unchanged. */
-  oldKind: "add" | "remove" | null;
-  oldLine: string | null;
-  oldNum: number | null;
-  newKind: "add" | "remove" | null;
-  newLine: string | null;
-  newNum: number | null;
-}
-
-/**
- * Build aligned (old,new) rows from the full file contents + parsed hunks.
- *
- * Walk each hunk. Context lines pair up on both sides. Runs of removals are
- * buffered and then paired with the following additions one-to-one, so an
- * edit (`-foo` / `+bar`) renders as a single side-by-side row with the old
- * line on the left and the new line on the right. Leftover removals become
- * left-only rows; leftover additions become right-only rows.
- */
-function buildRows(diff: DiffFile): DiffRow[] {
-  const oldLines = diff.oldLines;
-  const newLines = diff.newLines;
-  const rows: DiffRow[] = [];
-
-  let oldIdx = 0;
-  let newIdx = 0;
-
-  const pushContext = (count: number) => {
-    for (let i = 0; i < count; i++) {
-      rows.push({
-        oldKind: null,
-        oldLine: oldLines[oldIdx] ?? "",
-        oldNum: oldIdx + 1,
-        newKind: null,
-        newLine: newLines[newIdx] ?? "",
-        newNum: newIdx + 1,
-      });
-      oldIdx++;
-      newIdx++;
-    }
-  };
-
-  // Removed lines seen so far, held back to pair with following additions.
-  let pendingRemoves: { line: string; num: number }[] = [];
-
-  const flushRemoves = () => {
-    for (const r of pendingRemoves) {
-      rows.push({
-        oldKind: "remove",
-        oldLine: r.line,
-        oldNum: r.num,
-        newKind: null,
-        newLine: null,
-        newNum: null,
-      });
-    }
-    pendingRemoves = [];
-  };
-
-  const pushRemove = () => {
-    pendingRemoves.push({ line: oldLines[oldIdx] ?? "", num: oldIdx + 1 });
-    oldIdx++;
-  };
-
-  const pushStandaloneAdd = () => {
-    rows.push({
-      oldKind: null,
-      oldLine: null,
-      oldNum: null,
-      newKind: "add",
-      newLine: newLines[newIdx] ?? "",
-      newNum: newIdx + 1,
-    });
-    newIdx++;
-  };
-
-  const pushPairedEdit = () => {
-    const r = pendingRemoves.shift()!;
-    rows.push({
-      oldKind: "remove",
-      oldLine: r.line,
-      oldNum: r.num,
-      newKind: "add",
-      newLine: newLines[newIdx] ?? "",
-      newNum: newIdx + 1,
-    });
-    newIdx++;
-  };
-
-  for (const hunk of diff.hunks) {
-    // Context before this hunk (gap since the last hunk ended).
-    const gapOld = hunk.oldStart - 1 - oldIdx;
-    const gapNew = hunk.newStart - 1 - newIdx;
-    pushContext(Math.max(0, Math.min(gapOld, gapNew)));
-
-    for (const line of hunk.lines) {
-      if (line.kind === "context") {
-        // A context boundary ends any unpaired removal run.
-        flushRemoves();
-        pushContext(1);
-      } else if (line.kind === "remove") {
-        pushRemove();
-      } else {
-        // add — pair with a pending removal when one exists (edit), else a
-        // standalone insertion.
-        if (pendingRemoves.length > 0) pushPairedEdit();
-        else pushStandaloneAdd();
-      }
-    }
-    flushRemoves();
-  }
-
-  // Remaining context after the last hunk.
-  const remainingOld = oldLines.length - oldIdx;
-  const remainingNew = newLines.length - newIdx;
-  pushContext(Math.max(0, Math.min(remainingOld, remainingNew)));
-  // Any overflow (shouldn't happen) — render remaining lines on their side.
-  while (oldIdx < oldLines.length || newIdx < newLines.length) {
-    const hasOld = oldIdx < oldLines.length;
-    const hasNew = newIdx < newLines.length;
-    rows.push({
-      oldKind: null,
-      oldLine: hasOld ? (oldLines[oldIdx] ?? "") : null,
-      oldNum: hasOld ? oldIdx + 1 : null,
-      newKind: null,
-      newLine: hasNew ? (newLines[newIdx] ?? "") : null,
-      newNum: hasNew ? newIdx + 1 : null,
-    });
-    if (hasOld) oldIdx++;
-    if (hasNew) newIdx++;
-  }
-
-  return rows;
-}
-
-/** Async-highlight a code string into per-line token arrays. */
-function useHighlightedLines(code: string, lang: string): Line[] | null {
-  const [lines, setLines] = useState<Line[] | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    highlightLines(code, lang).then((l) => {
-      if (!cancelled) setLines(l);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [code, lang]);
-  return lines;
-}
-
-/** Render one cell's text, tokenized when highlight data is available. */
-function Cell({ text, num, tokens }: { text: string; num: number | null; tokens: Line[] | null }) {
-  const line = num != null && tokens ? tokens[num - 1] : undefined;
-  return (
-    <span className="diff-cell">
-      {line && line.length > 0
-        ? line.map((t, i) =>
-            t.color ? (
-              <span key={i} style={{ color: t.color }}>
-                {t.text}
-              </span>
-            ) : (
-              <span key={i}>{t.text}</span>
-            ),
-          )
-        : text}
-    </span>
-  );
-}
+import { langForPath } from "@/shared/utils/highlight";
+import { Button } from "@/shared/components/ui";
+import { buildRows } from "./align";
+import { DiffPane } from "./DiffPane";
+import { DiffMinimap } from "./DiffMinimap";
+import { useHighlightedLines } from "./highlightTokens";
+import s from "./diff.module.css";
 
 export function DiffView() {
   const { activeDiff, diffCache, closeDiff } = useRepoStore();
-
   const diff = activeDiff
     ? diffCache[`${activeDiff.hash}|${activeDiff.path}|${activeDiff.staged ? "s" : "w"}`]
     : undefined;
@@ -197,122 +29,71 @@ export function DiffView() {
     [diff],
   );
 
-  const oldColRef = useRef<HTMLDivElement>(null);
-  const newColRef = useRef<HTMLDivElement>(null);
-  const scrollbarRef = useRef<HTMLDivElement>(null);
-  const [contentWidth, setContentWidth] = useState(0);
+  // Scroll is shared between the two panes on both axes so the rows stay
+  // aligned and the horizontal offset matches; each pane still clips its own
+  // overflow at the edge. Pointer-enter marks the actively-scrolled pane, so
+  // a programmatic write to the sibling doesn't trigger a feedback loop.
+  const oldViewportRef = useRef<HTMLDivElement>(null);
+  const newViewportRef = useRef<HTMLDivElement>(null);
+  const activeViewportRef = useRef<HTMLDivElement | null>(null);
 
-  // Size the bottom scrollbar so its full scroll range equals the larger of the
-  // two columns' horizontal overflow. The bar is wider than either column, so a
-  // raw scrollWidth comparison would under-represent the needed scroll distance.
-  useEffect(() => {
-    const oldEl = oldColRef.current;
-    const newEl = newColRef.current;
-    const barEl = scrollbarRef.current;
-    if (!oldEl || !newEl || !barEl) return;
-    const maxScroll = Math.max(
-      oldEl.scrollWidth - oldEl.clientWidth,
-      newEl.scrollWidth - newEl.clientWidth,
-    );
-    const next = barEl.clientWidth + Math.max(0, maxScroll);
-    setContentWidth((prev) => (prev === next ? prev : next));
-  }, [rows, oldTokens, newTokens]);
+  const setActiveViewport = useCallback((src: HTMLDivElement) => {
+    activeViewportRef.current = src;
+  }, []);
 
-  // The bottom bar is the single source of truth for horizontal scroll. It
-  // drives both columns' scrollLeft. The columns are scrollable only
-  // programmatically (overflow-x: hidden), so there is no feedback loop.
-  const syncingRef = useRef(false);
-  const syncScroll = () => {
-    if (syncingRef.current) return;
-    const oldEl = oldColRef.current;
-    const newEl = newColRef.current;
-    const barEl = scrollbarRef.current;
-    if (!oldEl || !newEl || !barEl) return;
-
-    const range = (el: HTMLElement) => Math.max(0, el.scrollWidth - el.clientWidth);
-    const oldRange = range(oldEl);
-    const newRange = range(newEl);
-    const barRange = range(barEl);
-    const frac = barRange > 0 ? barEl.scrollLeft / barRange : 0;
-
-    syncingRef.current = true;
-    oldEl.scrollLeft = frac * oldRange;
-    newEl.scrollLeft = frac * newRange;
+  const syncScroll = useCallback((src: HTMLDivElement) => {
+    if (activeViewportRef.current && activeViewportRef.current !== src) return;
+    const dst = src === oldViewportRef.current ? newViewportRef.current : oldViewportRef.current;
+    if (!dst) return;
+    if (dst.scrollTop === src.scrollTop && dst.scrollLeft === src.scrollLeft) return;
     requestAnimationFrame(() => {
-      syncingRef.current = false;
+      dst.scrollTop = src.scrollTop;
+      dst.scrollLeft = src.scrollLeft;
     });
-  };
+  }, []);
 
   if (!activeDiff) return null;
 
   return (
-    <div className="diff-view">
-      <div className="diff-topbar">
-        <span className="diff-path mono" title={path}>
+    <div className={s.diffView}>
+      <div className={s.diffTopbar}>
+        <span className={`${s.diffPath} mono`} title={path}>
           {path}
         </span>
-        <button className="diff-close" onClick={closeDiff} aria-label="Close diff">
-          <X size={16} aria-hidden />
-        </button>
+        <Button variant="ghost" className={s.diffClose} onClick={closeDiff} aria-label="Close diff">
+          <XIcon size={16} aria-hidden />
+        </Button>
       </div>
 
       {!diff ? (
-        <div className="diff-placeholder">Loading…</div>
+        <div className={s.diffPlaceholder}>Loading…</div>
       ) : diff.error ? (
-        <div className="diff-placeholder">Failed to load diff: {diff.error}</div>
+        <div className={s.diffPlaceholder}>Failed to load diff: {diff.error}</div>
       ) : diff.binary ? (
-        <div className="diff-placeholder">Binary file — no diff preview.</div>
+        <div className={s.diffPlaceholder}>Binary file — no diff preview.</div>
       ) : diff.tooLarge ? (
-        <div className="diff-placeholder">File too large to display.</div>
+        <div className={s.diffPlaceholder}>File too large to display.</div>
       ) : (
-        <>
-          <div className="diff-table">
-            <div className="diff-col-headers">
-              <div className="diff-col-header">OLD</div>
-              <div className="diff-col-header">NEW</div>
-            </div>
-            <div className="diff-cols">
-              <div className="diff-col" ref={oldColRef}>
-                {rows.map((r, i) => (
-                  <div key={i} className={clsx("diff-line", r.oldKind && `diff-${r.oldKind}`)}>
-                    <span className="diff-gutter">
-                      <span className="diff-num">{r.oldNum ?? ""}</span>
-                      <span className={clsx("diff-sign", r.oldKind === "remove" && "remove")}>
-                        {r.oldKind === "remove" ? "-" : "\u00a0"}
-                      </span>
-                    </span>
-                    {r.oldNum != null ? (
-                      <Cell text={r.oldLine ?? ""} num={r.oldNum} tokens={oldTokens} />
-                    ) : (
-                      <span className="diff-cell diff-empty" aria-hidden />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="diff-col" ref={newColRef}>
-                {rows.map((r, i) => (
-                  <div key={i} className={clsx("diff-line", r.newKind && `diff-${r.newKind}`)}>
-                    <span className="diff-gutter">
-                      <span className="diff-num">{r.newNum ?? ""}</span>
-                      <span className={clsx("diff-sign", r.newKind === "add" && "add")}>
-                        {r.newKind === "add" ? "+" : "\u00a0"}
-                      </span>
-                    </span>
-                    {r.newNum != null ? (
-                      <Cell text={r.newLine ?? ""} num={r.newNum} tokens={newTokens} />
-                    ) : (
-                      <span className="diff-cell diff-empty" aria-hidden />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {/* Always-visible horizontal scrollbar, the single scroll source. */}
-          <div className="diff-scrollbar" ref={scrollbarRef} onScroll={syncScroll}>
-            <div style={{ width: Math.max(contentWidth, 1), height: 1 }} />
-          </div>
-        </>
+        <div className={s.diffBody}>
+          <DiffPane
+            side="old"
+            rows={rows}
+            tokens={oldTokens}
+            viewportRef={oldViewportRef}
+            onPointerEnter={setActiveViewport}
+            onScroll={syncScroll}
+            minimap={<DiffMinimap side="old" rows={rows} viewportRef={oldViewportRef} />}
+          />
+          <DiffPane
+            side="new"
+            rows={rows}
+            tokens={newTokens}
+            viewportRef={newViewportRef}
+            onPointerEnter={setActiveViewport}
+            onScroll={syncScroll}
+            minimap={<DiffMinimap side="new" rows={rows} viewportRef={newViewportRef} />}
+          />
+        </div>
       )}
     </div>
   );

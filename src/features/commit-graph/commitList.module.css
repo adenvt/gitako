@@ -1,0 +1,201 @@
+/* ---------- commit list ---------- */
+.commitList {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+/* Vertical drag handle at the boundary between graph band and commit text. */
+.graphResizeHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  z-index: 5;
+  cursor: col-resize;
+}
+
+.graphResizeHandle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 1px;
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.graphResizeHandle:hover::after,
+.graphResizeHandle:active::after {
+  background: var(--accent);
+}
+
+.commitScroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.commitScrollViewport {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Scroll viewport is focusable so arrow keys work, but suppress the
+   browser focus ring — keyboard navigation is signaled by the row's
+   selected state instead of a viewport outline. */
+.commitScrollViewport:focus,
+.commitScrollViewport:focus-visible {
+  outline: none;
+}
+
+.commitRows {
+  position: relative;
+}
+
+.commitRow {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px 0 10px;
+  border-radius: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  background: transparent;
+  color: var(--text);
+}
+
+/* Full-row highlight: the row content starts at the graph band (textLeft),
+   but the selection background should span the entire row width — tag
+   column, graph band, and message column. The ::before stretches from the
+   container's left edge (using the negative of the row's left offset) to
+   the row's right edge. It paints at z-index -1 so it sits behind the
+   graph canvas (the commit dots/lines stay visible) and behind the row
+   content, which is stacked relative above it. */
+.commitRow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--row-left, 0px));
+  right: 0;
+  background: transparent;
+  z-index: -1;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.commitRow:hover::before {
+  background: var(--bg-hover);
+}
+
+.commitRow.selected::before {
+  background: var(--selected);
+}
+
+/* Keep row content above the ::before highlight. */
+.commitRow > * {
+  position: relative;
+}
+
+.selected .commitSubject {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Working-directory row above the newest commit. Hover is handled by the
+   ::before highlight (see .commitRow:hover::before). */
+.workingRow {
+  cursor: pointer;
+}
+
+.wipLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+
+.wipCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+
+/* ANSI-style status colors on the WIP counts. */
+.wipAdded {
+  color: var(--ok);
+}
+.wipDeleted {
+  color: var(--err);
+}
+.wipModified {
+  color: var(--warn);
+}
+
+/* Commit message column — monospaced, so the subject column aligns. */
+.commitSubject {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+}
+
+.commitMeta {
+  display: flex;
+  gap: var(--space-2);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.commitMetaSep {
+  color: var(--text-faint);
+}
+
+/* Tag/branch column: badges shown to the left of the graph. */
+.commitTagCell {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 12px;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+  white-space: nowrap;
+  /* Transparent so the row's full-width ::before highlight shows through,
+     but stacked above it so the badges stay visible. */
+  background: transparent;
+  z-index: 1;
+}
+
+/* Empty-state pane (no commits). */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--text-faint);
+  font-size: var(--fs-sm);
+  flex: 1;
+}

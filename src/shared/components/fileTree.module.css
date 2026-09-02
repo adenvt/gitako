@@ -1,0 +1,199 @@
+/* ---------- file tree (shared by composer + commit detail) ---------- */
+.fileTree {
+  border: 1px solid var(--border);
+  border-radius: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 8px 12px 12px;
+}
+
+.fileTreeToolbar {
+  display: flex;
+  gap: var(--space-1);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.treeToolbarBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  font-family: inherit;
+  padding: 1px 6px;
+  cursor: pointer;
+  text-transform: lowercase;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.treeToolbarBtn:hover:not(:disabled):not([data-disabled]) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.fileTreeRows {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fileTreeRowsViewport {
+  flex: 1;
+  min-height: 0;
+}
+
+.fileTreeRowsContent {
+  padding: 2px 0;
+}
+
+.treeRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 2px 8px;
+  font-size: var(--fs-sm);
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0;
+  font-family: inherit;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.treeDir:hover {
+  background: var(--bg-hover);
+}
+
+.treeFile {
+  cursor: default;
+}
+
+.treeFile:hover {
+  background: var(--bg-hover);
+}
+
+/* File rows that open a diff show a pointer cursor. */
+.clickable {
+  cursor: pointer;
+}
+
+.treeFileAction {
+  margin-left: auto;
+  /* Pin to the visible right edge of the tree even if a row's content is
+     wider than the viewport, so the button is always reachable on hover.
+     Offset clears the 8px scrollbar track with breathing room. */
+  position: sticky;
+  right: 12px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  font-family: inherit;
+  padding: 0 6px;
+  cursor: pointer;
+  text-transform: lowercase;
+  opacity: 0;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+  flex-shrink: 0;
+}
+
+.treeFile:hover .treeFileAction,
+.treeFileAction:focus-visible {
+  opacity: 1;
+}
+
+/* Stage actions read as "add to index" — green. Hover deepens the tint
+   (background + stronger text/border) instead of dropping to neutral gray. */
+.treeFileAction {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 45%, var(--border));
+}
+
+.treeFileAction:hover:not(:disabled):not([data-disabled]) {
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ok) 70%, var(--border));
+  color: var(--accent-strong);
+}
+
+/* Unstage actions read as "remove from index" — yellow (reversible, not destructive). */
+.treeFileActionUnstage {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+}
+
+.treeFileActionUnstage:hover:not(:disabled):not([data-disabled]) {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 70%, var(--border));
+  color: color-mix(in srgb, var(--warn) 70%, var(--text));
+}
+
+.treeArrow {
+  flex-shrink: 0;
+  color: var(--text-faint);
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.treeArrowOpen {
+  transform: rotate(90deg);
+}
+
+.treeFolderIcon {
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.treeStatusIcon {
+  flex-shrink: 0;
+}
+
+/* Status icon colors (file tree rows + commit detail file stats). */
+.statusAdded {
+  color: var(--ok);
+}
+
+.statusDeleted {
+  color: var(--err);
+}
+
+.statusChanged {
+  color: var(--warn);
+}
+
+.treeSpacer {
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.treeName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Allow the name to shrink below its content width so a long filename
+     truncates with an ellipsis instead of pushing the hover action button
+     (margin-left: auto) off the visible right edge. */
+  min-width: 0;
+}
+
+.treeChildren {
+  /* Vertical indent guide between nested dirs. */
+  margin-left: 8px;
+  border-left: 1px solid var(--border);
+  padding-left: 4px;
+}

@@ -1,0 +1,6 @@
+/* App shell (global-ish classes, namespaced via module). */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
