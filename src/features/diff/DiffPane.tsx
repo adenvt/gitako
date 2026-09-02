@@ -28,7 +28,7 @@ export function DiffPane({
   minimap?: React.ReactNode;
 }) {
   return (
-    <div className={s.diffPane}>
+    <div className={s.diffPane} onPointerEnter={(e) => onPointerEnter(e.currentTarget)}>
       <ScrollArea.Root className={s.diffPaneRoot}>
         <div className={s.diffColHeaders}>
           <div className={s.diffColHeader}>{side === "old" ? "OLD" : "NEW"}</div>
@@ -37,7 +37,6 @@ export function DiffPane({
           ref={viewportRef}
           className={s.diffTableViewport}
           onScroll={(e) => onScroll(e.currentTarget)}
-          onPointerEnter={(e) => onPointerEnter(e.currentTarget)}
         >
           <ScrollArea.Content className={s.diffContent}>
             <div className={s.diffCol}>

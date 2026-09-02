@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { RefBadge, RefBadgeGroup, RefIcon } from "./refBadge";
+import { RefBadge, RefBadgeGroup, RefIcon, RefOverflowBadge } from "./refBadge";
 import type { RefInfo } from "@/shared/types/git";
 
 function makeRef(overrides: Partial<RefInfo>): RefInfo {
@@ -187,17 +187,21 @@ describe("RefBadgeGroup", () => {
 });
 
 describe("double-click to checkout", () => {
-  it("calls onCheckout with the local branch name + kind on double-click", () => {
+  it("calls onCheckout with a checkout action for a local branch", () => {
     const onCheckout = vi.fn();
     const { container } = render(
       <RefBadge refInfo={makeRef({ name: "feature", kind: "branch" })} onCheckout={onCheckout} />,
     );
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
-    expect(onCheckout).toHaveBeenCalledWith("feature", "branch");
+    expect(onCheckout).toHaveBeenCalledWith({
+      kind: "checkout",
+      name: "feature",
+      refKind: "branch",
+    });
   });
 
-  it("calls onCheckout with the full name and remoteBranch kind for a remote branch", () => {
+  it("calls onCheckout with a checkout action for a lone remote branch", () => {
     const onCheckout = vi.fn();
     const { container } = render(
       <RefBadge
@@ -212,7 +216,11 @@ describe("double-click to checkout", () => {
     );
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
-    expect(onCheckout).toHaveBeenCalledWith("origin/main", "remoteBranch");
+    expect(onCheckout).toHaveBeenCalledWith({
+      kind: "checkout",
+      name: "origin/main",
+      refKind: "remoteBranch",
+    });
   });
 
   it("does not call onCheckout for a tag", () => {
@@ -234,7 +242,10 @@ describe("double-click to checkout", () => {
     expect(() => fireEvent.doubleClick(badge)).not.toThrow();
   });
 
-  it("RefBadgeGroup fires onCheckout with the local branch name", () => {
+  it("RefBadgeGroup with local + remote fires a pull action (fast-forward the local)", () => {
+    // When the group contains BOTH a local branch and a matching
+    // remote-tracking ref, dblclick means "refresh this branch" — a
+    // fast-forward pull into the local. This is the new behavior.
     const onCheckout = vi.fn();
     const refs = [
       makeRef({ name: "main", fullName: "main", kind: "branch" }),
@@ -248,10 +259,23 @@ describe("double-click to checkout", () => {
     const { container } = render(<RefBadgeGroup refs={refs} onCheckout={onCheckout} />);
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
-    expect(onCheckout).toHaveBeenCalledWith("main", "branch");
+    expect(onCheckout).toHaveBeenCalledWith({ kind: "pull", branch: "main" });
   });
 
-  it("RefBadgeGroup falls back to the remote branch's full name when no local branch is in the group", () => {
+  it("RefBadgeGroup with only a local branch fires a checkout action", () => {
+    const onCheckout = vi.fn();
+    const refs = [makeRef({ name: "feature", fullName: "feature", kind: "branch" })];
+    const { container } = render(<RefBadgeGroup refs={refs} onCheckout={onCheckout} />);
+    const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
+    fireEvent.doubleClick(badge);
+    expect(onCheckout).toHaveBeenCalledWith({
+      kind: "checkout",
+      name: "feature",
+      refKind: "branch",
+    });
+  });
+
+  it("RefBadgeGroup with only a remote branch fires a checkout action (create local tracking)", () => {
     const onCheckout = vi.fn();
     const refs = [
       makeRef({
@@ -264,6 +288,83 @@ describe("double-click to checkout", () => {
     const { container } = render(<RefBadgeGroup refs={refs} onCheckout={onCheckout} />);
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
-    expect(onCheckout).toHaveBeenCalledWith("origin/main", "remoteBranch");
+    expect(onCheckout).toHaveBeenCalledWith({
+      kind: "checkout",
+      name: "origin/main",
+      refKind: "remoteBranch",
+    });
+  });
+});
+
+describe("RefOverflowBadge", () => {
+  it("renders +N where N is the number of hidden groups (refs within a group count as one)", () => {
+    const hidden = [
+      [makeRef({ name: "v1.0", fullName: "v1.0", kind: "tag" })],
+      [makeRef({ name: "v2.0", fullName: "v2.0", kind: "tag" })],
+      [makeRef({ name: "v3.0", fullName: "v3.0", kind: "tag" })],
+    ];
+    render(<RefOverflowBadge hiddenGroups={hidden} />);
+    expect(screen.getByText("+3")).toBeInTheDocument();
+  });
+
+  it("counts a grouped local+remote as one badge, not two", () => {
+    const hidden = [
+      [
+        makeRef({ name: "main", fullName: "main", kind: "branch" }),
+        makeRef({
+          name: "main",
+          fullName: "origin/main",
+          kind: "remoteBranch",
+          remote: "origin",
+        }),
+      ],
+    ];
+    render(<RefOverflowBadge hiddenGroups={hidden} />);
+    expect(screen.getByText("+1")).toBeInTheDocument();
+  });
+
+  it("renders one row per hidden group with combined names and icons on hover", () => {
+    const hidden = [
+      [makeRef({ name: "v1.0", fullName: "v1.0", kind: "tag" })],
+      [makeRef({ name: "v2.0", fullName: "v2.0", kind: "tag" })],
+    ];
+    const { container } = render(<RefOverflowBadge hiddenGroups={hidden} />);
+    // Dropdown is portaled into document.body on hover, so mouseEnter
+    // the chip first to open it.
+    const chip = container.querySelector("[class*='refOverflowBadge']") as HTMLElement;
+    fireEvent.mouseEnter(chip);
+    expect(screen.getByText("v1.0")).toBeInTheDocument();
+    expect(screen.getByText("v2.0")).toBeInTheDocument();
+    const rows = document.body.querySelectorAll("[class*='refDropdownRow']");
+    expect(rows.length).toBe(2);
+  });
+
+  it("collapses a hidden local+remote pair into one row, and the +N count", () => {
+    const hidden = [
+      [
+        makeRef({ name: "main", fullName: "main", kind: "branch" }),
+        makeRef({
+          name: "main",
+          fullName: "origin/main",
+          kind: "remoteBranch",
+          remote: "origin",
+        }),
+      ],
+    ];
+    const { container } = render(<RefOverflowBadge hiddenGroups={hidden} />);
+    // +N counts the number of dropdown rows: the local+remote pair is 1 row.
+    expect(screen.getByText("+1")).toBeInTheDocument();
+    const chip = container.querySelector("[class*='refOverflowBadge']") as HTMLElement;
+    fireEvent.mouseEnter(chip);
+    // Single row, labelled by the shared base name (icons show local+remote).
+    expect(screen.getByText("main")).toBeInTheDocument();
+    const rows = document.body.querySelectorAll("[class*='refDropdownRow']");
+    expect(rows.length).toBe(1);
+  });
+
+  it("renders nothing for an empty hiddenGroups array (defensive)", () => {
+    const { container } = render(<RefOverflowBadge hiddenGroups={[]} />);
+    expect(container.querySelector("[class*='refOverflowBadge']")).not.toBeNull();
+    expect(screen.getByText("+0")).toBeInTheDocument();
   });
 });

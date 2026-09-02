@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChangedFile, Commit, DiffFile, RefInfo } from "@/shared/types/git";
+import type { StatusEntry } from "@/shared/utils/status";
 
 // Hoisted mocks for the backend invoke wrappers. The store is the unit under
 // test; the backend is a network boundary we want to control fully.
@@ -12,6 +13,12 @@ vi.mock("./git", () => ({
   stageFiles: vi.fn(),
   commitChanges: vi.fn(),
   fetchHeadBranch: vi.fn().mockResolvedValue("main"),
+  checkoutBranch: vi.fn().mockResolvedValue(""),
+  checkoutTrack: vi.fn().mockResolvedValue(""),
+  stashSave: vi.fn().mockResolvedValue(""),
+  stashPop: vi.fn().mockResolvedValue(undefined),
+  fetchAll: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "" }),
+  pullBranch: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "" }),
 }));
 
 // Importing the store AFTER vi.mock so the mock is in place. `act` is
@@ -19,13 +26,17 @@ vi.mock("./git", () => ({
 import { useRepoStore } from "./store";
 import {
   commitChanges,
+  checkoutBranch,
   fetchDiff,
   fetchHeadBranch,
   fetchLog,
   fetchRefs,
   fetchShowFiles,
   fetchStatus,
+  pullBranch,
   stageFiles,
+  stashPop,
+  stashSave,
 } from "./git";
 
 const mockFetchLog = vi.mocked(fetchLog);
@@ -36,6 +47,10 @@ const mockFetchDiff = vi.mocked(fetchDiff);
 const mockStageFiles = vi.mocked(stageFiles);
 const mockCommitChanges = vi.mocked(commitChanges);
 const mockFetchHeadBranch = vi.mocked(fetchHeadBranch);
+const mockCheckoutBranch = vi.mocked(checkoutBranch);
+const mockStashSave = vi.mocked(stashSave);
+const mockStashPop = vi.mocked(stashPop);
+const mockPullBranch = vi.mocked(pullBranch);
 
 function makeCommit(hash: string, parents: string[] = [], subject = "x"): Commit {
   return {
@@ -63,6 +78,10 @@ function makeRef(name: string, commit: string, kind: RefInfo["kind"] = "branch")
 
 function makeFile(path: string, status = "M"): ChangedFile {
   return { status, path, oldPath: null };
+}
+
+function makeStatusEntry(path: string, index = "M", worktree = " "): StatusEntry {
+  return { index, worktree, path, oldPath: null };
 }
 
 function makeDiff(path: string): DiffFile {
@@ -268,6 +287,89 @@ describe("select", () => {
   it("accepts null to deselect without re-opening anything", () => {
     useRepoStore.getState().select(null);
     expect(useRepoStore.getState().selectedHash).toBeNull();
+  });
+});
+
+describe("pullLocalBranch", () => {
+  // The "refresh this branch" gesture: dblclick on a ref-badge group
+  // that has BOTH a local and a remote for the same name fires
+  // `pullLocalBranch(branch)`, which must (1) checkout the local
+  // branch, (2) run `git pull --ff-only`, (3) refresh, (4) toast.
+  beforeEach(() => {
+    // The checkout() call inside pullLocalBranch kicks off its own
+    // refresh (mockFetchLog + mockFetchRefs). Queue responses so they
+    // resolve to no-op values.
+    mockFetchLog.mockResolvedValue([]);
+    mockFetchRefs.mockResolvedValue([]);
+    mockFetchStatus.mockResolvedValue("");
+  });
+
+  it("checks out the local branch and then pulls with --ff-only", async () => {
+    useRepoStore.setState({ repoPath: "/r" });
+    mockCheckoutBranch.mockResolvedValueOnce("");
+    mockPullBranch.mockResolvedValueOnce({
+      remote: "origin",
+      branch: "main",
+      summary: "Fast-forward",
+    });
+
+    await useRepoStore.getState().pullLocalBranch("main");
+
+    expect(mockCheckoutBranch).toHaveBeenCalledWith("/r", "main");
+    expect(mockPullBranch).toHaveBeenCalledWith("/r", "ffOnly");
+    // pulling flag must be reset in finally.
+    expect(useRepoStore.getState().pulling).toBe(false);
+  });
+
+  it("does not call gitStashSave when the working tree is clean", async () => {
+    useRepoStore.setState({ repoPath: "/r", statusEntries: [] });
+    mockCheckoutBranch.mockResolvedValueOnce("");
+    mockPullBranch.mockResolvedValueOnce({ remote: "origin", branch: "main", summary: "" });
+
+    await useRepoStore.getState().pullLocalBranch("main");
+
+    expect(mockStashSave).not.toHaveBeenCalled();
+  });
+
+  it("stashes a dirty working tree before checkout, then pops after success", async () => {
+    useRepoStore.setState({
+      repoPath: "/r",
+      statusEntries: [makeStatusEntry("a.ts")],
+    });
+    mockStashSave.mockResolvedValueOnce("stash@{0}");
+    mockCheckoutBranch.mockResolvedValueOnce("");
+    mockPullBranch.mockResolvedValueOnce({ remote: "origin", branch: "main", summary: "" });
+
+    await useRepoStore.getState().pullLocalBranch("main");
+
+    expect(mockStashSave).toHaveBeenCalledWith("/r", "auto: pre-checkout main");
+    expect(mockCheckoutBranch).toHaveBeenCalled();
+    expect(mockStashPop).toHaveBeenCalledWith("/r", "stash@{0}");
+  });
+
+  it("surfaces a diverged-branches error with a hint to use the toolbar pull menu", async () => {
+    // The backend returns a typed `GitErrorPayload` with kind: "conflict"
+    // for non-fast-forward rejections. The store must surface that
+    // distinctly from a generic failure.
+    useRepoStore.setState({ repoPath: "/r" });
+    mockCheckoutBranch.mockResolvedValueOnce("");
+    mockPullBranch.mockRejectedValueOnce({
+      kind: "conflict",
+      message: "Not possible to fast-forward, aborting.",
+      code: null,
+    });
+
+    await expect(useRepoStore.getState().pullLocalBranch("main")).rejects.toMatchObject({
+      kind: "conflict",
+    });
+    // pulling flag still reset.
+    expect(useRepoStore.getState().pulling).toBe(false);
+  });
+
+  it("does nothing without a repo path", async () => {
+    await useRepoStore.getState().pullLocalBranch("main");
+    expect(mockCheckoutBranch).not.toHaveBeenCalled();
+    expect(mockPullBranch).not.toHaveBeenCalled();
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CommitList } from "./CommitList";
 import { useRepoStore } from "@/state/store";
@@ -132,6 +132,30 @@ describe("CommitList", () => {
     render(<CommitList />);
     // The grouped badge shows the base name once in the visible name
     // span, and again in the (hidden-until-hover) dropdown — both are fine.
+    expect(screen.getAllByText("main").length).toBeGreaterThan(0);
+  });
+
+  it("collapses extra groups into a +N overflow chip (1 visible + overflow)", () => {
+    const c = commit({ refs: ["development", "main"] });
+    useRepoStore.setState({
+      commits: [c],
+      layout: layout([{ hash: c.hash, parents: [] }]),
+      statusEntries: [],
+      refsByCommit: {
+        [c.hash]: [
+          refInfo({ name: "development", fullName: "development", kind: "branch" }),
+          refInfo({ name: "main", fullName: "main", kind: "branch" }),
+        ],
+      },
+    });
+    render(<CommitList />);
+    // First group renders; the second collapses into a +N chip.
+    expect(screen.getByText("development")).toBeInTheDocument();
+    expect(screen.getByText("+1")).toBeInTheDocument();
+    // Hover the +N chip to open the portaled dropdown — the hidden group's
+    // name should appear there.
+    const chip = screen.getByText("+1");
+    fireEvent.mouseEnter(chip);
     expect(screen.getAllByText("main").length).toBeGreaterThan(0);
   });
 

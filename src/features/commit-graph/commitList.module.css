@@ -170,7 +170,10 @@
   color: var(--text-faint);
 }
 
-/* Tag/branch column: badges shown to the left of the graph. */
+/* Tag/branch column: badges shown to the left of the graph. Capped at
+   TAG_WIDTH - LANE_WIDTH/2 so the +N overflow chip + the visible badge
+   never paint over the leftmost graph lane. Shrinks to content when
+   there's only one short badge (no overflow). */
 .commitTagCell {
   position: absolute;
   left: 0;
@@ -178,6 +181,7 @@
   align-items: center;
   gap: 4px;
   padding: 0 8px 0 12px;
+  max-width: calc(var(--tag-width, 140px) - 9px);
   overflow: hidden;
   pointer-events: auto;
   cursor: pointer;

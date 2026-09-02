@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ChangedFile, Commit, DiffFile, RefInfo } from "@/shared/types/git";
+import type { ChangedFile, Commit, DiffFile, GitErrorPayload, RefInfo } from "@/shared/types/git";
 import { layout, type LayoutResult } from "@/features/commit-graph/layout";
 import {
   fetchLog,
@@ -79,6 +79,14 @@ interface RepoState {
    * may need to move HEAD).
    */
   checkout: (branch: string, kind?: "branch" | "remoteBranch") => Promise<void>;
+  /**
+   * Switch onto an existing local branch and fast-forward-pull its
+   * upstream. Used by the "refresh this branch" gesture on a ref-badge
+   * group (dblclick on a `main` + `origin/main` group pulls `main`).
+   * If the branches have diverged, surfaces an error pointing the user
+   * at the toolbar's pull menu (which offers rebase/merge modes).
+   */
+  pullLocalBranch: (branch: string) => Promise<void>;
   refreshStatus: () => Promise<void>;
   select: (hash: string | null) => void;
   loadCommitFiles: (hash: string) => Promise<void>;
@@ -227,6 +235,47 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       throw e;
     } finally {
       set({ loading: false });
+    }
+  },
+
+  async pullLocalBranch(branch: string) {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    set({ pulling: true });
+    try {
+      // First move onto the local branch (so the subsequent pull updates
+      // *its* working copy, not whatever HEAD was on). Uses the same
+      // smart-switch flow as a regular checkout, including stash push/pop
+      // if the tree is dirty.
+      await get().checkout(branch, "branch");
+      // Then fast-forward pull. If the branches have diverged, the
+      // backend returns a Conflict GitError — surface it with a hint
+      // pointing the user at the toolbar's pull menu (which offers
+      // rebase/merge).
+      const result = await pullBranch(repoPath, "ffOnly");
+      await get().refresh();
+      toastSuccess(
+        "Pull complete",
+        result.summary || `Pulled ${result.branch} from ${result.remote}`,
+      );
+    } catch (e) {
+      // The backend's GitErrorPayload carries a `kind` discriminator
+      // that's set to "conflict" for non-fast-forward rejections, so
+      // we can surface a tailored message pointing the user at the
+      // toolbar's pull menu.
+      const payload = e as Partial<GitErrorPayload> | undefined;
+      const message = payload?.message ?? errorMessage(e);
+      if (payload?.kind === "conflict") {
+        toastError(
+          `Pull into ${branch} failed (diverged)`,
+          `${message}\nUse the toolbar Pull menu to rebase or merge.`,
+        );
+      } else {
+        toastError("Pull failed", message);
+      }
+      throw e;
+    } finally {
+      set({ pulling: false });
     }
   },
 

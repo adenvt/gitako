@@ -42,7 +42,7 @@ export function DiffView() {
   }, []);
 
   const syncScroll = useCallback((src: HTMLDivElement) => {
-    if (activeViewportRef.current && activeViewportRef.current !== src) return;
+    if (activeViewportRef.current && !activeViewportRef.current.contains(src)) return;
     const dst = src === oldViewportRef.current ? newViewportRef.current : oldViewportRef.current;
     if (!dst) return;
     if (dst.scrollTop === src.scrollTop && dst.scrollLeft === src.scrollLeft) return;
