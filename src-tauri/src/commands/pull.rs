@@ -10,7 +10,10 @@ use crate::git::GitOutput;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum PullMode {
-    /// `git pull` — fast-forward if possible, otherwise create a merge commit.
+    /// `git pull --no-rebase` — fast-forward if possible, otherwise create a
+    /// merge commit. The `--no-rebase` flag is required because `git pull`
+    /// alone errors out on divergent branches when the repo has neither
+    /// `pull.ff` nor `pull.rebase` configured.
     Ff,
     /// `git pull --ff-only` — refuse to create a merge commit.
     FfOnly,
@@ -21,7 +24,7 @@ pub enum PullMode {
 impl PullMode {
     fn args(&self) -> &'static [&'static str] {
         match self {
-            PullMode::Ff => &["pull"],
+            PullMode::Ff => &["pull", "--no-rebase"],
             PullMode::FfOnly => &["pull", "--ff-only"],
             PullMode::Rebase => &["pull", "--rebase"],
         }
@@ -288,6 +291,33 @@ mod tests {
         advance_remote(&remote, suffix);
         let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::FfOnly);
         assert!(r.is_err(), "ff-only pull should refuse diverged history");
+    }
+
+    #[test]
+    fn pull_ff_merges_divergent_history_without_pull_rebase_config() {
+        // Regression: `git pull` alone fails on divergent branches when the
+        // repo has no `pull.ff` / `pull.rebase` config. The Ff mode now
+        // passes `--no-rebase` so it falls through to a merge commit instead
+        // of erroring out.
+        let (remote, repo, _branch) = network_repo("ffdiverge");
+        let suffix = nanos();
+        // Sanity: no pull.* config set on the test repo.
+        let cfg = Command::new("git")
+            .args(["config", "--get-regexp", r"^pull\."])
+            .current_dir(&repo)
+            .output()
+            .unwrap();
+        assert!(cfg.stdout.is_empty(), "test repo should not have pull.* config");
+        // Local diverges from remote.
+        Command::new("git")
+            .args(["commit", "--allow-empty", "-q", "-m", "local-divergence"])
+            .current_dir(&repo)
+            .output()
+            .unwrap();
+        // Remote moves ahead.
+        advance_remote(&remote, suffix);
+        let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::Ff);
+        assert!(r.is_ok(), "Ff pull should merge divergent history, got: {r:?}");
     }
 
     #[test]
