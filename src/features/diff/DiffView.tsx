@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { X } from "lucide-react";
+import { XIcon } from "@primer/octicons-react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import { useRepoStore } from "@/state/store";
 import type { DiffFile } from "@/shared/types/git";
@@ -522,7 +522,7 @@ export function DiffView() {
           {path}
         </span>
         <Button variant="ghost" className={s.diffClose} onClick={closeDiff} aria-label="Close diff">
-          <X size={16} aria-hidden />
+          <XIcon size={16} aria-hidden />
         </Button>
       </div>
 

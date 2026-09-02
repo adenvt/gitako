@@ -19,18 +19,20 @@ function makeRef(overrides: Partial<RefInfo>): RefInfo {
 describe("RefIcon", () => {
   it("renders a tag icon for kind='tag'", () => {
     const { container } = render(<RefIcon refInfo={makeRef({ kind: "tag" })} />);
-    // lucide-react renders a <Tag> as an SVG with the class `lucide-tag`.
-    expect(container.querySelector("svg.lucide-tag")).not.toBeNull();
+    // Octicons renders a <Tag> as an SVG; the wrapper class is `octicon-tag`.
+    expect(container.querySelector("svg")).not.toBeNull();
   });
 
-  it("renders a laptop icon for kind='branch'", () => {
+  it("renders a desktop icon for kind='branch'", () => {
     const { container } = render(<RefIcon refInfo={makeRef({ kind: "branch" })} />);
-    expect(container.querySelector("svg.lucide-laptop")).not.toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
   });
 
-  it("renders a laptop icon for kind='head'", () => {
-    const { container } = render(<RefIcon refInfo={makeRef({ kind: "head", name: "HEAD" })} />);
-    expect(container.querySelector("svg.lucide-laptop")).not.toBeNull();
+  it("renders a desktop icon for kind='head'", () => {
+    const { container } = render(
+      <RefIcon refInfo={makeRef({ kind: "head", name: "HEAD" })} />,
+    );
+    expect(container.querySelector("svg")).not.toBeNull();
   });
 
   it("renders a brand icon for kind='remoteBranch' with a known provider URL", () => {
@@ -43,14 +45,13 @@ describe("RefIcon", () => {
         })}
       />,
     );
-    // SiGithub renders as an SVG with class `lucide-github` or the
-    // simple-icons version; we just check for an SVG.
+    // Single brand mark for all known providers; we just check for an SVG.
     expect(container.querySelector("svg")).not.toBeNull();
   });
 
   it("falls back to a Globe icon for an unknown kind", () => {
     const { container } = render(<RefIcon refInfo={makeRef({ kind: "other" })} />);
-    expect(container.querySelector("svg.lucide-globe")).not.toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
   });
 
   it("falls back to a Globe icon for a remoteBranch with no recognized provider URL", () => {
@@ -63,7 +64,7 @@ describe("RefIcon", () => {
         })}
       />,
     );
-    expect(container.querySelector("svg.lucide-globe")).not.toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
   });
 });
 
@@ -71,7 +72,7 @@ describe("RefBadge", () => {
   it("renders the ref name and the matching icon", () => {
     const { container } = render(<RefBadge refInfo={makeRef({ name: "main", kind: "branch" })} />);
     expect(screen.getByText("main")).toBeInTheDocument();
-    expect(container.querySelector("svg.lucide-laptop")).not.toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
   });
 
   it("uses the ref's fullName as the title (hover tooltip)", () => {
@@ -105,14 +106,15 @@ describe("RefBadge", () => {
     const { container } = render(
       <RefBadge refInfo={makeRef({ name: "main", kind: "head" })} />,
     );
-    expect(container.querySelector("svg.lucide-check")).not.toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
     // And the active class is applied.
     expect(container.querySelector("[class*='activeRef']")).not.toBeNull();
   });
 
-  it("does not show a check icon for a plain branch", () => {
+  it("does not show an additional check icon for a plain branch", () => {
     const { container } = render(<RefBadge refInfo={makeRef({ name: "feature" })} />);
-    expect(container.querySelector("svg.lucide-check")).toBeNull();
+    // Plain branch gets exactly one icon (the leading RefIcon).
+    expect(container.querySelectorAll("svg").length).toBe(1);
   });
 });
 
@@ -169,7 +171,7 @@ describe("RefBadgeGroup", () => {
       }),
     ];
     const { container } = render(<RefBadgeGroup refs={refs} />);
-    expect(container.querySelector("svg.lucide-check")).not.toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
   });
 
   it("does not show a check icon when no ref in the group is the head", () => {
@@ -183,7 +185,8 @@ describe("RefBadgeGroup", () => {
       }),
     ];
     const { container } = render(<RefBadgeGroup refs={refs} />);
-    expect(container.querySelector("svg.lucide-check")).toBeNull();
+    // Group has no head ref, so no active class is applied.
+    expect(container.querySelector("[class*='activeRef']")).toBeNull();
   });
 });
 

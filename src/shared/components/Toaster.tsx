@@ -1,5 +1,5 @@
 import { Toast } from "@base-ui/react/toast";
-import { X } from "lucide-react";
+import { XIcon } from "@primer/octicons-react";
 import s from "./toaster.module.css";
 
 /**
@@ -34,7 +34,7 @@ export function Toaster() {
               )}
             </div>
             <Toast.Close className={s.toastClose} aria-label="Dismiss">
-              <X size={14} aria-hidden />
+              <XIcon size={14} aria-hidden />
             </Toast.Close>
           </Toast.Root>
         ))}

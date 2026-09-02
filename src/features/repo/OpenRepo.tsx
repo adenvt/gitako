@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { FolderOpen, GitBranch, Search, X } from "lucide-react";
+import {
+  FileDirectoryOpenFillIcon,
+  GitBranchIcon,
+  SearchIcon,
+  XIcon,
+} from "@primer/octicons-react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import { open } from "@tauri-apps/plugin-dialog";
 import { homeDir } from "@tauri-apps/api/path";
@@ -97,7 +102,7 @@ export function OpenRepo() {
   return (
     <div className={s.welcome}>
       <div className={s.welcomeBrand}>
-        <GitBranch size={18} className={s.welcomeBrandIcon} aria-hidden />
+        <GitBranchIcon size={18} className={s.welcomeBrandIcon} aria-hidden />
         <span className={s.welcomeBrandName}>GiTako</span>
       </div>
 
@@ -107,14 +112,14 @@ export function OpenRepo() {
         </h1>
         <div className={s.welcomeActions}>
           <Button variant="solid" className={s.welcomeBtn} onClick={() => void handleBrowse()}>
-            <FolderOpen size={13} aria-hidden />
+            <FileDirectoryOpenFillIcon size={13} aria-hidden />
             open
           </Button>
         </div>
       </div>
 
       <div className={s.welcomeSearch}>
-        <Search size={14} className={s.welcomeSearchIcon} aria-hidden />
+        <SearchIcon size={14} className={s.welcomeSearchIcon} aria-hidden />
         <Input
           type="text"
           className={s.welcomeSearchInput}
@@ -129,7 +134,7 @@ export function OpenRepo() {
             onClick={() => setQuery("")}
             aria-label="Clear search"
           >
-            <X size={13} aria-hidden />
+            <XIcon size={13} aria-hidden />
           </Button>
         )}
       </div>
@@ -159,7 +164,7 @@ export function OpenRepo() {
                       }}
                       aria-label={`Remove ${r.name} from recent`}
                     >
-                      <X size={13} aria-hidden />
+                      <XIcon size={13} aria-hidden />
                     </Button>
                   </li>
                 ))}
@@ -172,7 +177,7 @@ export function OpenRepo() {
         </ScrollArea.Root>
       ) : (
         <div className={s.welcomeEmpty}>
-          <GitBranch size={22} className={s.welcomeEmptyIcon} aria-hidden />
+          <GitBranchIcon size={22} className={s.welcomeEmptyIcon} aria-hidden />
           <p className="muted">No repositories yet.</p>
           <p className="muted">Pick a git repository folder to get started.</p>
           <Button
@@ -180,7 +185,7 @@ export function OpenRepo() {
             className={s.welcomeEmptyBtn}
             onClick={() => void handleBrowse()}
           >
-            <FolderOpen size={13} aria-hidden />
+            <FileDirectoryOpenFillIcon size={13} aria-hidden />
             open
           </Button>
         </div>

@@ -1,5 +1,10 @@
-import { Check, Globe, Laptop, Tag } from "lucide-react";
-import { SiBitbucket, SiGithub, SiGitlab } from "react-icons/si";
+import {
+  CheckIcon,
+  DeviceDesktopIcon,
+  GlobeIcon,
+  MarkGithubIcon,
+  TagIcon,
+} from "@primer/octicons-react";
 import clsx from "clsx";
 import type { RefInfo } from "@/shared/types/git";
 import s from "./refBadge.module.css";
@@ -15,11 +20,12 @@ export function providerFromUrl(url: string | null | undefined): RefProvider {
   return null;
 }
 
-const BRAND_ICONS: Record<Exclude<RefProvider, null>, typeof SiGithub> = {
-  github: SiGithub,
-  gitlab: SiGitlab,
-  bitbucket: SiBitbucket,
-};
+// Octicons ships a single GitHub mark; we keep the provider detection
+// around for downstream consumers (sorting, future brand-specific UI) but
+// render a single brand mark for all three and a globe for everything else.
+function BrandIcon() {
+  return <MarkGithubIcon size={11} aria-hidden />;
+}
 
 interface RefIconProps {
   refInfo: RefInfo;
@@ -31,16 +37,15 @@ export function RefIcon({ refInfo }: RefIconProps) {
   switch (kind) {
     case "remoteBranch": {
       const provider = providerFromUrl(remoteUrl);
-      const Icon = provider ? BRAND_ICONS[provider] : Globe;
-      return <Icon size={11} aria-hidden />;
+      return provider ? <BrandIcon /> : <GlobeIcon size={11} aria-hidden />;
     }
     case "tag":
-      return <Tag size={11} aria-hidden />;
+      return <TagIcon size={11} aria-hidden />;
     case "branch":
     case "head":
-      return <Laptop size={11} aria-hidden />;
+      return <DeviceDesktopIcon size={11} aria-hidden />;
     default:
-      return <Globe size={11} aria-hidden />;
+      return <GlobeIcon size={11} aria-hidden />;
   }
 }
 
@@ -83,7 +88,7 @@ export function RefBadge({ refInfo, color, onCheckout }: RefBadgeProps) {
       style={color ? ({ "--badge-color": color } as React.CSSProperties) : undefined}
       onDoubleClick={handleDoubleClick}
     >
-      {refInfo.kind === "head" && <Check size={11} className={s.activeRefCheck} aria-hidden />}
+      {refInfo.kind === "head" && <CheckIcon size={11} className={s.activeRefCheck} aria-hidden />}
       <span className={s.refName}>{refInfo.name}</span>
       <RefIcon refInfo={refInfo} />
     </span>
@@ -130,7 +135,7 @@ export function RefBadgeGroup({ refs, color, onCheckout }: RefBadgeGroupProps) {
       style={color ? ({ "--badge-color": color } as React.CSSProperties) : undefined}
       onDoubleClick={handleDoubleClick}
     >
-      {isActive && <Check size={11} className={s.activeRefCheck} aria-hidden />}
+      {isActive && <CheckIcon size={11} className={s.activeRefCheck} aria-hidden />}
       <span className={s.refName}>{name}</span>
       <span className={s.refGroupIcons}>
         {refs.map((r) => (

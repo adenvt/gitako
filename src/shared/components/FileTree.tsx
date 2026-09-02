@@ -1,7 +1,13 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import { ChevronRight, Folder, FolderOpen, ListCollapse, ListTree } from "lucide-react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
+import {
+  ChevronRightIcon,
+  FileDirectoryIcon,
+  FileDirectoryOpenFillIcon,
+  ListOrderedIcon,
+  ListUnorderedIcon,
+} from "@primer/octicons-react";
 import { collectDirPaths, type FileTreeNode } from "@/shared/utils/fileTree";
 import { statusLabel } from "@/shared/utils/status";
 import { StatusIcon } from "@/shared/components/StatusIcon";
@@ -53,15 +59,15 @@ function TreeRow({
           onClick={() => onToggle(node.path)}
           aria-expanded={open}
         >
-          <ChevronRight
+          <ChevronRightIcon
             size={14}
             className={clsx(s.treeArrow, open && s.treeArrowOpen)}
             aria-hidden
           />
           {open ? (
-            <FolderOpen size={14} className={s.treeFolderIcon} aria-hidden />
+            <FileDirectoryOpenFillIcon size={14} className={s.treeFolderIcon} aria-hidden />
           ) : (
-            <Folder size={14} className={s.treeFolderIcon} aria-hidden />
+            <FileDirectoryIcon size={14} className={s.treeFolderIcon} aria-hidden />
           )}
           <span className={s.treeName}>{node.name || "/"}</span>
         </Button>
@@ -151,12 +157,12 @@ export function FileTree({
         <div className={s.fileTreeToolbar}>
           {allExpanded ? (
             <Button variant="none" className={s.treeToolbarBtn} onClick={collapseAll}>
-              <ListCollapse size={13} aria-hidden />
+              <ListUnorderedIcon size={13} aria-hidden />
               Collapse all
             </Button>
           ) : (
             <Button variant="none" className={s.treeToolbarBtn} onClick={expandAll}>
-              <ListTree size={13} aria-hidden />
+              <ListOrderedIcon size={13} aria-hidden />
               Expand all
             </Button>
           )}

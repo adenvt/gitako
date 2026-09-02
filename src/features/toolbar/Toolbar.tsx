@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, Archive, Settings } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ArchiveIcon,
+  GearIcon,
+} from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
 import { countChanges } from "@/shared/utils/status";
 import { Button } from "@/shared/components/ui";
@@ -48,7 +53,7 @@ export function Toolbar() {
           disabled={loading}
           title={loading ? "Refreshing…" : "Fetch and refresh"}
         >
-          <ArrowDownToLine size={13} aria-hidden />
+          <ArrowDownIcon size={13} aria-hidden />
           {loading ? "pull…" : "pull"}
         </Button>
         <Button
@@ -56,7 +61,7 @@ export function Toolbar() {
           className={s.toolbarBtn}
           onClick={() => showNotice("Push - not yet implemented (ROADMAP Phase 5)")}
         >
-          <ArrowUpFromLine size={13} aria-hidden />
+          <ArrowUpIcon size={13} aria-hidden />
           push
         </Button>
         <Button
@@ -64,7 +69,7 @@ export function Toolbar() {
           className={s.toolbarBtn}
           onClick={() => showNotice("Stash - not yet implemented (ROADMAP Phase 4)")}
         >
-          <Archive size={13} aria-hidden />
+          <ArchiveIcon size={13} aria-hidden />
           stash
         </Button>
         <Button
@@ -72,7 +77,7 @@ export function Toolbar() {
           className={s.toolbarBtn}
           onClick={() => showNotice("Settings - not yet implemented (ROADMAP Phase 7)")}
         >
-          <Settings size={13} aria-hidden />
+          <GearIcon size={13} aria-hidden />
           settings
         </Button>
       </div>
