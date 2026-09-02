@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildCommitMessagePrompt, parseCommitMessage } from "./commitMessage";
+import {
+  buildCommitMessagePrompt,
+  COMMIT_MESSAGE_RESPONSE_FORMAT,
+  parseCommitMessage,
+  parseCommitMessageJson,
+} from "./commitMessage";
 
 describe("parseCommitMessage", () => {
   it("splits on the first blank line into subject + description", () => {
@@ -67,5 +72,146 @@ describe("buildCommitMessagePrompt", () => {
     const [, user] = buildCommitMessagePrompt(small);
     expect(user.content).not.toContain("... (truncated)");
     expect(user.content).toContain(small);
+  });
+});
+
+describe("COMMIT_MESSAGE_RESPONSE_FORMAT", () => {
+  it("uses OpenAI json_schema shape with strict mode", () => {
+    expect(COMMIT_MESSAGE_RESPONSE_FORMAT.type).toBe("json_schema");
+    expect(COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.strict).toBe(true);
+    expect(COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.name).toBe("commit_message");
+  });
+
+  it("requires the conventional-commit fields and forbids extras", () => {
+    const schema = COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.schema;
+    expect(schema.required).toEqual(["type", "subject", "description"]);
+    expect(schema.additionalProperties).toBe(false);
+    expect(schema.properties).toHaveProperty("type");
+    expect(schema.properties).toHaveProperty("scope");
+    expect(schema.properties).toHaveProperty("subject");
+    expect(schema.properties).toHaveProperty("description");
+  });
+
+  it("restricts the type field to the Conventional Commits allowlist", () => {
+    const typeProp = COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.schema.properties.type;
+    expect(typeProp.enum).toEqual([
+      "feat",
+      "fix",
+      "refactor",
+      "perf",
+      "docs",
+      "test",
+      "build",
+      "ci",
+      "chore",
+      "style",
+      "revert",
+    ]);
+  });
+
+  it("allows the scope to be null or a string", () => {
+    const scopeProp = COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.schema.properties.scope;
+    expect(scopeProp.type).toEqual(["string", "null"]);
+  });
+
+  it("caps the subject at 72 characters", () => {
+    const subjectProp = COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.schema.properties.subject;
+    expect(subjectProp.type).toBe("string");
+    expect(subjectProp.maxLength).toBe(72);
+  });
+});
+
+describe("parseCommitMessageJson", () => {
+  it("rebuilds the subject as `type(scope): description`", () => {
+    const reply = JSON.stringify({
+      type: "feat",
+      scope: "api",
+      subject: "add /users endpoint",
+      description: "Adds the new endpoint and wires it into the router.",
+    });
+    expect(parseCommitMessageJson(reply)).toEqual({
+      subject: "feat(api): add /users endpoint",
+      description: "Adds the new endpoint and wires it into the router.",
+    });
+  });
+
+  it("omits parentheses when scope is null", () => {
+    const reply = JSON.stringify({
+      type: "fix",
+      scope: null,
+      subject: "null pointer when token is empty",
+      description: "",
+    });
+    expect(parseCommitMessageJson(reply)).toEqual({
+      subject: "fix: null pointer when token is empty",
+      description: "",
+    });
+  });
+
+  it("treats an empty-string scope as no scope", () => {
+    const reply = JSON.stringify({
+      type: "chore",
+      scope: "",
+      subject: "bump deps",
+      description: "",
+    });
+    expect(parseCommitMessageJson(reply)).toEqual({
+      subject: "chore: bump deps",
+      description: "",
+    });
+  });
+
+  it("strips a leading `type:` prefix if the model included it in subject", () => {
+    // The system prompt forbids this, but cheap to defend against:
+    // don't double-prefix when rebuilding.
+    const reply = JSON.stringify({
+      type: "feat",
+      scope: null,
+      subject: "feat: add /users endpoint",
+      description: "",
+    });
+    expect(parseCommitMessageJson(reply)).toEqual({
+      subject: "feat: add /users endpoint",
+      description: "",
+    });
+  });
+
+  it("throws when the reply is not valid JSON", () => {
+    expect(() => parseCommitMessageJson("not json")).toThrow(/not valid JSON/);
+  });
+
+  it("throws when the type is not in the conventional allowlist", () => {
+    const reply = JSON.stringify({
+      type: "feature", // wrong — must be "feat"
+      scope: null,
+      subject: "x",
+      description: "",
+    });
+    expect(() => parseCommitMessageJson(reply)).toThrow(/invalid type/);
+  });
+
+  it("throws when the subject is missing or empty", () => {
+    const missing = JSON.stringify({ type: "feat", scope: null, description: "" });
+    const empty = JSON.stringify({
+      type: "feat",
+      scope: null,
+      subject: "   ",
+      description: "",
+    });
+    expect(() => parseCommitMessageJson(missing)).toThrow(/subject/);
+    expect(() => parseCommitMessageJson(empty)).toThrow(/subject/);
+  });
+
+  it("returns an empty description when the field is not a string", () => {
+    const reply = JSON.stringify({
+      type: "docs",
+      scope: null,
+      subject: "fix typo",
+      description: 42,
+    });
+    expect(parseCommitMessageJson(reply)).toEqual({
+      subject: "docs: fix typo",
+      description: "",
+    });
   });
 });

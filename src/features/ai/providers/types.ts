@@ -16,6 +16,14 @@ export interface ChatRequest {
   messages: AiMessage[];
   temperature?: number;
   maxTokens?: number;
+  /**
+   * Provider-specific structured-output directive. The OpenAI provider
+   * passes this through as `response_format` in the request body.
+   * Other providers may ignore it; the call site is expected to
+   * gracefully degrade to plain-text parsing if the model reply isn't
+   * JSON. Shape is left open to match each provider's API.
+   */
+  responseFormat?: unknown;
 }
 
 export interface ChatResponse {

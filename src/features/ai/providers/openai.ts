@@ -38,6 +38,13 @@ export function createOpenAiProvider(opts: OpenAiProviderOptions = {}): AiProvid
             messages: req.messages,
             ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
             ...(req.maxTokens !== undefined ? { max_tokens: req.maxTokens } : {}),
+            // Pass through structured-output directives. Only set
+            // `response_format` when the caller actually provided one;
+            // some non-OpenAI endpoints (Ollama, LM Studio) reject an
+            // empty/unknown value.
+            ...(req.responseFormat !== undefined
+              ? { response_format: req.responseFormat }
+              : {}),
           }),
         });
       } catch (e) {

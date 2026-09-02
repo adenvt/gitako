@@ -2,7 +2,12 @@ import { fetchStagedDiff } from "@/state/git";
 import { createOpenAiProvider } from "./providers/openai";
 import { getProvider } from "./providers/registry";
 import type { AiProvider } from "./providers/types";
-import { buildCommitMessagePrompt, parseCommitMessage } from "./prompts/commitMessage";
+import {
+  buildCommitMessagePrompt,
+  COMMIT_MESSAGE_RESPONSE_FORMAT,
+  parseCommitMessage,
+  parseCommitMessageJson,
+} from "./prompts/commitMessage";
 import type { AiSettings } from "@/shared/utils/aiSettings";
 import type { ParsedCommitMessage } from "./prompts/commitMessage";
 
@@ -45,11 +50,24 @@ export async function generateCommitMessage(
 
   const messages = buildCommitMessagePrompt(diff);
   const res = await provider.chat(
-    { model: provider.defaultModel, messages, temperature: 0.2, maxTokens: 400 },
+    {
+      model: provider.defaultModel,
+      messages,
+      temperature: 0.2,
+      maxTokens: 400,
+      responseFormat: COMMIT_MESSAGE_RESPONSE_FORMAT,
+    },
     settings.apiKey,
   );
 
-  return parseCommitMessage(res.text);
+  // Try the structured path first (OpenAI / OpenAI-compatible providers
+  // that honor `response_format`). Fall back to freeform text parsing
+  // when the model returned plain text (Ollama, LM Studio, etc.).
+  try {
+    return parseCommitMessageJson(res.text);
+  } catch {
+    return parseCommitMessage(res.text);
+  }
 }
 
 /** Tiny "are we alive" call used by the AI settings page's
