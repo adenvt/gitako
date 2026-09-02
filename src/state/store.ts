@@ -9,6 +9,11 @@ import {
   fetchDiff,
   stageFiles,
   commitChanges,
+  checkoutBranch,
+  checkoutTrack,
+  stashSave,
+  stashPop,
+  fetchHeadBranch,
 } from "./git";
 import { parsePorcelain, type StatusEntry } from "@/shared/utils/status";
 import { errorMessage } from "@/shared/utils/error";
@@ -50,10 +55,21 @@ interface RepoState {
   diffCache: Record<string, DiffFile>;
   /** True while a refresh is in flight. */
   loading: boolean;
+  /** Local branch name HEAD is on, or short hash for detached HEAD.
+   *  Authoritative — the log's first commit is not guaranteed to be HEAD. */
+  headBranch: string | null;
   error: string | null;
 
   openRepo: (path: string) => Promise<void>;
   refresh: () => Promise<void>;
+  /**
+   * Switch HEAD to a branch. For local branches, passes the name
+   * straight to `git checkout`. For remote-tracking refs (`origin/feature`),
+   * creates a local branch with the same name tracking the upstream
+   * (smart switch + stash pop still apply, since the resulting checkout
+   * may need to move HEAD).
+   */
+  checkout: (branch: string, kind?: "branch" | "remoteBranch") => Promise<void>;
   refreshStatus: () => Promise<void>;
   select: (hash: string | null) => void;
   loadCommitFiles: (hash: string) => Promise<void>;
@@ -90,6 +106,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   graphWidth: 0, // 0 = auto (fits lane count)
   diffCache: {},
   loading: false,
+  headBranch: null,
   error: null,
 
   async openRepo(path) {
@@ -106,10 +123,11 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     if (!repoPath) return;
     set({ loading: true, error: null });
     try {
-      const [commits, refs, status] = await Promise.all([
+      const [commits, refs, status, headBranch] = await Promise.all([
         fetchLog(repoPath),
         fetchRefs(repoPath),
         fetchStatus(repoPath).catch(() => ""),
+        fetchHeadBranch(repoPath).catch(() => null),
       ]);
       // Join refs onto commits for badge display.
       const refByCommit = new Map<string, RefInfo[]>();
@@ -131,6 +149,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
         refsByCommit,
         layout: computeLayout(withRefs),
         statusEntries,
+        headBranch,
         // A repo can open with files already staged (e.g. staged in a
         // terminal before launching the app) — mirror the real index so the
         // composer's staged/unstaged split is correct from the start.
@@ -139,6 +158,50 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     } catch (e) {
       const message = errorMessage(e);
       set({ error: message });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  /**
+   * Switch HEAD to a local branch. **Smart switch**: if the worktree is
+   * dirty, stash push -u -> checkout -> stash pop so the user never sees
+   * a "would overwrite" error. On pop conflict the stash is preserved
+   * and the user is notified via toast; the checkout itself is still
+   * considered successful.
+   */
+  async checkout(branch: string, kind: "branch" | "remoteBranch" = "branch") {
+    const { repoPath, statusEntries } = get();
+    if (!repoPath) return;
+    const dirty = statusEntries.length > 0;
+    set({ loading: true, error: null });
+    let stashedRef = "";
+    try {
+      if (dirty) {
+        stashedRef = await stashSave(repoPath, `auto: pre-checkout ${branch}`);
+      }
+      if (kind === "remoteBranch") {
+        // Create the local branch tracking the remote; HEAD moves to it
+        // implicitly (just like `git checkout`).
+        await checkoutTrack(repoPath, branch);
+      } else {
+        await checkoutBranch(repoPath, branch);
+      }
+      if (stashedRef) {
+        try {
+          await stashPop(repoPath, stashedRef);
+        } catch (popErr) {
+          // Pop conflict — stash is preserved; surface to the user.
+          toastError(
+            `Stash pop conflict on ${branch}`,
+            `Your changes are safe in ${stashedRef}`,
+          );
+        }
+      }
+      await get().refresh();
+    } catch (e) {
+      set({ error: errorMessage(e) });
+      throw e;
     } finally {
       set({ loading: false });
     }

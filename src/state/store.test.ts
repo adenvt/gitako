@@ -11,6 +11,7 @@ vi.mock("./git", () => ({
   fetchDiff: vi.fn(),
   stageFiles: vi.fn(),
   commitChanges: vi.fn(),
+  fetchHeadBranch: vi.fn().mockResolvedValue("main"),
 }));
 
 // Importing the store AFTER vi.mock so the mock is in place. `act` is
@@ -19,6 +20,7 @@ import { useRepoStore } from "./store";
 import {
   commitChanges,
   fetchDiff,
+  fetchHeadBranch,
   fetchLog,
   fetchRefs,
   fetchShowFiles,
@@ -33,6 +35,7 @@ const mockFetchShowFiles = vi.mocked(fetchShowFiles);
 const mockFetchDiff = vi.mocked(fetchDiff);
 const mockStageFiles = vi.mocked(stageFiles);
 const mockCommitChanges = vi.mocked(commitChanges);
+const mockFetchHeadBranch = vi.mocked(fetchHeadBranch);
 
 function makeCommit(hash: string, parents: string[] = [], subject = "x"): Commit {
   return {
@@ -125,6 +128,8 @@ describe("openRepo", () => {
     expect(s.statusEntries).toEqual([{ index: ".", worktree: "M", path: "a.ts", oldPath: null }]);
     // Final loading is false even on success.
     expect(s.loading).toBe(false);
+    // headBranch is set from the backend (default mock returns "main").
+    expect(s.headBranch).toBe("main");
   });
 
   it("surfaces the error message and clears loading on failure", async () => {
@@ -153,6 +158,21 @@ describe("openRepo", () => {
     expect(s.error).toBeNull();
     expect(s.commits).toHaveLength(1);
     expect(s.statusEntries).toEqual([]);
+  });
+
+  it("stores the HEAD branch name from the backend (authoritative, not commits[0])", async () => {
+    // Reproduces the original bug: topo order can place HEAD below another
+    // branch's tip, so inferring HEAD from `commits[0]` is wrong. The store
+    // trusts `fetchHeadBranch` instead.
+    mockFetchLog.mockResolvedValueOnce([makeCommit("c1"), makeCommit("c0")]);
+    mockFetchRefs.mockResolvedValueOnce([makeRef("main", "c0"), makeRef("feature", "c1")]);
+    mockFetchStatus.mockResolvedValueOnce("");
+    mockFetchHeadBranch.mockResolvedValueOnce("feature");
+
+    await useRepoStore.getState().openRepo("/repo");
+
+    const s = useRepoStore.getState();
+    expect(s.headBranch).toBe("feature");
   });
 });
 

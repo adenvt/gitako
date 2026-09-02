@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { RefBadge, RefBadgeGroup, RefIcon } from "./refBadge";
 import type { RefInfo } from "@/shared/types/git";
 
@@ -184,5 +184,91 @@ describe("RefBadgeGroup", () => {
     ];
     const { container } = render(<RefBadgeGroup refs={refs} />);
     expect(container.querySelector("svg.lucide-check")).toBeNull();
+  });
+});
+
+describe("double-click to checkout", () => {
+  it("calls onCheckout with the local branch name + kind on double-click", () => {
+    const onCheckout = vi.fn();
+    const { container } = render(
+      <RefBadge refInfo={makeRef({ name: "feature", kind: "branch" })} onCheckout={onCheckout} />,
+    );
+    const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
+    fireEvent.doubleClick(badge);
+    expect(onCheckout).toHaveBeenCalledWith("feature", "branch");
+  });
+
+  it("calls onCheckout with the full name and remoteBranch kind for a remote branch", () => {
+    const onCheckout = vi.fn();
+    const { container } = render(
+      <RefBadge
+        refInfo={makeRef({
+          name: "main",
+          fullName: "origin/main",
+          kind: "remoteBranch",
+          remote: "origin",
+        })}
+        onCheckout={onCheckout}
+      />,
+    );
+    const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
+    fireEvent.doubleClick(badge);
+    expect(onCheckout).toHaveBeenCalledWith("origin/main", "remoteBranch");
+  });
+
+  it("does not call onCheckout for a tag", () => {
+    const onCheckout = vi.fn();
+    const { container } = render(
+      <RefBadge refInfo={makeRef({ name: "v1.0", kind: "tag" })} onCheckout={onCheckout} />,
+    );
+    const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
+    fireEvent.doubleClick(badge);
+    expect(onCheckout).not.toHaveBeenCalled();
+  });
+
+  it("does not call onCheckout when the prop is omitted", () => {
+    const { container } = render(
+      <RefBadge refInfo={makeRef({ name: "feature", kind: "branch" })} />,
+    );
+    const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
+    // No throw is enough; the handler is not wired.
+    expect(() => fireEvent.doubleClick(badge)).not.toThrow();
+  });
+
+  it("RefBadgeGroup fires onCheckout with the local branch name", () => {
+    const onCheckout = vi.fn();
+    const refs = [
+      makeRef({ name: "main", fullName: "main", kind: "branch" }),
+      makeRef({
+        name: "main",
+        fullName: "origin/main",
+        kind: "remoteBranch",
+        remote: "origin",
+      }),
+    ];
+    const { container } = render(
+      <RefBadgeGroup refs={refs} onCheckout={onCheckout} />,
+    );
+    const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
+    fireEvent.doubleClick(badge);
+    expect(onCheckout).toHaveBeenCalledWith("main", "branch");
+  });
+
+  it("RefBadgeGroup falls back to the remote branch's full name when no local branch is in the group", () => {
+    const onCheckout = vi.fn();
+    const refs = [
+      makeRef({
+        name: "main",
+        fullName: "origin/main",
+        kind: "remoteBranch",
+        remote: "origin",
+      }),
+    ];
+    const { container } = render(
+      <RefBadgeGroup refs={refs} onCheckout={onCheckout} />,
+    );
+    const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
+    fireEvent.doubleClick(badge);
+    expect(onCheckout).toHaveBeenCalledWith("origin/main", "remoteBranch");
   });
 });

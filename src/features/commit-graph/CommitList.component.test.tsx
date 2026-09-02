@@ -14,6 +14,7 @@ vi.mock("@/state/git", () => ({
   fetchDiff: vi.fn(),
   stageFiles: vi.fn(),
   commitChanges: vi.fn(),
+  fetchHeadBranch: vi.fn().mockResolvedValue("main"),
 }));
 
 function commit(overrides: Partial<Commit> = {}): Commit {

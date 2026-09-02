@@ -79,15 +79,45 @@ describe("CommitDetail", () => {
   });
 
   it("shows the Refs row when the commit has refs joined onto it", () => {
-    // The component reads `commit.refs` (the string array joined by the
-    // store on refresh), not refsByCommit — pin that contract.
+    // The component reads `refsByCommit` (full RefInfo[]) so it can use
+    // `fullName` as a unique React key — a local `main` and remote
+    // `origin/main` share the base name but must not collide.
     setStoreWith(commit({ refs: ["main", "origin/main"] }), [
       refInfo({ name: "main", fullName: "main", kind: "branch" }),
+      refInfo({
+        name: "main",
+        fullName: "origin/main",
+        kind: "remoteBranch",
+        remote: "origin",
+      }),
+    ]);
+    const { container } = render(<CommitDetail />);
+    expect(screen.getByText("Refs")).toBeInTheDocument();
+    // Both refs render as distinct badge spans (one per `fullName`).
+    const badges = container.querySelectorAll("[class*='commitRefBadge']");
+    expect(badges.length).toBe(2);
+  });
+
+  it("does not warn on duplicate keys when a commit has a local + remote ref sharing a base name", () => {
+    // Regression: `commit.refs` was just `r.name`, so `main` and
+    // `origin/main` both produced `key="main"`. Switching the component
+    // to `refsByCommit` with `fullName` as the key fixes it.
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    setStoreWith(commit({ refs: ["main", "origin/main"] }), [
+      refInfo({ name: "main", fullName: "main", kind: "branch" }),
+      refInfo({
+        name: "main",
+        fullName: "origin/main",
+        kind: "remoteBranch",
+        remote: "origin",
+      }),
     ]);
     render(<CommitDetail />);
-    expect(screen.getByText("Refs")).toBeInTheDocument();
-    expect(screen.getByText("main")).toBeInTheDocument();
-    expect(screen.getByText("origin/main")).toBeInTheDocument();
+    const dupKeyWarns = consoleError.mock.calls.filter((args) =>
+      String(args[0] ?? "").includes("two children with the same key"),
+    );
+    expect(dupKeyWarns).toHaveLength(0);
+    consoleError.mockRestore();
   });
 
   it("renders file stats (status icon + count + label) when files are loaded", () => {

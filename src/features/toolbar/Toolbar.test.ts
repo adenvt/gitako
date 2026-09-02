@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { pickLocalBranch, repoNameFromPath } from "./Toolbar";
+import { pickLocalBranch } from "./pickLocalBranch";
+import { repoNameFromPath } from "./Toolbar";
 
 describe("pickLocalBranch", () => {
   it("returns the first ref without a '/' for a mixed list", () => {

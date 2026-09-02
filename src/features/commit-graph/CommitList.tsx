@@ -54,6 +54,7 @@ export function CommitList() {
     refsByCommit,
     graphWidth,
     setGraphWidth,
+    checkout,
   } = useRepoStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 50 });
@@ -94,6 +95,20 @@ export function CommitList() {
       window.addEventListener("pointerup", onUp);
     },
     [setGraphWidth],
+  );
+
+  // Double-clicking a ref badge checks out the ref. The badge
+  // component gates by `kind`, but remote-tracking refs also need to
+  // resolve to their full name (`origin/feature`) so the store can
+  // route them through `git checkout --track` instead of plain
+  // `git checkout`.
+  const onCheckout = useCallback(
+    (name: string, kind: "branch" | "remoteBranch") => {
+      void checkout(name, kind).catch(() => {
+        // store already set `error`; nothing to do.
+      });
+    },
+    [checkout],
   );
 
   const counts = countByKind(statusEntries);
@@ -335,12 +350,14 @@ export function CommitList() {
                                 key={group[0].fullName}
                                 refs={group}
                                 color={badgeColor}
+                                onCheckout={onCheckout}
                               />
                             ) : (
                               <RefBadge
                                 key={group[0].fullName}
                                 refInfo={group[0]}
                                 color={badgeColor}
+                                onCheckout={onCheckout}
                               />
                             ),
                           )}
