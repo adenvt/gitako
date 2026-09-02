@@ -37,6 +37,23 @@ export interface GitErrorPayload {
   code: number | null;
 }
 
+/** Mirrors the Rust `PushResult` returned by `git_push`. */
+export interface PushResult {
+  remote: string;
+  branch: string;
+  summary: string;
+}
+
+/** Pull strategy, mirrors the Rust `PullMode` enum. */
+export type PullMode = "ff" | "ffOnly" | "rebase";
+
+/** Mirrors the Rust `PullResult` returned by `git_fetch` / `git_pull`. */
+export interface PullResult {
+  remote: string;
+  branch: string;
+  summary: string;
+}
+
 /** Mirrors the Rust git::diff structs. */
 export type DiffLineKind = "context" | "add" | "remove";
 

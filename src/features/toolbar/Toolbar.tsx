@@ -1,14 +1,10 @@
 import { useState } from "react";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ArchiveIcon,
-  GearIcon,
-} from "@primer/octicons-react";
+import { ArrowUpIcon, ArchiveIcon, GearIcon } from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
 import { countChanges } from "@/shared/utils/status";
 import { Button } from "@/shared/components/ui";
 import { BranchSwitcher } from "./BranchSwitcher";
+import { PullMenu } from "./PullMenu";
 import s from "./workspace.module.css";
 
 /** Last path component of a repo path, for the toolbar's "repo name" pill. */
@@ -19,7 +15,14 @@ export function repoNameFromPath(path: string | null | undefined): string | unde
 
 /** Transient "not yet implemented" notice for placeholder toolbar actions. */
 export function Toolbar() {
-  const { repoPath, loading, refresh, statusEntries } = useRepoStore();
+  const {
+    repoPath,
+    loading,
+    pushing,
+    push: pushAction,
+    statusEntries,
+    openOverlay,
+  } = useRepoStore();
   const [notice, setNotice] = useState<string | null>(null);
 
   const head = useRepoStore((st) => st.commits[0]);
@@ -31,8 +34,8 @@ export function Toolbar() {
     window.setTimeout(() => setNotice((cur) => (cur === msg ? null : cur)), 2500);
   };
 
-  const handlePull = () => {
-    void refresh();
+  const handlePush = () => {
+    void pushAction();
   };
 
   return (
@@ -46,23 +49,16 @@ export function Toolbar() {
       <div className={s.toolbarDivider} aria-hidden />
 
       <div className={s.toolbarActions}>
+        <PullMenu />
         <Button
           variant="solid"
           className={s.toolbarBtn}
-          onClick={handlePull}
-          disabled={loading}
-          title={loading ? "Refreshing…" : "Fetch and refresh"}
-        >
-          <ArrowDownIcon size={13} aria-hidden />
-          {loading ? "pull…" : "pull"}
-        </Button>
-        <Button
-          variant="solid"
-          className={s.toolbarBtn}
-          onClick={() => showNotice("Push - not yet implemented (ROADMAP Phase 5)")}
+          onClick={handlePush}
+          disabled={pushing || loading}
+          title={pushing ? "Pushing…" : "Push to remote"}
         >
           <ArrowUpIcon size={13} aria-hidden />
-          push
+          {pushing ? "push…" : "push"}
         </Button>
         <Button
           variant="solid"
@@ -72,11 +68,7 @@ export function Toolbar() {
           <ArchiveIcon size={13} aria-hidden />
           stash
         </Button>
-        <Button
-          variant="solid"
-          className={s.toolbarBtn}
-          onClick={() => showNotice("Settings - not yet implemented (ROADMAP Phase 7)")}
-        >
+        <Button variant="solid" className={s.toolbarBtn} onClick={() => openOverlay("ai-settings")}>
           <GearIcon size={13} aria-hidden />
           settings
         </Button>

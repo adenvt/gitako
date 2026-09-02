@@ -235,7 +235,16 @@ export function CommitList() {
         if (c) select(c.hash);
       }
     },
-    [totalRows, focusIndex, selectedIndex, hasWorkingRow, commits, select, setWorkingSelected, openComposer],
+    [
+      totalRows,
+      focusIndex,
+      selectedIndex,
+      hasWorkingRow,
+      commits,
+      select,
+      setWorkingSelected,
+      openComposer,
+    ],
   );
 
   if (!layout || layout.commits.length === 0) {

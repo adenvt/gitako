@@ -80,7 +80,7 @@ export function DiffMinimap({
           className={s.diffMinimapBar}
           data-kind={b.kind}
           style={{
-            top: `${(i * ROW_HEIGHT) / Math.max(1, contentHeight) * 100}%`,
+            top: `${((i * ROW_HEIGHT) / Math.max(1, contentHeight)) * 100}%`,
             height: `${barPercent}%`,
           }}
         />

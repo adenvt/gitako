@@ -70,8 +70,7 @@ interface RefBadgeProps {
 /** A single ref badge (used when refs have distinct names). */
 export function RefBadge({ refInfo, color, onCheckout }: RefBadgeProps) {
   const fullName = refFullName(refInfo);
-  const canCheckout =
-    onCheckout && (refInfo.kind === "branch" || refInfo.kind === "remoteBranch");
+  const canCheckout = onCheckout && (refInfo.kind === "branch" || refInfo.kind === "remoteBranch");
   const handleDoubleClick = canCheckout
     ? () => {
         // Remote branches are addressed by their full `origin/feature`

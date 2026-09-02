@@ -1,4 +1,9 @@
-import { PlusIcon, FileSymlinkFileIcon, FileRemovedIcon, FileDiffIcon } from "@primer/octicons-react";
+import {
+  PlusIcon,
+  FileSymlinkFileIcon,
+  FileRemovedIcon,
+  FileDiffIcon,
+} from "@primer/octicons-react";
 import clsx from "clsx";
 import s from "./fileTree.module.css";
 

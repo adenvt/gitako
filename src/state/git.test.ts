@@ -9,11 +9,14 @@ vi.mock("@tauri-apps/api/core", () => ({
 import { invoke } from "@tauri-apps/api/core";
 import {
   commitChanges,
+  fetchAll,
   fetchDiff,
   fetchLog,
   fetchRefs,
   fetchShowFiles,
   fetchStatus,
+  pullBranch,
+  pushBranch,
   repoRoot,
   resolveRev,
   stageFiles,
@@ -103,6 +106,36 @@ describe("state/git wrappers", () => {
     });
   });
 
+  it("pushBranch invokes 'git_push' with the repoPath and returns PushResult", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      remote: "origin",
+      branch: "main",
+      summary: "Everything up-to-date",
+    });
+    const result = await pushBranch("/r");
+    expect(mockInvoke).toHaveBeenCalledWith("git_push", { repoPath: "/r" });
+    expect(result).toEqual({
+      remote: "origin",
+      branch: "main",
+      summary: "Everything up-to-date",
+    });
+  });
+
+  it("fetchAll invokes 'git_fetch' with the repoPath", async () => {
+    mockInvoke.mockResolvedValueOnce({ remote: "origin", branch: "main", summary: "" });
+    await fetchAll("/r");
+    expect(mockInvoke).toHaveBeenCalledWith("git_fetch", { repoPath: "/r" });
+  });
+
+  it("pullBranch invokes 'git_pull' with the repoPath and mode", async () => {
+    mockInvoke.mockResolvedValueOnce({ remote: "origin", branch: "main", summary: "Fast-forward" });
+    await pullBranch("/r", "ffOnly");
+    expect(mockInvoke).toHaveBeenCalledWith("git_pull", {
+      repoPath: "/r",
+      mode: "ffOnly",
+    });
+  });
+
   it("rethrows a typed GitErrorPayload on failure (via toGitError cast)", async () => {
     const payload = { kind: "notARepo", message: "fatal: not a git repo", code: 128 };
     mockInvoke.mockRejectedValueOnce(payload);
@@ -131,5 +164,11 @@ describe("state/git wrappers", () => {
     await expect(commitChanges("/r", "s", "d")).rejects.toBe(boom);
     mockInvoke.mockRejectedValueOnce(boom);
     await expect(fetchDiff("/r", "x", "p")).rejects.toBe(boom);
+    mockInvoke.mockRejectedValueOnce(boom);
+    await expect(pushBranch("/r")).rejects.toBe(boom);
+    mockInvoke.mockRejectedValueOnce(boom);
+    await expect(fetchAll("/r")).rejects.toBe(boom);
+    mockInvoke.mockRejectedValueOnce(boom);
+    await expect(pullBranch("/r", "ff")).rejects.toBe(boom);
   });
 });

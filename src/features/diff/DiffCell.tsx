@@ -51,8 +51,7 @@ export function ChangeCell({
   other: string;
   tokens: Line[] | null;
 }) {
-  const segments =
-    kind === "add" ? diffWords(other, text).newSegs : diffWords(other, text).oldSegs;
+  const segments = kind === "add" ? diffWords(other, text).newSegs : diffWords(other, text).oldSegs;
   const line = num != null && tokens ? tokens[num - 1] : undefined;
   const colors = line ?? [{ text, color: undefined }];
   const out: { t: string; color?: string; changed: boolean }[] = [];

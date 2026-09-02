@@ -1,7 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import clsx from "clsx";
+import { useCallback, useMemo, useRef } from "react";
 import { XIcon } from "@primer/octicons-react";
-import { ScrollArea } from "@base-ui/react/scroll-area";
 import { useRepoStore } from "@/state/store";
 import { langForPath } from "@/shared/utils/highlight";
 import { Button } from "@/shared/components/ui";

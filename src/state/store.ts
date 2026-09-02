@@ -14,13 +14,16 @@ import {
   stashSave,
   stashPop,
   fetchHeadBranch,
+  pushBranch,
+  fetchAll,
+  pullBranch,
 } from "./git";
+import type { PullMode } from "@/shared/types/git";
 import { parsePorcelain, type StatusEntry } from "@/shared/utils/status";
 import { errorMessage } from "@/shared/utils/error";
-import { toastError } from "@/shared/components/Toaster";
+import { toastError, toastSuccess } from "@/shared/components/Toaster";
 
-const isStaged = (e: StatusEntry) =>
-  e.index !== "." && !(e.index === "A" && e.worktree === "A");
+const isStaged = (e: StatusEntry) => e.index !== "." && !(e.index === "A" && e.worktree === "A");
 
 interface RepoState {
   /** Root path of the open repository. */
@@ -51,10 +54,16 @@ interface RepoState {
   workingSelected: boolean;
   /** User-resizable width of the graph band (0 = auto from lane count). */
   graphWidth: number;
+  /** Overlay view shown instead of the workspace (e.g. AI settings). */
+  overlay: "ai-settings" | null;
   /** Cached diffs, keyed by `${hash}|${path}`. */
   diffCache: Record<string, DiffFile>;
   /** True while a refresh is in flight. */
   loading: boolean;
+  /** True while a push is in flight (toolbar disables the button). */
+  pushing: boolean;
+  /** True while a fetch or pull is in flight (toolbar disables the button). */
+  pulling: boolean;
   /** Local branch name HEAD is on, or short hash for detached HEAD.
    *  Authoritative — the log's first commit is not guaranteed to be HEAD. */
   headBranch: string | null;
@@ -80,9 +89,14 @@ interface RepoState {
   stageAll: () => Promise<void>;
   unstageAll: () => Promise<void>;
   commit: (subject: string, description: string) => Promise<void>;
+  push: () => Promise<void>;
+  fetch: () => Promise<void>;
+  pull: (mode: PullMode) => Promise<void>;
   openDiff: (hash: string, path: string, staged?: boolean) => Promise<void>;
   closeDiff: () => void;
   setGraphWidth: (w: number) => void;
+  openOverlay: (overlay: "ai-settings") => void;
+  closeOverlay: () => void;
 }
 
 function computeLayout(commits: Commit[]): LayoutResult {
@@ -104,8 +118,11 @@ export const useRepoStore = create<RepoState>((set, get) => ({
   activeDiff: null,
   workingSelected: false,
   graphWidth: 0, // 0 = auto (fits lane count)
+  overlay: null,
   diffCache: {},
   loading: false,
+  pushing: false,
+  pulling: false,
   headBranch: null,
   error: null,
 
@@ -190,12 +207,9 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       if (stashedRef) {
         try {
           await stashPop(repoPath, stashedRef);
-        } catch (popErr) {
+        } catch {
           // Pop conflict — stash is preserved; surface to the user.
-          toastError(
-            `Stash pop conflict on ${branch}`,
-            `Your changes are safe in ${stashedRef}`,
-          );
+          toastError(`Stash pop conflict on ${branch}`, `Your changes are safe in ${stashedRef}`);
         }
       }
       await get().refresh();
@@ -339,6 +353,59 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     }
   },
 
+  async push() {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    set({ pushing: true });
+    try {
+      const result = await pushBranch(repoPath);
+      // Refresh refs so the remote branch badge updates after a successful push.
+      await get().refresh();
+      const detail = result.summary || `${result.branch} → ${result.remote}`;
+      toastSuccess("Push complete", `Pushed ${result.branch} to ${result.remote} — ${detail}`);
+    } catch (e) {
+      const message = errorMessage(e);
+      toastError("Push failed", message);
+    } finally {
+      set({ pushing: false });
+    }
+  },
+
+  async fetch() {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    set({ pulling: true });
+    try {
+      const result = await fetchAll(repoPath);
+      await get().refresh();
+      toastSuccess("Fetch complete", result.summary || `Fetched from ${result.remote}`);
+    } catch (e) {
+      const message = errorMessage(e);
+      toastError("Fetch failed", message);
+    } finally {
+      set({ pulling: false });
+    }
+  },
+
+  async pull(mode) {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    set({ pulling: true });
+    try {
+      const result = await pullBranch(repoPath, mode);
+      await get().refresh();
+      toastSuccess(
+        "Pull complete",
+        result.summary || `Pulled ${result.branch} from ${result.remote}`,
+      );
+    } catch (e) {
+      const message = errorMessage(e);
+      toastError("Pull failed", message);
+    } finally {
+      set({ pulling: false });
+    }
+  },
+
   async openDiff(hash, path, staged = false) {
     const { repoPath, diffCache } = get();
     if (!repoPath) return;
@@ -377,5 +444,13 @@ export const useRepoStore = create<RepoState>((set, get) => ({
 
   setGraphWidth(w) {
     set({ graphWidth: w });
+  },
+
+  openOverlay(overlay) {
+    set({ overlay });
+  },
+
+  closeOverlay() {
+    set({ overlay: null });
   },
 }));

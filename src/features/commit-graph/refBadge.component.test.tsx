@@ -29,9 +29,7 @@ describe("RefIcon", () => {
   });
 
   it("renders a desktop icon for kind='head'", () => {
-    const { container } = render(
-      <RefIcon refInfo={makeRef({ kind: "head", name: "HEAD" })} />,
-    );
+    const { container } = render(<RefIcon refInfo={makeRef({ kind: "head", name: "HEAD" })} />);
     expect(container.querySelector("svg")).not.toBeNull();
   });
 
@@ -103,9 +101,7 @@ describe("RefBadge", () => {
   });
 
   it("shows a check icon for the current branch (kind='head')", () => {
-    const { container } = render(
-      <RefBadge refInfo={makeRef({ name: "main", kind: "head" })} />,
-    );
+    const { container } = render(<RefBadge refInfo={makeRef({ name: "main", kind: "head" })} />);
     expect(container.querySelector("svg")).not.toBeNull();
     // And the active class is applied.
     expect(container.querySelector("[class*='activeRef']")).not.toBeNull();
@@ -249,9 +245,7 @@ describe("double-click to checkout", () => {
         remote: "origin",
       }),
     ];
-    const { container } = render(
-      <RefBadgeGroup refs={refs} onCheckout={onCheckout} />,
-    );
+    const { container } = render(<RefBadgeGroup refs={refs} onCheckout={onCheckout} />);
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
     expect(onCheckout).toHaveBeenCalledWith("main", "branch");
@@ -267,9 +261,7 @@ describe("double-click to checkout", () => {
         remote: "origin",
       }),
     ];
-    const { container } = render(
-      <RefBadgeGroup refs={refs} onCheckout={onCheckout} />,
-    );
+    const { container } = render(<RefBadgeGroup refs={refs} onCheckout={onCheckout} />);
     const badge = container.querySelector("[class*='commitRefBadge']") as HTMLElement;
     fireEvent.doubleClick(badge);
     expect(onCheckout).toHaveBeenCalledWith("origin/main", "remoteBranch");

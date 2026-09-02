@@ -119,8 +119,20 @@
   background: var(--bg-raised);
 }
 
-/* Inputs in the composer share the .ui-input shape via the shared kit,
-   but we still want monospaced, denser styling. Override a few knobs. */
+/* Subject input row: input on the left, ⚡ on the right. */
+.subjectRow {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.subjectRow > input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Subject input shares the .ui-input shape via the shared kit, but we
+   still want monospaced, denser styling. Override a few knobs. */
 .composerSubject {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -149,6 +161,36 @@
   line-height: 1.5;
 }
 
+/* Icon-only Generate button, styled to match the .composerSubject row
+   so it reads as an embedded trailing control. */
+.aiIconBtn {
+  flex: 0 0 auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 0 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.aiIconBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--accent-strong);
+  border-color: var(--accent-border);
+}
+
+.aiIconBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .composerCommit {
   background: var(--accent);
   border: 1px solid var(--accent);
@@ -158,8 +200,7 @@
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease);
+  transition: background var(--dur-fast) var(--ease);
 }
 
 .composerCommit:hover:not(:disabled):not([data-disabled]) {

@@ -95,7 +95,9 @@ body {
   color: var(--text);
   font-family: var(--font-ui);
   font-size: var(--fs-md);
-  font-feature-settings: "calt" 0, "liga" 0; /* no contextual ligatures in a TUI */
+  font-feature-settings:
+    "calt" 0,
+    "liga" 0; /* no contextual ligatures in a TUI */
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }

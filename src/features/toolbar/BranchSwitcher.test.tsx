@@ -8,7 +8,15 @@ import type { RefInfo, Commit } from "@/shared/types/git";
 const HEAD_HASH = "abcdef0123456789";
 
 function ref(name: string, kind: RefInfo["kind"], commitHash = ""): RefInfo {
-  return { name, kind, fullName: name, commit: commitHash, target: commitHash, remote: null, remoteUrl: null };
+  return {
+    name,
+    kind,
+    fullName: name,
+    commit: commitHash,
+    target: commitHash,
+    remote: null,
+    remoteUrl: null,
+  };
 }
 
 function headCommit(): Commit {
@@ -23,7 +31,11 @@ function headCommit(): Commit {
   };
 }
 
-function seed(refs: RefInfo[], headBranch: string | null = "main", commits: Commit[] = [headCommit()]) {
+function seed(
+  refs: RefInfo[],
+  headBranch: string | null = "main",
+  commits: Commit[] = [headCommit()],
+) {
   useRepoStore.setState({ refs, commits, headBranch });
 }
 

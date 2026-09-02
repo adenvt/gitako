@@ -3,4 +3,5 @@
  * base.css holds design tokens + shared control kit (ui-*), utilities.
  * Feature styles are colocated CSS Modules next to their components.
  */
+@import "modern-normalize/modern-normalize.css";
 @import "./base.css";

@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import { ZapIcon } from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
 import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
 import { useAppSettings } from "@/shared/compositions/useAppSettings";
+import { useAiSettings } from "@/shared/compositions/useAiSettings";
+import { isAiConfigured } from "@/shared/utils/aiSettings";
+import { generateCommitMessage } from "@/features/ai";
+import { errorMessage } from "@/shared/utils/error";
+import { toastError, toastSuccess } from "@/shared/components/Toaster";
 import { Button, Input, Textarea } from "@/shared/components/ui";
 import detail from "@/features/commit-detail/detail.module.css";
 import s from "./composer.module.css";
@@ -17,6 +23,7 @@ export function toTreeEntry(e: StatusEntry) {
 /** Right-pane commit composer: two staging trees + subject/description + commit. */
 export function CommitComposer() {
   const {
+    repoPath,
     statusEntries,
     stagedPaths,
     toggleStage,
@@ -30,6 +37,8 @@ export function CommitComposer() {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const aiSettings = useAiSettings();
 
   // Reflect staging done outside the app (e.g. `git add` in a terminal) by
   // polling status while the composer is open. Interval is user-configurable;
@@ -57,6 +66,8 @@ export function CommitComposer() {
   }, [statusEntries, stagedPaths]);
 
   const canCommit = stagedCount > 0 && subject.trim().length > 0 && !busy;
+  const aiConfigured = isAiConfigured(aiSettings);
+  const canGenerate = stagedCount > 0 && aiConfigured && !aiBusy;
 
   const handleCommit = async () => {
     if (!canCommit) return;
@@ -67,6 +78,31 @@ export function CommitComposer() {
       setBusy(false);
     }
   };
+
+  const handleGenerate = async () => {
+    if (!canGenerate || !repoPath) return;
+    setAiBusy(true);
+    try {
+      const { subject: s, description: d } = await generateCommitMessage({
+        settings: aiSettings,
+        repoPath,
+      });
+      setSubject(s);
+      if (d) setDescription(d);
+      toastSuccess("Commit message generated");
+    } catch (e) {
+      const m = errorMessage(e);
+      toastError("AI generation failed", m);
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const generateTooltip = !aiConfigured
+    ? "Configure your API key in AI settings"
+    : stagedCount === 0
+      ? "Stage files first"
+      : "Generate commit message from staged diff";
 
   return (
     <div className={`${detail.detailPane} ${s.composer}`}>
@@ -111,19 +147,31 @@ export function CommitComposer() {
       </div>
 
       <div className={s.composerForm}>
-        <Input
-          type="text"
-          className={s.composerSubject}
-          placeholder="Subject (required)"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void handleCommit();
-            }
-          }}
-        />
+        <div className={s.subjectRow}>
+          <Input
+            type="text"
+            className={s.composerSubject}
+            placeholder="Subject (required)"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void handleCommit();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className={s.aiIconBtn}
+            disabled={!canGenerate}
+            onClick={() => void handleGenerate()}
+            aria-label={aiBusy ? "Generating commit message" : "Generate commit message"}
+            title={generateTooltip}
+          >
+            <ZapIcon size={14} aria-hidden />
+          </button>
+        </div>
         <Textarea
           className={s.composerDescription}
           placeholder="Description"

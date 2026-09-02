@@ -5,6 +5,7 @@ import { CommitComposer } from "./CommitComposer";
 import { Toaster, toastManager } from "@/shared/components/Toaster";
 import { Toast } from "@base-ui/react/toast";
 import { useRepoStore } from "@/state/store";
+import { loadAiSettings, saveAiSettings } from "@/shared/utils/aiSettings";
 import type { StatusEntry } from "@/shared/utils/status";
 
 vi.mock("@/state/git", () => ({
@@ -13,6 +14,7 @@ vi.mock("@/state/git", () => ({
   fetchStatus: vi.fn(),
   fetchShowFiles: vi.fn(),
   fetchDiff: vi.fn(),
+  fetchStagedDiff: vi.fn().mockResolvedValue("diff --git a/x b/x\n+hello"),
   stageFiles: vi.fn().mockResolvedValue(undefined),
   commitChanges: vi.fn().mockResolvedValue("newhash"),
   fetchHeadBranch: vi.fn().mockResolvedValue("main"),
@@ -24,6 +26,7 @@ function entry(overrides: Partial<StatusEntry>): StatusEntry {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   toastManager.close(); // reset any toasts left over from previous tests
   // Full reset: earlier tests replace store actions with mocks via setState,
   // so restore the pristine store (actions included).
@@ -272,5 +275,92 @@ describe("CommitComposer", () => {
     await user.type(desc, "a longer body");
     // The textarea is uncontrolled; confirm the value is what we typed.
     expect((desc as HTMLTextAreaElement).value).toBe("a longer body");
+  });
+
+  it("disables the Generate button when AI is not configured", () => {
+    useRepoStore.setState({
+      stagedPaths: new Set(["a.ts"]),
+      statusEntries: [entry({ path: "a.ts" })],
+    });
+    render(<CommitComposer />);
+    expect(screen.getByRole("button", { name: /generate commit message/i })).toBeDisabled();
+  });
+
+  it("disables the Generate button when nothing is staged (even with API key set)", () => {
+    saveAiSettings({ ...loadAiSettings(), apiKey: "sk-test" });
+    useRepoStore.setState({ stagedPaths: new Set() });
+    render(<CommitComposer />);
+    expect(screen.getByRole("button", { name: /generate commit message/i })).toBeDisabled();
+  });
+
+  it("populates subject + description on successful generation", async () => {
+    saveAiSettings({ ...loadAiSettings(), apiKey: "sk-test" });
+    useRepoStore.setState({
+      stagedPaths: new Set(["a.ts"]),
+      statusEntries: [entry({ path: "a.ts" })],
+    });
+    // Mock the provider's chat via fetch.
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => ({
+        choices: [{ message: { content: "Add hello\n\nFirst cut of the hello world change." } }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+    render(<CommitComposer />);
+    await user.click(screen.getByRole("button", { name: /generate commit message/i }));
+
+    expect((screen.getByPlaceholderText(/subject/i) as HTMLInputElement).value).toBe("Add hello");
+    expect((screen.getByPlaceholderText(/description/i) as HTMLTextAreaElement).value).toBe(
+      "First cut of the hello world change.",
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("shows a toast (not inline) when generation fails", async () => {
+    saveAiSettings({ ...loadAiSettings(), apiKey: "sk-test" });
+    useRepoStore.setState({
+      stagedPaths: new Set(["a.ts"]),
+      statusEntries: [entry({ path: "a.ts" })],
+    });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      statusText: "Unauthorized",
+      json: async () => ({ error: { message: "bad key" } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+    render(
+      <Toast.Provider toastManager={toastManager}>
+        <CommitComposer />
+        <Toaster />
+      </Toast.Provider>,
+    );
+    await user.click(screen.getByRole("button", { name: /generate commit message/i }));
+    // Toast surfaces both the title ("AI generation failed") and the
+    // provider's message ("bad key"). The toast is the only surface —
+    // no inline error block. Use findAllByText because Base UI emits
+    // both a visual toast and a live-region announcement for screen
+    // readers, both of which legitimately carry the title.
+    expect((await screen.findAllByText("AI generation failed")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("bad key")).length).toBeGreaterThan(0);
+    vi.unstubAllGlobals();
+  });
+
+  it("does NOT render an AI settings chip in the composer head", () => {
+    useRepoStore.setState({
+      stagedPaths: new Set(["a.ts"]),
+      statusEntries: [entry({ path: "a.ts" })],
+    });
+    render(<CommitComposer />);
+    // The head previously had an "AI" chip that opened the overlay;
+    // now the toolbar Settings button is the only path.
+    expect(screen.queryByRole("button", { name: /^AI$/ })).toBeNull();
   });
 });

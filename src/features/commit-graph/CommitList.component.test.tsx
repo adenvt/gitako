@@ -184,7 +184,11 @@ describe("CommitList", () => {
     );
     useRepoStore.setState({
       commits: [a, b, c],
-      layout: layout([{ hash: "aaaa", parents: [] }, { hash: "bbbb", parents: [] }, { hash: "cccc", parents: [] }]),
+      layout: layout([
+        { hash: "aaaa", parents: [] },
+        { hash: "bbbb", parents: [] },
+        { hash: "cccc", parents: [] },
+      ]),
       statusEntries: [],
       select,
     });
@@ -235,7 +239,11 @@ describe("CommitList", () => {
     );
     useRepoStore.setState({
       commits,
-      layout: layout([{ hash: "aaaa", parents: [] }, { hash: "bbbb", parents: [] }, { hash: "cccc", parents: [] }]),
+      layout: layout([
+        { hash: "aaaa", parents: [] },
+        { hash: "bbbb", parents: [] },
+        { hash: "cccc", parents: [] },
+      ]),
       statusEntries: [],
       select,
     });

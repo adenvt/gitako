@@ -1,5 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { ChangedFile, Commit, DiffFile, RefInfo } from "@/shared/types/git";
+import type {
+  ChangedFile,
+  Commit,
+  DiffFile,
+  PullMode,
+  PullResult,
+  PushResult,
+  RefInfo,
+} from "@/shared/types/git";
 import { toGitError } from "@/shared/utils/error";
 
 /** Typed wrapper around the Tauri invoke layer. All backend calls go through here. */
@@ -120,10 +128,7 @@ export async function checkoutTrack(repoPath: string, remoteBranch: string): Pro
 
 /** `git stash push -u -m <message>`. Returns the new stash ref, or empty
  *  string if the worktree is clean. */
-export async function stashSave(
-  repoPath: string,
-  message: string,
-): Promise<string> {
+export async function stashSave(repoPath: string, message: string): Promise<string> {
   try {
     return await invoke<string>("git_stash_save", { repoPath, message });
   } catch (e) {
@@ -148,6 +153,57 @@ export async function stashPop(repoPath: string, stashRef: string): Promise<void
 export async function fetchHeadBranch(repoPath: string): Promise<string> {
   try {
     return await invoke<string>("git_head_branch", { repoPath });
+  } catch (e) {
+    throw toGitError(e);
+  }
+}
+
+/**
+ * `git push`. Resolves to the remote/branch that was pushed plus a
+ * human-readable summary line. Errors (no remote, non-fast-forward,
+ * auth failure) are thrown as typed `GitErrorPayload`.
+ */
+export async function pushBranch(repoPath: string): Promise<PushResult> {
+  try {
+    return await invoke<PushResult>("git_push", { repoPath });
+  } catch (e) {
+    throw toGitError(e);
+  }
+}
+
+/**
+ * `git fetch --all`. Resolves to the remote/branch that was fetched plus
+ * a summary line. Errors (no remote, auth failure) are thrown as typed
+ * `GitErrorPayload`.
+ */
+export async function fetchAll(repoPath: string): Promise<PullResult> {
+  try {
+    return await invoke<PullResult>("git_fetch", { repoPath });
+  } catch (e) {
+    throw toGitError(e);
+  }
+}
+
+/**
+ * `git pull` with the given strategy (`ff` = default merge, `ffOnly` =
+ * refuse to create a merge commit, `rebase` = rebase local on upstream).
+ */
+export async function pullBranch(repoPath: string, mode: PullMode): Promise<PullResult> {
+  try {
+    return await invoke<PullResult>("git_pull", { repoPath, mode });
+  } catch (e) {
+    throw toGitError(e);
+  }
+}
+
+/**
+ * Unified diff of staged changes across all files, used by the AI
+ * commit-message feature. Empty diffs throw (callers already gate on
+ * stagedCount > 0, this is a safety net).
+ */
+export async function fetchStagedDiff(repoPath: string): Promise<string> {
+  try {
+    return await invoke<string>("git_staged_diff", { repoPath });
   } catch (e) {
     throw toGitError(e);
   }

@@ -14,6 +14,11 @@ export function toastError(title: string, description?: string): void {
   toastManager.add({ type: "error", title, description, priority: "high" });
 }
 
+/** Fire a success toast for a completed action. */
+export function toastSuccess(title: string, description?: string): void {
+  toastManager.add({ type: "success", title, description });
+}
+
 /** App-wide toast viewport. Mount once near the app root. */
 export function Toaster() {
   const { toasts } = Toast.useToastManager();
@@ -24,9 +29,7 @@ export function Toaster() {
         {toasts.map((toast) => (
           <Toast.Root key={toast.id} toast={toast} className={s.toastRoot}>
             <div className={s.toastBody}>
-              {toast.title && (
-                <Toast.Title className={s.toastTitle}>{toast.title}</Toast.Title>
-              )}
+              {toast.title && <Toast.Title className={s.toastTitle}>{toast.title}</Toast.Title>}
               {toast.description && (
                 <Toast.Description className={s.toastDescription}>
                   {toast.description}

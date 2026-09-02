@@ -25,6 +25,16 @@
   box-shadow: none; /* flat design */
 }
 
+/* Success variant — green accent bar + green title instead of red. Keyed
+   off Base UI's data-type attribute, which it sets from toast.type. */
+.toastRoot[data-type="success"] {
+  border-left-color: var(--ok);
+}
+
+.toastRoot[data-type="success"] .toastTitle {
+  color: var(--ok);
+}
+
 .toastBody {
   flex: 1;
   min-width: 0;
