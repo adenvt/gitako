@@ -169,6 +169,13 @@ export function drawGraph(
     ctx.globalAlpha = 0.6;
     ctx.lineWidth = 2;
 
+    // Stash commits (reachable via `refs/stash`) are drawn as hollow dots
+    // with dashed connectors so they read as out-of-band state rather than
+    // real history. Dash any edge that touches one.
+    const stashChild = layout.commits[edge.childIndex]?.isStash ?? false;
+    const stashParent = layout.commits[edge.parentIndex]?.isStash ?? false;
+    if (stashChild || stashParent) ctx.setLineDash([3, 3]);
+
     if (edge.childLane === edge.parentLane) {
       // Same-lane: straight vertical between dot centers.
       ctx.beginPath();
@@ -197,6 +204,7 @@ export function drawGraph(
         ctx.stroke();
       }
     }
+    if (stashChild || stashParent) ctx.setLineDash([]);
     ctx.globalAlpha = 1;
   }
 
@@ -209,23 +217,42 @@ export function drawGraph(
     const y = screenY(i, scrollTop);
     const color = laneColor(c.lane);
     const isSelected = c.hash === selectedHash;
+    const isStash = c.isStash ?? false;
 
-    if (c.isMerge) {
+    if (isStash) {
+      // Hollow outline: no fill, no merge bubble. Stash commits always have
+      // two parents in the layout (WIP + original branch tip), so without
+      // this branch they'd be drawn with a soft outer bubble that fights the
+      // outline look.
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (c.isMerge) {
       ctx.beginPath();
       ctx.arc(x, y, 7, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.globalAlpha = 0.35;
       ctx.fill();
       ctx.globalAlpha = 1;
-    }
 
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = DOT_STROKE;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = DOT_STROKE;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = DOT_STROKE;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
 
     if (isSelected) {
       ctx.beginPath();

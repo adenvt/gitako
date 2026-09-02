@@ -364,6 +364,69 @@ describe("drawGraph", () => {
   });
 });
 
+describe("drawGraph stash rendering", () => {
+  it("draws a stash commit as a hollow outline (stroke only, no fill)", () => {
+    const lay: LayoutResult = {
+      commits: [{ hash: "st0", parents: [], children: [], lane: 0, isMerge: true, isStash: true }],
+      edges: [],
+      maxLane: 0,
+    };
+    const ctx = makeContext();
+    drawGraph(ctx, lay, DEFAULT_VIEWPORT);
+    // The merge bubble (r=7) is suppressed for stash nodes — only one arc (r=5).
+    expect(ctx.path.filter((p) => p.op === "arc" && p.args[2] === 7).length).toBe(0);
+    expect(ctx.path.filter((p) => p.op === "arc" && p.args[2] === 5).length).toBe(1);
+    // No fill call for the stash dot — only a stroke.
+    const fills = ctx.calls.filter((c) => c.method === "fill");
+    expect(fills.length).toBe(0);
+    // The outline uses the lane color (not the dark DOT_STROKE) at lineWidth 2.
+    const strokeSets = ctx.calls.filter((c) => c.method === "setStrokeStyle").map((c) => c.args[0]);
+    const widthSets = ctx.calls.filter((c) => c.method === "setLineWidth").map((c) => c.args[0]);
+    expect(strokeSets).toContain(laneColor(0));
+    expect(widthSets).toContain(2);
+  });
+
+  it("still draws the selection ring around a selected stash commit", () => {
+    const lay: LayoutResult = {
+      commits: [{ hash: "st0", parents: [], children: [], lane: 0, isMerge: true, isStash: true }],
+      edges: [],
+      maxLane: 0,
+    };
+    const ctx = makeContext();
+    drawGraph(ctx, lay, { ...DEFAULT_VIEWPORT, selectedHash: "st0" });
+    // Selection ring (r=8.5) + the hollow stash dot (r=5) = two arcs.
+    expect(ctx.path.some((p) => p.op === "arc" && p.args[2] === 8.5)).toBe(true);
+    expect(ctx.path.some((p) => p.op === "arc" && p.args[2] === 5)).toBe(true);
+  });
+
+  it("dashes edges that touch a stash commit and leaves other edges solid", () => {
+    // Linear layout: stash commit `st0` is the newest, with parent `p0` in
+    // the same lane. Edge st0 -> p0 must be dashed; an unrelated second edge
+    // between two non-stash commits must remain solid.
+    const lay: LayoutResult = {
+      commits: [
+        { hash: "p0", parents: [], children: [1], lane: 0, isMerge: false },
+        { hash: "st0", parents: ["p0"], children: [], lane: 0, isMerge: true, isStash: true },
+        { hash: "p1", parents: [], children: [3], lane: 1, isMerge: false },
+        { hash: "c1", parents: ["p1"], children: [], lane: 1, isMerge: false },
+      ],
+      edges: [
+        { parentLane: 0, childLane: 0, parentIndex: 0, childIndex: 1 }, // stash edge
+        { parentLane: 1, childLane: 1, parentIndex: 2, childIndex: 3 }, // normal edge
+      ],
+      maxLane: 1,
+    };
+    const ctx = makeContext();
+    drawGraph(ctx, lay, DEFAULT_VIEWPORT);
+    // At least one setLineDash([3, 3]) and at least one setLineDash([]) call
+    // (the stash edge dashes on, then off, then the normal edge resets empty
+    // if it was previously dashed — both forms should appear).
+    const dashCalls = ctx.calls.filter((c) => c.method === "setLineDash");
+    expect(dashCalls.some((c) => JSON.stringify(c.args) === JSON.stringify([[3, 3]]))).toBe(true);
+    expect(dashCalls.some((c) => JSON.stringify(c.args) === JSON.stringify([[]]))).toBe(true);
+  });
+});
+
 describe("drawGraph integration with the layout algorithm", () => {
   it("renders a 3-commit linear history without throwing", () => {
     const lay = makeLayout([

@@ -100,7 +100,9 @@ interface RepoState {
 }
 
 function computeLayout(commits: Commit[]): LayoutResult {
-  return layout(commits.map((c) => ({ hash: c.hash, parents: c.parents })));
+  return layout(
+    commits.map((c) => ({ hash: c.hash, parents: c.parents, isStash: c.isStash })),
+  );
 }
 
 export const useRepoStore = create<RepoState>((set, get) => ({
@@ -159,12 +161,21 @@ export const useRepoStore = create<RepoState>((set, get) => ({
         ...c,
         refs: (refByCommit.get(c.hash) ?? []).map((r) => r.name),
       }));
+      // A stash entry is the commit pointed at by `refs/stash` (the WIP
+      // commit; the `index on <branch>` pseudo-commit is filtered out by the
+      // backend and has no ref). Detection is ref-based so it doesn't depend
+      // on git's subject formatting.
+      const tagged = withRefs.map((c) => {
+        const commitRefs = refByCommit.get(c.hash) ?? [];
+        const isStash = commitRefs.some((r) => r.fullName === "refs/stash");
+        return { ...c, isStash };
+      });
       const statusEntries = parsePorcelain(status);
       set({
-        commits: withRefs,
+        commits: tagged,
         refs,
         refsByCommit,
-        layout: computeLayout(withRefs),
+        layout: computeLayout(tagged),
         statusEntries,
         headBranch,
         // A repo can open with files already staged (e.g. staged in a

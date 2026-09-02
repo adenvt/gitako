@@ -29,13 +29,15 @@ const HANDLE_HIT = 5;
 
 /**
  * Group refs by their base `name` for badge rendering. The remote `HEAD`
- * pointer (e.g. `origin/HEAD`) is filtered out — it's a convenience
- * annotation, not a real ref to show.
+ * pointer (e.g. `origin/HEAD`) and the stash ref (`refs/stash`) are filtered
+ * out — they're convenience pointers, not real branch/tag badges.
  *
  * Example: refs `[main, origin/main, v1.0]` -> `[[main, origin/main], [v1.0]]`.
  */
 export function groupRefsForBadging(refs: RefInfo[]): RefInfo[][] {
-  const visible = refs.filter((r) => !(r.kind === "remoteBranch" && r.name === "HEAD"));
+  const visible = refs.filter(
+    (r) => !(r.kind === "remoteBranch" && r.name === "HEAD") && r.fullName !== "refs/stash",
+  );
   const groups = new Map<string, RefInfo[]>();
   for (const r of visible) {
     const list = groups.get(r.name) ?? [];

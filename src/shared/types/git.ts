@@ -8,6 +8,10 @@ export interface Commit {
   authorTime: number;
   subject: string;
   refs: string[];
+  /** True for stash entries ("On <branch>: WIP on <branch>: ..."). Set in the
+   * store on fetch; used by the graph renderer to draw an outline + dashed
+   * edges instead of the default filled dot. */
+  isStash?: boolean;
 }
 
 /** A file changed by a commit, from `git show --name-status`. */

@@ -33,6 +33,13 @@ pub fn parse_log(stdout: &str) -> Vec<Commit> {
         if fields.len() < 6 {
             continue;
         }
+        // `git stash push` creates two reachable commits per stash entry: the
+        // real WIP commit (subject "On <branch>: WIP on <branch>: ...") and a
+        // pseudo-commit for the staged snapshot ("index on <branch>: ...").
+        // The index commit has no real history and only adds noise, so drop it.
+        if fields[5].starts_with("index on ") {
+            continue;
+        }
         let parents = if fields[1].is_empty() {
             Vec::new()
         } else {
@@ -87,5 +94,21 @@ mod tests {
         let commits = parse_log("onlyhash\0partial\n\0\0\0\n");
         // Malformed records are skipped.
         assert_eq!(commits.len(), 0);
+    }
+
+    #[test]
+    fn drops_stash_index_pseudo_commits() {
+        // A stash entry surfaces two commits from `git log --all`:
+        //  - "On <branch>: WIP on <branch>: ..." — the real stash commit
+        //  - "index on <branch>: ..." — a pseudo-commit for the staged snapshot
+        // We keep the first and drop the second.
+        let sample = "st0\0aaa\0Ada\0ada@x.dev\01700000000\0\
+                      On main: WIP on main: abc1234 Fix thing\0\n\
+                      idx0\0aaa\0Ada\0ada@x.dev\01700000000\0\
+                      index on main: refs/heads/main\0\n";
+        let commits = parse_log(sample);
+        assert_eq!(commits.len(), 1);
+        assert_eq!(commits[0].hash, "st0");
+        assert_eq!(commits[0].subject, "On main: WIP on main: abc1234 Fix thing");
     }
 }
