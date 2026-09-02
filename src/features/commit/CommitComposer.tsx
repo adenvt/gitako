@@ -8,7 +8,7 @@ import { useAiSettings } from "@/shared/compositions/useAiSettings";
 import { isAiConfigured } from "@/shared/utils/aiSettings";
 import { generateCommitMessage } from "@/features/ai";
 import { errorMessage } from "@/shared/utils/error";
-import { toastError, toastSuccess } from "@/shared/components/Toaster";
+import { toastError, toastLoading, toastSuccess } from "@/shared/components/Toaster";
 import { Button, Input, Textarea } from "@/shared/components/ui";
 import detail from "@/features/commit-detail/detail.module.css";
 import s from "./composer.module.css";
@@ -82,17 +82,31 @@ export function CommitComposer() {
   const handleGenerate = async () => {
     if (!canGenerate || !repoPath) return;
     setAiBusy(true);
+    // AbortController wires the toast's Cancel button to the in-flight
+    // HTTP request. `signal.aborted` is also the tell that distinguishes
+    // a user cancel from a real network/API failure in the catch.
+    const controller = new AbortController();
+    const loading = toastLoading("Generating commit message…", {
+      description: "This can take a few seconds.",
+      action: { label: "Cancel", onClick: () => controller.abort() },
+    });
     try {
       const { subject: s, description: d } = await generateCommitMessage({
         settings: aiSettings,
         repoPath,
+        signal: controller.signal,
       });
       setSubject(s);
       if (d) setDescription(d);
+      loading.close();
       toastSuccess("Commit message generated");
     } catch (e) {
-      const m = errorMessage(e);
-      toastError("AI generation failed", m);
+      loading.close();
+      if (controller.signal.aborted) {
+        // User-initiated cancel — no error toast, the click was the signal.
+        return;
+      }
+      toastError("AI generation failed", errorMessage(e));
     } finally {
       setAiBusy(false);
     }

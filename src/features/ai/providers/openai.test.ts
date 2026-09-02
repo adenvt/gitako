@@ -130,4 +130,42 @@ describe("openai-compatible provider", () => {
     const res = await provider.chat(baseReq, "sk-test");
     expect(res.text).toBe("hello");
   });
+
+  it("forwards AbortSignal to fetch and the request rejects when aborted", async () => {
+    // The Cancel button on a long-running AI request aborts the signal;
+    // fetch rejects with an AbortError DOMException that we want to
+    // bubble out of `chat()` so the caller can detect the cancel.
+    const controller = new AbortController();
+    const abortError = new DOMException("aborted", "AbortError");
+    fetchMock.mockImplementationOnce(() => {
+      controller.abort();
+      return Promise.reject(abortError);
+    });
+    const provider = createOpenAiProvider();
+    await expect(
+      provider.chat({ ...baseReq, signal: controller.signal }, "sk-test"),
+    ).rejects.toBe(abortError);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ signal: controller.signal }),
+    );
+  });
+
+  it("does not wrap an aborted fetch in an AiError (preserves signal.aborted detection)", async () => {
+    // The provider must NOT swallow the abort into a generic
+    // "Network error: aborted" AiError — the composer relies on
+    // `signal.aborted` to know the failure was user-initiated.
+    const controller = new AbortController();
+    controller.abort();
+    const abortError = new DOMException("aborted", "AbortError");
+    fetchMock.mockRejectedValueOnce(abortError);
+    const provider = createOpenAiProvider();
+    try {
+      await provider.chat({ ...baseReq, signal: controller.signal }, "sk-test");
+      throw new Error("expected chat() to reject");
+    } catch (e) {
+      expect(e).toBe(abortError);
+      expect(e instanceof Error && e.name).toBe("AbortError");
+    }
+  });
 });

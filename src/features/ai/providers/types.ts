@@ -24,6 +24,14 @@ export interface ChatRequest {
    * JSON. Shape is left open to match each provider's API.
    */
   responseFormat?: unknown;
+  /**
+   * Optional abort signal. When fired, the in-flight HTTP request is
+   * cancelled via the Fetch API. The resulting `DOMException` bubbles
+   * out of `chat()`; callers (e.g. a "Cancel" button on a loading
+   * toast) should check `signal.aborted` to distinguish a user cancel
+   * from a network/API failure and surface it accordingly.
+   */
+  signal?: AbortSignal;
 }
 
 export interface ChatResponse {

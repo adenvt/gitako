@@ -19,6 +19,52 @@ export function toastSuccess(title: string, description?: string): void {
   toastManager.add({ type: "success", title, description });
 }
 
+/** Options for a loading toast — the long-running in-flight indicator
+ *  with an optional action button (e.g. "Cancel"). */
+export interface ToastLoadingOptions {
+  description?: string;
+  /** Inline action rendered into the toast (a button). Use for "Cancel",
+   *  "Retry", etc. The toast stays open until the caller calls `close()`. */
+  action?: { label: string; onClick: () => void };
+}
+
+/** Returned by `toastLoading` so the caller can close the toast or
+ *  swap its state once the work resolves/rejects. */
+export interface ToastLoadingHandle {
+  id: string;
+  close: () => void;
+  /** Update the toast in place (e.g. flip `type` to "error" on failure). */
+  update: (patch: { title?: string; description?: string; type?: string }) => void;
+}
+
+/** Fire a non-auto-dismissing loading toast and return a handle so the
+ *  caller can close it (or flip its state) when the work resolves. The
+ *  optional `action` renders a button on the toast — used by the AI
+ *  generate flow to let the user cancel a slow request. */
+export function toastLoading(title: string, opts: ToastLoadingOptions = {}): ToastLoadingHandle {
+  const id = toastManager.add({
+    type: "loading",
+    title,
+    description: opts.description,
+    // Never auto-dismiss; the caller closes it when the work resolves.
+    timeout: 0,
+    actionProps: opts.action
+      ? { children: opts.action.label, onClick: opts.action.onClick }
+      : undefined,
+  });
+  return {
+    id,
+    close: () => toastManager.close(id),
+    update: (patch) => toastManager.update(id, patch),
+  };
+}
+
+/** Dismiss a toast by id. Thin wrapper for call sites that don't need
+ *  the rest of the loading handle. */
+export function toastClose(id: string): void {
+  toastManager.close(id);
+}
+
 /** App-wide toast viewport. Mount once near the app root. */
 export function Toaster() {
   const { toasts } = Toast.useToastManager();
@@ -36,6 +82,9 @@ export function Toaster() {
                 </Toast.Description>
               )}
             </div>
+            {toast.actionProps && (
+              <Toast.Action className={s.toastAction} {...toast.actionProps} />
+            )}
             <Toast.Close className={s.toastClose} aria-label="Dismiss">
               <XIcon size={14} aria-hidden />
             </Toast.Close>

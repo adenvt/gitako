@@ -35,6 +35,17 @@
   color: var(--ok);
 }
 
+/* Loading variant — neutral border + neutral title; the inline
+   .toastAction button is the only "actionable" element. Stays open
+   until the caller closes it. */
+.toastRoot[data-type="loading"] {
+  border-left-color: var(--accent);
+}
+
+.toastRoot[data-type="loading"] .toastTitle {
+  color: var(--text);
+}
+
 .toastBody {
   flex: 1;
   min-width: 0;
@@ -70,5 +81,29 @@
 }
 
 .toastClose:hover {
+  color: var(--text);
+}
+
+/* Inline action button rendered into the toast (e.g. "Cancel" on a
+   loading toast). Styled to read as a small accent button — not the
+   quiet ghost of the close icon — so it looks actionable. */
+.toastAction {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--accent-strong);
+  background: none;
+  border: 1px solid var(--accent-border);
+  padding: 2px 8px;
+  cursor: pointer;
+  align-self: center;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.toastAction:hover {
+  background: var(--bg-hover);
   color: var(--text);
 }

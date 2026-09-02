@@ -19,6 +19,13 @@ export interface GenerateCommitMessageOptions {
   settings: AiSettings;
   /** Repo root (passed to the staged_diff Tauri command). */
   repoPath: string;
+  /**
+   * Optional abort signal. Forwarded to the provider's HTTP request so
+   * the caller can cancel a slow generation (e.g. from a "Cancel"
+   * button on a loading toast). The Tauri `fetchStagedDiff` call below
+   * is not cancellable; only the model request is.
+   */
+  signal?: AbortSignal;
 }
 
 /** Build a provider instance honoring the user's overridden baseUrl
@@ -39,7 +46,7 @@ function providerFor(settings: AiSettings): AiProvider {
 export async function generateCommitMessage(
   opts: GenerateCommitMessageOptions,
 ): Promise<ParsedCommitMessage> {
-  const { settings, repoPath } = opts;
+  const { settings, repoPath, signal } = opts;
 
   if (!settings.apiKey.trim()) {
     throw new Error("AI is not set up. Add your API key in AI settings.");
@@ -56,6 +63,7 @@ export async function generateCommitMessage(
       temperature: 0.2,
       maxTokens: 400,
       responseFormat: COMMIT_MESSAGE_RESPONSE_FORMAT,
+      ...(signal ? { signal } : {}),
     },
     settings.apiKey,
   );

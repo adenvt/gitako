@@ -46,8 +46,18 @@ export function createOpenAiProvider(opts: OpenAiProviderOptions = {}): AiProvid
               ? { response_format: req.responseFormat }
               : {}),
           }),
+          // Forward the abort signal so callers (e.g. a "Cancel" button
+          // on a loading toast) can cancel the in-flight request. When
+          // the signal is already aborted, fetch rejects immediately
+          // with an AbortError DOMException — we let that bubble and
+          // let the caller distinguish via `signal.aborted`.
+          ...(req.signal ? { signal: req.signal } : {}),
         });
       } catch (e) {
+        // Re-throw abort errors verbatim so callers can detect a
+        // user-initiated cancel via `signal.aborted` without parsing
+        // the message.
+        if (req.signal?.aborted) throw e;
         // Network failure — sanitize the message so the API key isn't
         // accidentally embedded by some browser error formatter.
         const msg = e instanceof Error ? e.message : String(e);
