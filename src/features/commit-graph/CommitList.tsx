@@ -6,7 +6,6 @@ import {
   FileRemovedIcon,
   GitBranchIcon,
 } from "@primer/octicons-react";
-import { ScrollArea } from "@base-ui/react/scroll-area";
 import {
   GraphCanvas,
   ROW_HEIGHT,
@@ -20,6 +19,7 @@ import { RefBadge, RefBadgeGroup, RefOverflowBadge, type CheckoutAction } from "
 import { useRepoStore } from "@/state/store";
 import { timeAgo } from "@/shared/utils/time";
 import { countByKind } from "@/shared/utils/status";
+import { ScrollArea } from "@/shared/components/ui";
 import type { RefInfo } from "@/shared/types/git";
 import s from "./commitList.module.css";
 
@@ -430,8 +430,8 @@ export function CommitList() {
             </div>
           </ScrollArea.Content>
         </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
-          <ScrollArea.Thumb className="scrollbarThumb" />
+        <ScrollArea.Scrollbar orientation="vertical">
+          <ScrollArea.Thumb />
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
     </div>

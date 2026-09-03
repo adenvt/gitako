@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import { ScrollArea } from "@base-ui/react/scroll-area";
 import {
   ChevronRightIcon,
   FileDirectoryIcon,
@@ -11,7 +10,7 @@ import {
 import { collectDirPaths, type FileTreeNode } from "@/shared/utils/fileTree";
 import { statusLabel } from "@/shared/utils/status";
 import { StatusIcon } from "@/shared/components/StatusIcon";
-import { Button } from "@/shared/components/ui";
+import { Button, ScrollArea } from "@/shared/components/ui";
 import s from "./fileTree.module.css";
 
 interface FileTreeProps {
@@ -231,8 +230,8 @@ export function FileTree({
             ))}
           </ScrollArea.Content>
         </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
-          <ScrollArea.Thumb className="scrollbarThumb" />
+        <ScrollArea.Scrollbar orientation="vertical">
+          <ScrollArea.Thumb />
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
     </div>

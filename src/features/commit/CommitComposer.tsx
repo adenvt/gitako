@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ZapIcon } from "@primer/octicons-react";
+import { PencilAiIcon } from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
 import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
@@ -183,7 +183,7 @@ export function CommitComposer() {
             aria-label={aiBusy ? "Generating commit message" : "Generate commit message"}
             title={generateTooltip}
           >
-            <ZapIcon size={14} aria-hidden />
+            <PencilAiIcon size={14} aria-hidden />
           </button>
         </div>
         <Textarea

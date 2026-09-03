@@ -1,4 +1,4 @@
-# GiTako
+# GITako
 
 A GitKraken-style desktop Git GUI, built with **Tauri 2 + React + TypeScript + Vite**.
 

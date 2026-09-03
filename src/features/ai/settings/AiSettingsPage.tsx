@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { ArrowLeftIcon, EyeClosedIcon, EyeIcon, SyncIcon } from "@primer/octicons-react";
-import { Select } from "@base-ui/react/select";
-import { Combobox } from "@base-ui/react/combobox";
 import {
   DEFAULT_AI_SETTINGS,
   loadAiSettings,
@@ -16,7 +14,7 @@ import {
   writeModelCache,
 } from "@/features/ai/providers/modelCache";
 import { testAiConnection } from "@/features/ai";
-import { Button, Input as InputEl } from "@/shared/components/ui";
+import { Button, Input as InputEl, Select, Combobox, ScrollArea } from "@/shared/components/ui";
 import { errorMessage } from "@/shared/utils/error";
 import { toastError, toastSuccess } from "@/shared/components/Toaster";
 import { AiError } from "@/features/ai/providers/types";
@@ -148,20 +146,27 @@ export function AiSettingsPage({ onBack }: { onBack?: () => void }) {
             setModelMissing(false);
           }}
         >
-          <Select.Trigger aria-labelledby="ai-provider-label" className={s.selectTrigger}>
+          <Select.Trigger aria-labelledby="ai-provider-label">
             <Select.Value placeholder="Choose provider" />
             <Select.Icon>▾</Select.Icon>
           </Select.Trigger>
           <Select.Portal>
             <Select.Positioner sideOffset={4} alignItemWithTrigger={false}>
-              <Select.Popup className={s.selectPopup}>
-                <Select.List>
-                  {providerList.map((p) => (
-                    <Select.Item key={p.id} value={p.id} className={s.selectItem}>
-                      <Select.ItemText>{p.displayName}</Select.ItemText>
-                    </Select.Item>
-                  ))}
-                </Select.List>
+              <Select.Popup>
+                <ScrollArea.Root style={{ flex: "1 1 auto", minHeight: 0 }}>
+                  <ScrollArea.Viewport>
+                    <Select.List>
+                      {providerList.map((p) => (
+                        <Select.Item key={p.id} value={p.id}>
+                          <Select.ItemText>{p.displayName}</Select.ItemText>
+                        </Select.Item>
+                      ))}
+                    </Select.List>
+                  </ScrollArea.Viewport>
+                  <ScrollArea.Scrollbar>
+                    <ScrollArea.Thumb />
+                  </ScrollArea.Scrollbar>
+                </ScrollArea.Root>
               </Select.Popup>
             </Select.Positioner>
           </Select.Portal>
@@ -248,27 +253,33 @@ export function AiSettingsPage({ onBack }: { onBack?: () => void }) {
             }))}
             itemToStringValue={(item) => (item as unknown as { value: string }).value}
           >
-            <Combobox.InputGroup className={s.comboInputGroup}>
+            <Combobox.InputGroup>
               <Combobox.Input
                 aria-labelledby="ai-model-label"
                 placeholder={currentProvider.defaultModel}
-                className={s.comboInput}
               />
-              <Combobox.Trigger className={s.comboTrigger} aria-label="Open model list">
+              <Combobox.Trigger aria-label="Open model list">
                 <Combobox.Icon>▾</Combobox.Icon>
               </Combobox.Trigger>
             </Combobox.InputGroup>
             <Combobox.Portal>
               <Combobox.Positioner sideOffset={4}>
-                <Combobox.Popup className={s.selectPopup}>
-                  <Combobox.Empty className={s.comboEmpty}>No matches</Combobox.Empty>
-                  <Combobox.List>
-                    {(item: { value: string; label: string }) => (
-                      <Combobox.Item key={item.value} value={item.value} className={s.selectItem}>
-                        {item.label}
-                      </Combobox.Item>
-                    )}
-                  </Combobox.List>
+                <Combobox.Popup>
+                  <ScrollArea.Root style={{ flex: "1 1 auto", minHeight: 0 }}>
+                    <ScrollArea.Viewport>
+                      <Combobox.Empty>No matches</Combobox.Empty>
+                      <Combobox.List>
+                        {(item: { value: string; label: string }) => (
+                          <Combobox.Item key={item.value} value={item.value}>
+                            {item.label}
+                          </Combobox.Item>
+                        )}
+                      </Combobox.List>
+                    </ScrollArea.Viewport>
+                    <ScrollArea.Scrollbar>
+                      <ScrollArea.Thumb />
+                    </ScrollArea.Scrollbar>
+                  </ScrollArea.Root>
                 </Combobox.Popup>
               </Combobox.Positioner>
             </Combobox.Portal>

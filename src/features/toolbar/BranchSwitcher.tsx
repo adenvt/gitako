@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { CheckIcon, ChevronDownIcon } from "@primer/octicons-react";
-import { Combobox } from "@base-ui/react/combobox";
+import { Combobox, ScrollArea } from "@/shared/components/ui";
 import { useRepoStore } from "@/state/store";
 import s from "./BranchSwitcher.module.css";
 
@@ -49,31 +49,33 @@ export function BranchSwitcher() {
         title={current}
       >
         on {current}
-        <ChevronDownIcon size={12} className={s.triggerIcon} aria-hidden />
+        <ChevronDownIcon size={12} aria-hidden />
       </Combobox.Trigger>
       <Combobox.Portal>
-        <Combobox.Positioner align="start" sideOffset={2} className={s.positioner}>
-          <Combobox.Popup className={s.popup} aria-label="Branches">
-            <div className={s.inputGroup}>
-              <Combobox.Input
-                placeholder="Filter branches…"
-                className={s.input}
-                aria-label="Filter branches"
-              />
-            </div>
-            <Combobox.List className={s.list}>
-              {(branch: string) => (
-                <Combobox.Item key={branch} value={branch} className={s.item}>
-                  <Combobox.ItemIndicator
-                    keepMounted
-                    className={s.itemIndicator}
-                    render={<CheckIcon size={12} aria-hidden />}
-                  />
-                  <span>{branch}</span>
-                </Combobox.Item>
-              )}
-            </Combobox.List>
-            <Combobox.Empty className={s.empty}>
+        <Combobox.Positioner align="start" sideOffset={2}>
+          <Combobox.Popup aria-label="Branches">
+            <Combobox.Input
+              placeholder="Filter branches…"
+              aria-label="Filter branches"
+            />
+            <ScrollArea.Root style={{ flex: "1 1 auto", minHeight: 0 }}>
+              <ScrollArea.Viewport>
+                <Combobox.List>
+                  {(branch: string) => (
+                    <Combobox.Item key={branch} value={branch}>
+                      <Combobox.ItemIndicator
+                        render={<CheckIcon size={12} aria-hidden />}
+                      />
+                      <span>{branch}</span>
+                    </Combobox.Item>
+                  )}
+                </Combobox.List>
+              </ScrollArea.Viewport>
+              <ScrollArea.Scrollbar>
+                <ScrollArea.Thumb />
+              </ScrollArea.Scrollbar>
+            </ScrollArea.Root>
+            <Combobox.Empty>
               {branches.length === 0 ? "No local branches" : "No branches match"}
             </Combobox.Empty>
           </Combobox.Popup>

@@ -289,12 +289,23 @@ body {
   background: var(--bg-inset);
 }
 
-/* Reserve layout space for the absolutely-positioned custom scrollbar so
-   content doesn't shift when overflow appears/disappears. The Viewport
-   has `overflow: scroll` with native bars hidden by BaseUI's injected
-   `.base-ui-disable-scrollbar`, so the gutter is empty unless we claim it. */
-:where([class*="Viewport"]) {
+/* The kit's `ScrollArea.Root` applies `ui-scrollarea` to the Base UI
+   root, turning it into a flex column. The inner Viewport (matched via
+   `[class*="disable-scrollbar"]`, the class Base UI injects) is a flex
+   child with `flex: 1 1 auto; min-height: 0` so it fills the root and
+   `overflow: scroll` actually engages. Without this, the Viewport sizes
+   to its content and the popup's `max-height: 240px` never constrains
+   the list. */
+.ui-scrollarea {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:where([class*="disable-scrollbar"]) {
   scrollbar-gutter: stable;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .scrollbarThumb {
@@ -325,6 +336,219 @@ body {
 
 .scrollbarThumb:hover {
   background: var(--text);
+}
+
+/* ---------- shared popup chrome (Select / Combobox / future Menu) ---------- */
+
+/* The FloatingPortal (rendered by Base UI's Portal parts) is what
+   actually creates the floating element on <body>. The popup is a
+   descendant of it, so its own z-index is scoped to the portal's
+   stacking context — useless for stacking against sibling portalled
+   content (modals, tooltips, menus). Hoist the z-index to the portal. */
+.ui-positioner {
+  z-index: 1000;
+}
+
+/* Dropdown container. Scrolling is delegated to the kit ScrollArea nested
+   inside; the popup itself is a non-scrolling flex column capped at
+   240px tall. Stacking is handled by `.ui-portal` above — the popup
+   itself has no z-index of its own (it would be scoped to the portal's
+   stacking context anyway). */
+.ui-popup {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  border-radius: var(--radius);
+  width: var(--anchor-width, auto);
+  min-width: 180px;
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ui-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+}
+
+.ui-item[data-highlighted] {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.ui-item[data-selected] {
+  color: var(--accent-strong);
+}
+
+/* ItemIndicator (e.g. BranchSwitcher's "current" check) hides by default;
+   the parent .ui-item[data-selected] makes it visible. A fixed width
+   reserves the slot for the icon so unselected items' labels align
+   with the selected item's label. */
+.ui-item > [class*="ItemIndicator"] {
+  flex-shrink: 0;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+}
+
+.ui-item:not([data-selected]) {
+  padding-left: 28px /* 10px + 12px + 6px */;
+}
+
+.ui-item[data-selected] > [class*="ItemIndicator"] {
+  visibility: visible;
+}
+
+.ui-empty {
+  padding: 8px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  text-align: center;
+  list-style: none;
+  font-style: italic;
+}
+
+:not([data-empty]) > .ui-empty {
+  display: none;
+}
+
+/* Select trigger — flat panel with caret on the right, mirrors .ui-input. */
+.ui-trigger-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  text-align: left;
+  width: 100%;
+  border-radius: var(--radius);
+}
+
+.ui-trigger-select:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+}
+
+/* Combobox bare trigger (e.g. BranchSwitcher) — light button, no panel. */
+.ui-trigger-combobox {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  font-weight: 700;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 1px 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ui-trigger-combobox:hover {
+  background: var(--bg-hover);
+}
+
+.ui-trigger-combobox[data-popup-open] {
+  background: var(--bg-hover);
+  border-color: var(--border);
+}
+
+.ui-trigger-select > svg,
+.ui-trigger-combobox > svg {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ui-trigger-select:hover > svg,
+.ui-trigger-combobox:hover > svg {
+  color: var(--text);
+}
+
+/* Combobox bordered shell (Input + caret Trigger share one panel). */
+.ui-input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.ui-input-group:focus-within {
+  border-color: var(--accent-border);
+}
+
+/* Defined AFTER .ui-input so its `border: none` overrides the base input
+   border. The transparent background merges the input visually with the
+   bordered .ui-input-group shell. */
+.ui-input-flat {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  outline: none;
+}
+
+.ui-input-flat::placeholder {
+  color: var(--text-faint);
+}
+
+.ui-input-group > button {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-input-group > button:hover {
+  color: var(--text);
+}
+
+/* Filter input rendered at the top of a popup (BranchSwitcher pattern). */
+.ui-popup > input {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  padding: 4px 8px;
+  outline: none;
+}
+
+.ui-popup > input::placeholder {
+  color: var(--text-faint);
 }
 
 /* ---------- app shell ---------- */
