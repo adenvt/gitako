@@ -43,11 +43,11 @@ pub struct PullResult {
 /// `git fetch --all`. Fetches from every configured remote. Errors when no
 /// remote is configured or the fetch is rejected.
 #[tauri::command]
-pub fn git_fetch(repo_path: String) -> Result<PullResult, GitError> {
+pub async fn git_fetch(repo_path: String) -> Result<PullResult, GitError> {
     let repo = PathBuf::from(&repo_path);
-    let (remote, branch) = upstream(&repo).unwrap_or_else(|| ("origin".to_string(), String::new()));
+    let (remote, branch) = upstream(&repo).await.unwrap_or_else(|| ("origin".to_string(), String::new()));
 
-    let out = git::run(&repo, &["fetch", "--all"])?;
+    let out = git::run(&repo, &["fetch", "--all"]).await?;
     if !out.status.success() {
         return Err(failure(&out, &["fetch", "--all"]));
     }
@@ -62,12 +62,12 @@ pub fn git_fetch(repo_path: String) -> Result<PullResult, GitError> {
 
 /// `git pull` (default or with a mode flag).
 #[tauri::command]
-pub fn git_pull(repo_path: String, mode: PullMode) -> Result<PullResult, GitError> {
+pub async fn git_pull(repo_path: String, mode: PullMode) -> Result<PullResult, GitError> {
     let repo = PathBuf::from(&repo_path);
     let args = mode.args();
-    let (remote, branch) = upstream(&repo).unwrap_or_else(|| ("origin".to_string(), String::new()));
+    let (remote, branch) = upstream(&repo).await.unwrap_or_else(|| ("origin".to_string(), String::new()));
 
-    let out = git::run(&repo, args)?;
+    let out = git::run(&repo, args).await?;
     if !out.status.success() {
         return Err(failure(&out, args));
     }
@@ -80,11 +80,12 @@ pub fn git_pull(repo_path: String, mode: PullMode) -> Result<PullResult, GitErro
     })
 }
 
-fn upstream(repo: &PathBuf) -> Option<(String, String)> {
+async fn upstream(repo: &PathBuf) -> Option<(String, String)> {
     let out = git::run_ok(
         repo,
         &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
     )
+    .await
     .ok()?;
     let full = out.stdout.trim();
     if full.is_empty() {
@@ -241,16 +242,16 @@ mod tests {
             .unwrap();
     }
 
-    #[test]
-    fn fetch_with_remote_succeeds() {
+    #[tokio::test]
+    async fn fetch_with_remote_succeeds() {
         let (_remote, repo, branch) = network_repo("fetch");
-        let r = git_fetch(repo.to_string_lossy().into_owned()).unwrap();
+        let r = git_fetch(repo.to_string_lossy().into_owned()).await.unwrap();
         assert_eq!(r.remote, "origin");
         assert_eq!(r.branch, branch);
     }
 
-    #[test]
-    fn fetch_without_remote_does_nothing() {
+    #[tokio::test]
+    async fn fetch_without_remote_does_nothing() {
         // `git fetch --all` with no remotes is a no-op (exits 0, "Everything
         // up-to-date"). Verify it doesn't error and returns a plausible result.
         let suffix = nanos();
@@ -265,20 +266,20 @@ mod tests {
         ] {
             Command::new("git").args(args).current_dir(&dir).output().unwrap();
         }
-        let r = git_fetch(dir.to_string_lossy().into_owned());
+        let r = git_fetch(dir.to_string_lossy().into_owned()).await;
         assert!(r.is_ok(), "fetch with no remotes should be a no-op, got: {r:?}");
     }
 
-    #[test]
-    fn pull_ff_when_behind_succeeds() {
+    #[tokio::test]
+    async fn pull_ff_when_behind_succeeds() {
         let (remote, repo, _branch) = network_repo("ff");
         advance_remote(&remote, nanos());
-        let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::Ff).unwrap();
+        let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::Ff).await.unwrap();
         assert_eq!(r.remote, "origin");
     }
 
-    #[test]
-    fn pull_ff_only_rejects_diverged_history() {
+    #[tokio::test]
+    async fn pull_ff_only_rejects_diverged_history() {
         let (remote, repo, _branch) = network_repo("ffonly");
         let suffix = nanos();
         // Local diverges from remote.
@@ -289,12 +290,12 @@ mod tests {
             .unwrap();
         // Remote moves ahead.
         advance_remote(&remote, suffix);
-        let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::FfOnly);
+        let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::FfOnly).await;
         assert!(r.is_err(), "ff-only pull should refuse diverged history");
     }
 
-    #[test]
-    fn pull_ff_merges_divergent_history_without_pull_rebase_config() {
+    #[tokio::test]
+    async fn pull_ff_merges_divergent_history_without_pull_rebase_config() {
         // Regression: `git pull` alone fails on divergent branches when the
         // repo has no `pull.ff` / `pull.rebase` config. The Ff mode now
         // passes `--no-rebase` so it falls through to a merge commit instead
@@ -316,15 +317,15 @@ mod tests {
             .unwrap();
         // Remote moves ahead.
         advance_remote(&remote, suffix);
-        let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::Ff);
+        let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::Ff).await;
         assert!(r.is_ok(), "Ff pull should merge divergent history, got: {r:?}");
     }
 
-    #[test]
-    fn pull_rebase_when_behind_succeeds() {
+    #[tokio::test]
+    async fn pull_rebase_when_behind_succeeds() {
         let (remote, repo, _branch) = network_repo("rebase");
         advance_remote(&remote, nanos());
-        let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::Rebase).unwrap();
+        let r = git_pull(repo.to_string_lossy().into_owned(), PullMode::Rebase).await.unwrap();
         assert_eq!(r.remote, "origin");
     }
 }

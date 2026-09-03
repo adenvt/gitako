@@ -6,13 +6,13 @@ use crate::git;
 /// frontend can confirm the switch before the UI updates. Errors from git
 /// (e.g. uncommitted changes would be overwritten) bubble up as `GitError`.
 #[tauri::command]
-pub fn git_checkout(repo_path: String, branch: String) -> Result<String, crate::error::GitError> {
+pub async fn git_checkout(repo_path: String, branch: String) -> Result<String, crate::error::GitError> {
     let repo = PathBuf::from(&repo_path);
     // Resolve the branch to a hash first so an invalid name fails before
     // we mutate HEAD.
-    let hash = crate::git::resolve_revision(&repo, &branch)?;
+    let hash = crate::git::resolve_revision(&repo, &branch).await?;
     // Now do the actual checkout.
-    git::run_ok(&repo, &["checkout", &branch])?;
+    git::run_ok(&repo, &["checkout", &branch]).await?;
     Ok(hash)
 }
 
@@ -45,17 +45,17 @@ mod tests {
         dir
     }
 
-    #[test]
-    fn checkout_existing_branch() {
+    #[tokio::test]
+    async fn checkout_existing_branch() {
         let dir = tmp_repo();
-        let hash = git_checkout(dir.to_string_lossy().into_owned(), "feature".into()).unwrap();
-        let head = run(&dir, &["rev-parse", "HEAD"]).unwrap().stdout;
+        let hash = git_checkout(dir.to_string_lossy().into_owned(), "feature".into()).await.unwrap();
+        let head = run(&dir, &["rev-parse", "HEAD"]).await.unwrap().stdout;
         assert_eq!(head.trim(), hash);
     }
 
-    #[test]
-    fn checkout_missing_branch_errors() {
+    #[tokio::test]
+    async fn checkout_missing_branch_errors() {
         let dir = tmp_repo();
-        assert!(git_checkout(dir.to_string_lossy().into_owned(), "nope".into()).is_err());
+        assert!(git_checkout(dir.to_string_lossy().into_owned(), "nope".into()).await.is_err());
     }
 }

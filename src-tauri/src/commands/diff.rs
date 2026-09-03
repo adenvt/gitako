@@ -12,7 +12,7 @@ const MAX_BYTES: usize = 500 * 1024;
 /// `rev` is a commit hash; empty string means the working tree. When `rev` is
 /// empty and `staged` is true, diff the index against HEAD (staged changes).
 #[tauri::command]
-pub fn git_diff(
+pub async fn git_diff(
     repo_path: String,
     rev: String,
     path: String,
@@ -24,7 +24,7 @@ pub fn git_diff(
         // Worktree diff: parent is the index, new side is the working file.
         (":".to_string(), None)
     } else {
-        let parent = resolve_parent(&repo, &rev)?;
+        let parent = resolve_parent(&repo, &rev).await?;
         (parent, Some(rev.as_str()))
     };
 
@@ -33,11 +33,13 @@ pub fn git_diff(
         None => {
             if staged {
                 // Index vs HEAD.
-                git::run_ok(&repo, &["diff", "--cached", "--unified=3", "--no-color", "--", &path])?.stdout
+                git::run_ok(&repo, &["diff", "--cached", "--unified=3", "--no-color", "--", &path])
+                    .await?
+                    .stdout
             } else {
                 // Untracked files produce no `git diff` output (not in the index);
                 // synthesize an all-added diff so they show as changes.
-                if is_untracked(&repo, &path) {
+                if is_untracked(&repo, &path).await {
                     let content = std::fs::read_to_string(repo.join(&path)).unwrap_or_default();
                     let new_lines = split_lines(&content).len();
                     let hunk = crate::git::diff::DiffHunk {
@@ -64,7 +66,9 @@ pub fn git_diff(
                         hunks: vec![hunk],
                     });
                 }
-                git::run_ok(&repo, &["diff", "--unified=3", "--no-color", "--", &path])?.stdout
+                git::run_ok(&repo, &["diff", "--unified=3", "--no-color", "--", &path])
+                    .await?
+                    .stdout
             }
         }
         Some(r) => git::run_ok(
@@ -78,7 +82,8 @@ pub fn git_diff(
                 "--",
                 &path,
             ],
-        )?
+        )
+        .await?
         .stdout,
     };
 
@@ -102,18 +107,18 @@ pub fn git_diff(
         None => {
             if staged {
                 // Index vs HEAD: old side is HEAD's blob, new side is the index.
-                let old = git::run_tolerate(&repo, &["show", &format!("HEAD:{path}")])?;
-                let new = git::run_tolerate(&repo, &["show", &format!(":{path}")])?;
+                let old = git::run_tolerate(&repo, &["show", &format!("HEAD:{path}")]).await?;
+                let new = git::run_tolerate(&repo, &["show", &format!(":{path}")]).await?;
                 (old.stdout, new.stdout)
             } else {
-                let old = git::run_tolerate(&repo, &["show", &format!(":{path}")])?;
+                let old = git::run_tolerate(&repo, &["show", &format!(":{path}")]).await?;
                 let new = std::fs::read_to_string(repo.join(&path)).unwrap_or_default();
                 (old.stdout, new)
             }
         }
         Some(r) => {
-            let old = git::run_tolerate(&repo, &["show", &format!("{parent}:{path}")])?;
-            let new = git::run_tolerate(&repo, &["show", &format!("{r}:{path}")])?;
+            let old = git::run_tolerate(&repo, &["show", &format!("{parent}:{path}")]).await?;
+            let new = git::run_tolerate(&repo, &["show", &format!("{r}:{path}")]).await?;
             (old.stdout, new.stdout)
         }
     };
@@ -150,21 +155,21 @@ pub fn git_diff(
 /// merges of long-lived branches, but no single default is right for both,
 /// so the first parent wins unless a future UI lets the user pick. Octopus
 /// merges (3+ parents) are not specially handled.
-fn resolve_parent(repo: &std::path::Path, rev: &str) -> Result<String, crate::error::GitError> {
-    let out = git::run_tolerate(repo, &["rev-parse", &format!("{rev}^")]);
+async fn resolve_parent(repo: &std::path::Path, rev: &str) -> Result<String, crate::error::GitError> {
+    let out = git::run_tolerate(repo, &["rev-parse", &format!("{rev}^")]).await;
     match out {
         Ok(o) if o.status.success() => Ok(o.stdout.trim().to_string()),
         _ => {
             // Root commit: diff against the empty tree.
-            let empty = git::run_ok(repo, &["hash-object", "-t", "tree", "/dev/null"])?;
+            let empty = git::run_ok(repo, &["hash-object", "-t", "tree", "/dev/null"]).await?;
             Ok(empty.stdout.trim().to_string())
         }
     }
 }
 
 /// True when `path` is untracked in the working tree (porcelain status `??`).
-fn is_untracked(repo: &std::path::Path, path: &str) -> bool {
-    if let Ok(out) = git::run_ok(repo, &["status", "--porcelain", "--", path]) {
+async fn is_untracked(repo: &std::path::Path, path: &str) -> bool {
+    if let Ok(out) = git::run_ok(repo, &["status", "--porcelain", "--", path]).await {
         out.stdout.lines().any(|l| l.starts_with("??"))
     } else {
         false
@@ -205,10 +210,10 @@ mod tests {
         dir
     }
 
-    #[test]
-    fn staged_new_file_diff() {
+    #[tokio::test]
+    async fn staged_new_file_diff() {
         let repo = repo_with_staged_new_file();
-        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).unwrap();
+        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).await.unwrap();
         assert_eq!(d.status, "M");
         assert!(d.old_lines.is_empty(), "old_lines should be empty for a new file");
         assert_eq!(d.new_lines, vec!["const a = 1;", "const b = 2;"]);
@@ -220,8 +225,8 @@ mod tests {
         assert!(h.lines.iter().all(|l| l.kind == "add"));
     }
 
-    #[test]
-    fn staged_new_file_diff_with_parent_commit() {
+    #[tokio::test]
+    async fn staged_new_file_diff_with_parent_commit() {
         let repo = repo_with_staged_new_file();
         // Unstage new.ts so the following commits don't accidentally include it,
         // then re-stage it after — new.ts must never enter HEAD.
@@ -239,7 +244,7 @@ mod tests {
         // Re-stage the new file (the user's action) and diff it.
         run(&["add", "new.ts"]);
 
-        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).unwrap();
+        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).await.unwrap();
         assert!(d.old_lines.is_empty(), "old_lines should be empty (new.ts never in HEAD)");
         assert_eq!(d.new_lines, vec!["const a = 1;", "const b = 2;"]);
         let h = &d.hunks[0];
@@ -254,14 +259,14 @@ mod tests {
     /// A staged new file without a trailing newline must still render: the
     /// `\ No newline at end of file` marker is skipped and old_lines stays
     /// empty.
-    #[test]
-    fn staged_new_file_no_trailing_newline() {
+    #[tokio::test]
+    async fn staged_new_file_no_trailing_newline() {
         let repo = repo_with_staged_new_file();
         // Rewrite new.ts without a trailing newline and re-stage.
         std::fs::write(repo.join("new.ts"), "const a = 1;\nconst b = 2;").unwrap();
         let out = Command::new("git").args(["add", "new.ts"]).current_dir(&repo).output().unwrap();
         assert!(out.status.success());
-        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).unwrap();
+        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).await.unwrap();
         assert!(d.old_lines.is_empty());
         assert_eq!(d.new_lines, vec!["const a = 1;", "const b = 2;"]);
         let h = &d.hunks[0];
@@ -272,10 +277,10 @@ mod tests {
 
     /// Serialize the DiffFile to JSON and check the exact camelCase field
     /// names the frontend reads (oldLines/newLines/oldStart/...).
-    #[test]
-    fn staged_new_file_json_shape() {
+    #[tokio::test]
+    async fn staged_new_file_json_shape() {
         let repo = repo_with_staged_new_file();
-        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).unwrap();
+        let d = git_diff(repo.to_str().unwrap().to_string(), String::new(), "new.ts".to_string(), true).await.unwrap();
         let json = serde_json::to_value(&d).unwrap();
         let obj = json.as_object().unwrap();
         eprintln!("JSON KEYS: {:?}", obj.keys().collect::<Vec<_>>());
@@ -291,17 +296,17 @@ mod tests {
 
     /// git_stage with staged=false (unstage) on a staged new file must
     /// succeed — this is the "Unstage All" path.
-    #[test]
-    fn unstage_new_file_via_git_stage() {
+    #[tokio::test]
+    async fn unstage_new_file_via_git_stage() {
         let repo = repo_with_staged_new_file();
         let repo_str = repo.to_str().unwrap().to_string();
         // Sanity: the file is staged.
-        let before = git_diff(repo_str.clone(), String::new(), "new.ts".to_string(), true).unwrap();
+        let before = git_diff(repo_str.clone(), String::new(), "new.ts".to_string(), true).await.unwrap();
         assert!(!before.old_lines.is_empty() || !before.hunks.is_empty());
         // Unstage it exactly as the app does.
-        super::super::commit::git_stage(repo_str.clone(), vec!["new.ts".to_string()], false).unwrap();
+        super::super::commit::git_stage(repo_str.clone(), vec!["new.ts".to_string()], false).await.unwrap();
         // Now a staged diff should show no hunks / empty.
-        let after = git_diff(repo_str, String::new(), "new.ts".to_string(), true).unwrap();
+        let after = git_diff(repo_str, String::new(), "new.ts".to_string(), true).await.unwrap();
         assert!(after.hunks.is_empty(), "unstaged file has no cached diff");
     }
 
@@ -309,8 +314,8 @@ mod tests {
     /// blob as the old side (not HEAD^). The hunks come from `git diff
     /// --cached` (HEAD vs index), so the full old content must match that
     /// baseline or the side-by-side alignment drifts on unchanged regions.
-    #[test]
-    fn staged_diff_of_existing_file_uses_head_blob_as_old() {
+    #[tokio::test]
+    async fn staged_diff_of_existing_file_uses_head_blob_as_old() {
         let dir = std::env::temp_dir().join(format!(
             "gitako-diff-staged-exists-{}-{:?}",
             std::process::id(),
@@ -340,7 +345,7 @@ mod tests {
         std::fs::write(dir.join("f.txt"), "alpha\ninserted\nbeta\n").unwrap();
         run(&["add", "f.txt"]);
 
-        let d = git_diff(dir.to_str().unwrap().to_string(), String::new(), "f.txt".to_string(), true).unwrap();
+        let d = git_diff(dir.to_str().unwrap().to_string(), String::new(), "f.txt".to_string(), true).await.unwrap();
         // Old side must be HEAD's content (alpha + beta), NOT HEAD^ (alpha).
         assert_eq!(d.old_lines, vec!["alpha", "beta"], "old side must be the HEAD blob");
         assert_eq!(d.new_lines, vec!["alpha", "inserted", "beta"]);

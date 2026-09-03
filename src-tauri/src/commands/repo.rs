@@ -2,15 +2,15 @@ use crate::git;
 
 /// Resolve a revision to its full hash. Empty string means HEAD.
 #[tauri::command]
-pub fn git_rev_parse(repo_path: String, rev: String) -> Result<String, crate::error::GitError> {
+pub async fn git_rev_parse(repo_path: String, rev: String) -> Result<String, crate::error::GitError> {
     let repo = std::path::PathBuf::from(&repo_path);
-    git::resolve_revision(&repo, &rev)
+    git::resolve_revision(&repo, &rev).await
 }
 
 /// Get the top-level directory of the repo containing a path.
 #[tauri::command]
-pub fn git_repo_root(path: String) -> Result<String, crate::error::GitError> {
-    let root = git::repo_root(std::path::Path::new(&path))?;
+pub async fn git_repo_root(path: String) -> Result<String, crate::error::GitError> {
+    let root = git::repo_root(std::path::Path::new(&path)).await?;
     Ok(root.to_string_lossy().into_owned())
 }
 
@@ -19,9 +19,9 @@ pub fn git_repo_root(path: String) -> Result<String, crate::error::GitError> {
 /// just the branch name and errors out cleanly for detached HEAD; the
 /// fallback then resolves HEAD to a 7-char hash.
 #[tauri::command]
-pub fn git_head_branch(repo_path: String) -> Result<String, crate::error::GitError> {
+pub async fn git_head_branch(repo_path: String) -> Result<String, crate::error::GitError> {
     let repo = std::path::PathBuf::from(&repo_path);
-    if let Ok(out) = git::run_ok(&repo, &["symbolic-ref", "--short", "HEAD"]) {
+    if let Ok(out) = git::run_ok(&repo, &["symbolic-ref", "--short", "HEAD"]).await {
         let name = out.stdout.trim().to_string();
         if !name.is_empty() {
             return Ok(name);
@@ -29,7 +29,7 @@ pub fn git_head_branch(repo_path: String) -> Result<String, crate::error::GitErr
     }
     // Detached HEAD — return a short hash so the UI can show something
     // distinguishable from "no repo" or a hard error.
-    let hash = git::resolve_revision(&repo, "HEAD")?;
+    let hash = git::resolve_revision(&repo, "HEAD").await?;
     Ok(hash[..7.min(hash.len())].to_string())
 }
 
@@ -63,11 +63,11 @@ mod tests {
         dir
     }
 
-    #[test]
-    fn head_branch_returns_local_branch_name() {
+    #[tokio::test]
+    async fn head_branch_returns_local_branch_name() {
         let dir = tmp_repo();
         // HEAD starts on `main` (the init branch).
-        let name = git_head_branch(dir.to_string_lossy().into_owned()).unwrap();
+        let name = git_head_branch(dir.to_string_lossy().into_owned()).await.unwrap();
         assert_eq!(name, "main");
 
         // Switch to a different branch — must reflect the new HEAD.
@@ -76,22 +76,22 @@ mod tests {
             .current_dir(&dir)
             .output()
             .unwrap();
-        let name = git_head_branch(dir.to_string_lossy().into_owned()).unwrap();
+        let name = git_head_branch(dir.to_string_lossy().into_owned()).await.unwrap();
         assert_eq!(name, "feature");
     }
 
-    #[test]
-    fn head_branch_returns_short_hash_for_detached_head() {
+    #[tokio::test]
+    async fn head_branch_returns_short_hash_for_detached_head() {
         let dir = tmp_repo();
         // Detach HEAD onto a specific commit (the tip of `main`).
-        let tip = run(&dir, &["rev-parse", "HEAD"]).unwrap().stdout;
+        let tip = run(&dir, &["rev-parse", "HEAD"]).await.unwrap().stdout;
         Command::new("git")
             .args(["checkout", "-q", "--detach", tip.trim()])
             .current_dir(&dir)
             .output()
             .unwrap();
 
-        let result = git_head_branch(dir.to_string_lossy().into_owned()).unwrap();
+        let result = git_head_branch(dir.to_string_lossy().into_owned()).await.unwrap();
         // Should be the 7-char prefix of HEAD's hash, NOT the literal "HEAD".
         assert_ne!(result, "HEAD");
         assert_eq!(result.len(), 7);
