@@ -209,9 +209,12 @@ export function RefBadgeGroup({ refs, color, onCheckout }: RefBadgeGroupProps) {
     if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
     closeTimer.current = window.setTimeout(() => setOpen(false), 100);
   };
-  useEffect(() => () => {
-    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    },
+    [],
+  );
   const handleDoubleClick =
     onCheckout && (localBranch || remoteBranch)
       ? () => {
@@ -320,9 +323,12 @@ export function RefOverflowBadge({ hiddenGroups, color }: RefOverflowBadgeProps)
     if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
     closeTimer.current = window.setTimeout(() => setOpen(false), 100);
   };
-  useEffect(() => () => {
-    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    },
+    [],
+  );
   return (
     <span
       ref={ref}

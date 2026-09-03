@@ -43,8 +43,9 @@ describe("FileTree", () => {
 
   it("shows the Expand all button and reveals deep files when clicked", async () => {
     const user = userEvent.setup();
-    render(<FileTree root={tree(["src/lib/a.ts", "M"])} />);
-    // `src/lib` is a deeper dir, so it starts collapsed.
+    // `src` has two children (`lib` dir + `c.ts` file), so the singleton
+    // chain stops at `src` and `a.ts` stays hidden until expanded.
+    render(<FileTree root={tree(["src/lib/a.ts", "M"], ["src/c.ts", "M"])} />);
     expect(screen.queryByText("a.ts")).toBeNull();
     // Click "Expand all".
     await user.click(screen.getByRole("button", { name: /expand all/i }));
@@ -116,10 +117,53 @@ describe("FileTree", () => {
   });
 
   it("renders a deeply nested file under its parents (collapsed by default)", () => {
-    render(<FileTree root={tree(["a/b/c/file.ts", "M"])} />);
-    // Top-level `a` is expanded by default; the file is hidden until expanded.
+    // `a` has 2 children (`b`, `d.ts`), so the chain stops at `a`.
+    render(<FileTree root={tree(["a/b/c/file.ts", "M"], ["a/d.ts", "M"])} />);
     expect(screen.getByText("a")).toBeInTheDocument();
     expect(screen.queryByText("file.ts")).toBeNull();
+  });
+
+  it("auto-expands a singleton directory chain on initial render", () => {
+    // a -> b -> c -> file.ts: every level has a single directory child,
+    // so the whole chain should auto-open.
+    render(<FileTree root={tree(["a/b/c/file.ts", "M"])} />);
+    expect(screen.getByText("file.ts")).toBeVisible();
+  });
+
+  it("stops auto-expanding the chain when a directory has multiple children", () => {
+    // a -> b -> [c, other.ts]: b has 2 children, so the singleton chain
+    // stops at b. `b` itself is on a singleton chain from `a`, so it
+    // auto-opens — revealing `other.ts` directly. `c` is NOT auto-opened.
+    render(
+      <FileTree root={tree(["a/b/c/file.ts", "M"], ["a/b/other.ts", "M"])} />,
+    );
+    expect(screen.getByText("a")).toBeInTheDocument();
+    // `b` is on a singleton chain from `a`, so it auto-opens.
+    expect(screen.getByText("b")).toBeInTheDocument();
+    // `other.ts` is a direct child of `b` (a file), so it's visible.
+    expect(screen.getByText("other.ts")).toBeVisible();
+    // `c` is a directory child of `b` — since `b` has 2 children, the
+    // chain stops and `c` is NOT auto-opened, so `file.ts` stays hidden.
+    expect(screen.queryByText("file.ts")).toBeNull();
+  });
+
+  it("cascades open through a singleton chain when a user clicks to expand a parent", async () => {
+    const user = userEvent.setup();
+    // Start with siblings at top so `a` doesn't auto-open via singleton chain.
+    render(
+      <FileTree root={tree(["a/b/c/d/file.ts", "M"], ["other.ts", "M"])} />,
+    );
+    // `a` is top-level so it's expanded by default, but its singleton chain
+    // (b -> c -> d) should also have auto-opened.
+    expect(screen.getByText("file.ts")).toBeVisible();
+
+    // Collapse everything: toggle `a` closed, then re-open and verify cascade.
+    await user.click(screen.getByRole("button", { name: /^a$/ }));
+    expect(screen.queryByText("file.ts")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /^a$/ }));
+    // Re-opening `a` should cascade through b, c, d -> file.ts is visible.
+    expect(screen.getByText("file.ts")).toBeVisible();
   });
 
   it("hides the toolbar (no Expand/Collapse all) when the tree has no directories at all", () => {
@@ -129,9 +173,9 @@ describe("FileTree", () => {
   });
 
   it("displays 'Expand all' when at least one top-level dir is collapsed", () => {
-    // src starts expanded; lib (deeper) starts collapsed -> not all expanded.
-    render(<FileTree root={tree(["src/lib/a.ts", "M"])} />);
-    // 'a.ts' is not yet visible because lib is collapsed.
+    // `src` has two children (`lib` dir + `c.ts` file), so `lib` stays
+    // collapsed and 'a.ts' is hidden initially.
+    render(<FileTree root={tree(["src/lib/a.ts", "M"], ["src/c.ts", "M"])} />);
     expect(screen.queryByText("a.ts")).toBeNull();
     // The toolbar still shows the 'Expand all' button (some dir is collapsed).
     expect(screen.getByRole("button", { name: /expand all/i })).toBeInTheDocument();
