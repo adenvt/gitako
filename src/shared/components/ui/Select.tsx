@@ -18,12 +18,7 @@ export const Select = {
     <BaseSelect.Trigger className={clsx("ui-trigger-select", className)} {...props} />
   ),
   Portal: ({ className, ...props }: ComponentProps<typeof BaseSelect.Portal>) => (
-    <BaseSelect.Portal
-      {...props}
-      render={
-        <div className={clsx("ui-portal", className)} />
-      }
-    />
+    <BaseSelect.Portal {...props} render={<div className={clsx("ui-portal", className)} />} />
   ),
   Positioner: ({ className, ...props }: ComponentProps<typeof BaseSelect.Positioner>) => (
     <BaseSelect.Positioner className={clsx("ui-positioner", className)} {...props} />

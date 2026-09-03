@@ -134,9 +134,7 @@ describe("FileTree", () => {
     // a -> b -> [c, other.ts]: b has 2 children, so the singleton chain
     // stops at b. `b` itself is on a singleton chain from `a`, so it
     // auto-opens — revealing `other.ts` directly. `c` is NOT auto-opened.
-    render(
-      <FileTree root={tree(["a/b/c/file.ts", "M"], ["a/b/other.ts", "M"])} />,
-    );
+    render(<FileTree root={tree(["a/b/c/file.ts", "M"], ["a/b/other.ts", "M"])} />);
     expect(screen.getByText("a")).toBeInTheDocument();
     // `b` is on a singleton chain from `a`, so it auto-opens.
     expect(screen.getByText("b")).toBeInTheDocument();
@@ -150,9 +148,7 @@ describe("FileTree", () => {
   it("cascades open through a singleton chain when a user clicks to expand a parent", async () => {
     const user = userEvent.setup();
     // Start with siblings at top so `a` doesn't auto-open via singleton chain.
-    render(
-      <FileTree root={tree(["a/b/c/d/file.ts", "M"], ["other.ts", "M"])} />,
-    );
+    render(<FileTree root={tree(["a/b/c/d/file.ts", "M"], ["other.ts", "M"])} />);
     // `a` is top-level so it's expanded by default, but its singleton chain
     // (b -> c -> d) should also have auto-opened.
     expect(screen.getByText("file.ts")).toBeVisible();

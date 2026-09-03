@@ -33,10 +33,7 @@ export const Combobox = {
     <BaseCombobox.Input className={clsx("ui-input ui-input-flat", className)} {...props} />
   ),
   Portal: ({ className, ...props }: ComponentProps<typeof BaseCombobox.Portal>) => (
-    <BaseCombobox.Portal
-      {...props}
-      render={<div className={clsx("ui-portal", className)} />}
-    />
+    <BaseCombobox.Portal {...props} render={<div className={clsx("ui-portal", className)} />} />
   ),
   Positioner: ({ className, ...props }: ComponentProps<typeof BaseCombobox.Positioner>) => (
     <BaseCombobox.Positioner className={clsx("ui-positioner", className)} {...props} />

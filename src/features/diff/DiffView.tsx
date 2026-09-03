@@ -18,8 +18,13 @@ export function DiffView() {
   const path = activeDiff?.path ?? "";
   const lang = useMemo(() => langForPath(path), [path]);
 
-  const oldCode = diff ? diff.oldLines.join("\n") : "";
-  const newCode = diff ? diff.newLines.join("\n") : "";
+  // Joining the line arrays on every render would be O(n) for a 2000-line
+  // file. Memoize so the highlighter hook only re-runs when the diff
+  // itself changes.
+  const { oldCode, newCode } = useMemo(() => {
+    if (!diff) return { oldCode: "", newCode: "" };
+    return { oldCode: diff.oldLines.join("\n"), newCode: diff.newLines.join("\n") };
+  }, [diff]);
   // Hooks must run unconditionally.
   const oldTokens = useHighlightedLines(oldCode, lang);
   const newTokens = useHighlightedLines(newCode, lang);

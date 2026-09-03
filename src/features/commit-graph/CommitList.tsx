@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import clsx from "clsx";
 import {
   FileAddedIcon,
@@ -62,7 +63,22 @@ export function CommitList() {
     graphWidth,
     setGraphWidth,
     checkout,
-  } = useRepoStore();
+  } = useRepoStore(
+    useShallow((st) => ({
+      commits: st.commits,
+      layout: st.layout,
+      selectedHash: st.selectedHash,
+      select: st.select,
+      statusEntries: st.statusEntries,
+      openComposer: st.openComposer,
+      workingSelected: st.workingSelected,
+      setWorkingSelected: st.setWorkingSelected,
+      refsByCommit: st.refsByCommit,
+      graphWidth: st.graphWidth,
+      setGraphWidth: st.setGraphWidth,
+      checkout: st.checkout,
+    })),
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 50 });
   /** True while the graph-band resize drag is in progress. */
@@ -176,13 +192,15 @@ export function CommitList() {
     setFocusIndex(selectedIndex);
   }, [selectedIndex]);
 
-  // Give the scroll viewport focus on mount so arrow keys work immediately,
-  // and refocus it whenever the working row is selected by keyboard (it holds
-  // no focusable element of its own).
+  // Give the scroll viewport focus on mount so arrow keys work immediately.
   useEffect(() => {
     const el = scrollRef.current;
     if (el && document.activeElement === document.body) el.focus();
-  });
+    // Run once on mount; the working-row focus is handled by the effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Refocus the scroll viewport when the working row is selected by keyboard
+  // (it holds no focusable element of its own).
   useEffect(() => {
     if (workingSelected) scrollRef.current?.focus();
   }, [workingSelected]);
@@ -258,6 +276,17 @@ export function CommitList() {
     ],
   );
 
+  // Hooks must run unconditionally on every render. The gutter depends on
+  // `layout.maxLane`, which is undefined before the first refresh resolves;
+  // treat the empty case as zero lanes so this effect stays safe pre-layout.
+  const gutter = graphGutter(layout?.maxLane);
+  // Keep the ref in sync without mutating it during render — useLayoutEffect
+  // runs after the render commit, so the ref is always up to date when
+  // `onPointerDown` reads it.
+  useLayoutEffect(() => {
+    maxGraphBandRef.current = gutter;
+  }, [gutter]);
+
   if (!layout || layout.commits.length === 0) {
     return (
       <div className={clsx(s.commitList, s.empty)}>
@@ -270,8 +299,6 @@ export function CommitList() {
 
   const totalHeight = (layout.commits.length + offset) * ROW_HEIGHT;
   // The graph band is resizable: use the user-set width, else the auto gutter.
-  const gutter = graphGutter(layout.maxLane);
-  maxGraphBandRef.current = gutter;
   const graphBand = Math.min(
     Math.max(graphWidth > 0 ? graphWidth : gutter, MIN_GRAPH_BAND),
     gutter,

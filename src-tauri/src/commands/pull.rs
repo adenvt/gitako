@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -80,7 +80,7 @@ pub async fn git_pull(repo_path: String, mode: PullMode) -> Result<PullResult, G
     })
 }
 
-async fn upstream(repo: &PathBuf) -> Option<(String, String)> {
+async fn upstream(repo: &Path) -> Option<(String, String)> {
     let out = git::run_ok(
         repo,
         &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],

@@ -29,50 +29,35 @@ export type ScrollAreaRootProps = ComponentProps<typeof BaseScrollArea.Root>;
 const Root = forwardRef<HTMLDivElement, ComponentProps<typeof BaseScrollArea.Root>>(
   function ScrollAreaRoot({ className, ...props }, ref) {
     const final = clsx("ui-scrollarea", className);
+    return <BaseScrollArea.Root ref={ref} className={final} {...props} />;
+  },
+);
+
+const Viewport = forwardRef<HTMLDivElement, ComponentProps<typeof BaseScrollArea.Viewport>>(
+  function ScrollAreaViewport({ className, ...props }, ref) {
+    return <BaseScrollArea.Viewport ref={ref} className={className} {...props} />;
+  },
+);
+
+const Scrollbar = forwardRef<HTMLDivElement, ComponentProps<typeof BaseScrollArea.Scrollbar>>(
+  function ScrollAreaScrollbar({ className, keepMounted = true, children, ...props }, ref) {
     return (
-      <BaseScrollArea.Root
+      <BaseScrollArea.Scrollbar
         ref={ref}
-        className={final}
+        className={clsx("scrollbarTrack", className)}
+        keepMounted={keepMounted}
         {...props}
-      />
+      >
+        {children}
+      </BaseScrollArea.Scrollbar>
     );
   },
 );
 
-const Viewport = forwardRef<
-  HTMLDivElement,
-  ComponentProps<typeof BaseScrollArea.Viewport>
->(function ScrollAreaViewport({ className, ...props }, ref) {
-  return <BaseScrollArea.Viewport ref={ref} className={className} {...props} />;
-});
-
-const Scrollbar = forwardRef<
-  HTMLDivElement,
-  ComponentProps<typeof BaseScrollArea.Scrollbar>
->(function ScrollAreaScrollbar(
-  { className, keepMounted = true, children, ...props },
-  ref,
-) {
-  return (
-    <BaseScrollArea.Scrollbar
-      ref={ref}
-      className={clsx("scrollbarTrack", className)}
-      keepMounted={keepMounted}
-      {...props}
-    >
-      {children}
-    </BaseScrollArea.Scrollbar>
-  );
-});
-
 const Thumb = forwardRef<HTMLDivElement, ComponentProps<typeof BaseScrollArea.Thumb>>(
   function ScrollAreaThumb({ className, ...props }, ref) {
     return (
-      <BaseScrollArea.Thumb
-        ref={ref}
-        className={clsx("scrollbarThumb", className)}
-        {...props}
-      />
+      <BaseScrollArea.Thumb ref={ref} className={clsx("scrollbarThumb", className)} {...props} />
     );
   },
 );

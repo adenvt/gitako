@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { PencilAiIcon } from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
 import { buildFileTree } from "@/shared/utils/fileTree";
@@ -32,7 +33,19 @@ export function CommitComposer() {
     commit,
     openDiff,
     refreshStatus,
-  } = useRepoStore();
+  } = useRepoStore(
+    useShallow((st) => ({
+      repoPath: st.repoPath,
+      statusEntries: st.statusEntries,
+      stagedPaths: st.stagedPaths,
+      toggleStage: st.toggleStage,
+      stageAll: st.stageAll,
+      unstageAll: st.unstageAll,
+      commit: st.commit,
+      openDiff: st.openDiff,
+      refreshStatus: st.refreshStatus,
+    })),
+  );
 
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");

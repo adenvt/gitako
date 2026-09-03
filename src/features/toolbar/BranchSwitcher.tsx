@@ -54,18 +54,13 @@ export function BranchSwitcher() {
       <Combobox.Portal>
         <Combobox.Positioner align="start" sideOffset={2}>
           <Combobox.Popup aria-label="Branches">
-            <Combobox.Input
-              placeholder="Filter branches…"
-              aria-label="Filter branches"
-            />
+            <Combobox.Input placeholder="Filter branches…" aria-label="Filter branches" />
             <ScrollArea.Root style={{ flex: "1 1 auto", minHeight: 0 }}>
               <ScrollArea.Viewport>
                 <Combobox.List>
                   {(branch: string) => (
                     <Combobox.Item key={branch} value={branch}>
-                      <Combobox.ItemIndicator
-                        render={<CheckIcon size={12} aria-hidden />}
-                      />
+                      <Combobox.ItemIndicator render={<CheckIcon size={12} aria-hidden />} />
                       <span>{branch}</span>
                     </Combobox.Item>
                   )}

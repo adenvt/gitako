@@ -266,4 +266,5 @@ export function drawGraph(
 
 /** Compute the graph gutter (the X range reserved for lanes) for a given
  * max lane. Re-exported here so the renderer is self-contained. */
-export const graphGutter = (maxLane: number) => LANE_PAD + (maxLane + 1) * LANE_WIDTH + GRAPH_PAD;
+export const graphGutter = (maxLane: number | undefined) =>
+  LANE_PAD + ((maxLane ?? 0) + 1) * LANE_WIDTH + GRAPH_PAD;

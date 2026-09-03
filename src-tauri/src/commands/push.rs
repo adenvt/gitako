@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
@@ -51,7 +51,7 @@ pub async fn git_push(repo_path: String) -> Result<PushResult, GitError> {
 
 /// Resolve the upstream tracking ref as `remote/branch`. Returns `None` when
 /// the current branch has no upstream or HEAD is detached.
-async fn upstream(repo: &PathBuf) -> Option<(String, String)> {
+async fn upstream(repo: &Path) -> Option<(String, String)> {
     let out = git::run_ok(repo, &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
         .await
         .ok()?;
@@ -64,7 +64,7 @@ async fn upstream(repo: &PathBuf) -> Option<(String, String)> {
 }
 
 /// Local branch name HEAD is on, or empty if detached.
-async fn git_head_branch_local(repo: &PathBuf) -> Option<String> {
+async fn git_head_branch_local(repo: &Path) -> Option<String> {
     let out = git::run_ok(repo, &["symbolic-ref", "--short", "HEAD"]).await.ok()?;
     let name = out.stdout.trim().to_string();
     if name.is_empty() {
