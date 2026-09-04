@@ -438,6 +438,7 @@ export function CommitList() {
                           height: ROW_HEIGHT,
                           left: textLeft,
                           ["--row-left" as string]: `${textLeft}px`,
+                          ["--row-accent" as string]: badgeColor,
                         }}
                         onClick={() => select(c.hash)}
                       >

@@ -25,14 +25,14 @@
   top: 0;
   bottom: 0;
   left: 2px;
-  width: 1px;
+  width: 2px;
   background: transparent;
   transition: background var(--dur-fast) var(--ease);
 }
 
 .graphResizeHandle:hover::after,
 .graphResizeHandle:active::after {
-  background: var(--accent);
+  background: var(--bg-hover);
 }
 
 .commitScroll {
@@ -97,8 +97,21 @@
   background: var(--bg-hover);
 }
 
+/* Subtle left bar on every row, colored to the row's lane at low
+   opacity so the column reads as a color-coded index. Selected rows
+   override this with a 2px solid bar in the full lane color. */
+.commitRow {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--row-accent, var(--accent)) 30%, transparent);
+}
+
 .commitRow.selected::before {
-  background: var(--selected);
+  /* Tint background + left accent bar, colored to match the row's lane.
+     Mirrors the file tree's selection style (treeRowFocused). */
+  background: color-mix(in srgb, var(--row-accent, var(--accent)) 14%, transparent);
+}
+
+.commitRow.selected {
+  box-shadow: inset 2px 0 0 var(--row-accent, var(--accent));
 }
 
 /* Keep row content above the ::before highlight. */
