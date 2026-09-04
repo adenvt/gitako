@@ -45,6 +45,11 @@ describe("Button (kit)", () => {
     expect(cls).not.toMatch(/ui-btn-sm|ui-btn-lg|ui-btn-icon/);
   });
 
+  it("maps subtle to ui-btn-subtle", () => {
+    render(<Button variant="subtle">Stage all</Button>);
+    expect(screen.getByRole("button", { name: "Stage all" }).className).toMatch(/ui-btn-subtle/);
+  });
+
   it('maps size="sm", size="lg" and size="icon"', () => {
     render(
       <>
