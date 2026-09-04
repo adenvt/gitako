@@ -57,6 +57,7 @@
 }
 
 .treeRow {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -70,7 +71,18 @@
   cursor: pointer;
   border-radius: 0;
   font-family: inherit;
+}
+
+/* Full-row highlight painted behind content via ::before, same technique
+   as CommitList. Covers the entire row width edge-to-edge. */
+.treeRow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  z-index: -1;
   transition: background var(--dur-fast) var(--ease);
+  pointer-events: none;
 }
 
 /* Keyboard focus: same hover tint + accent outline for visibility. */
@@ -78,21 +90,26 @@
   outline: none;
 }
 
-.treeRow:focus-visible {
+.treeRow:focus-visible::before {
   background: var(--bg-hover);
-  outline: 1px solid var(--accent);
-  outline-offset: -1px;
+}
+
+.treeRow:focus-visible {
+  outline: none;
 }
 
 /* Navigate indicator: persistent cursor on the focused row. Stays visible
    even when :focus-visible heuristics hide the ring (e.g. focus moved
    programmatically by ArrowUp/Down). Left accent bar + hover tint. */
-.treeRowFocused {
+.treeRowFocused::before {
   background: var(--bg-hover);
+}
+
+.treeRowFocused {
   box-shadow: inset 2px 0 0 var(--accent);
 }
 
-.treeDir:hover {
+.treeDir:hover::before {
   background: var(--bg-hover);
 }
 
@@ -100,7 +117,7 @@
   cursor: default;
 }
 
-.treeFile:hover {
+.treeFile:hover::before {
   background: var(--bg-hover);
 }
 
@@ -211,8 +228,8 @@
 }
 
 .treeChildren {
-  /* Vertical indent guide between nested dirs. */
-  margin-left: 8px;
-  border-left: 1px solid var(--border);
-  padding-left: 4px;
+  /* No margin/border here: the indent comes from each row's own
+     padding-left (6 + depth * 14, set inline). Keeping this wrapper
+     full-width lets the row's ::before highlight span the entire
+     container edge-to-edge at every nesting level. */
 }
