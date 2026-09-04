@@ -17,7 +17,23 @@ control chrome stays consistent app-wide.
 
 ## Buttons
 
-`.ui-btn` (default "solid"), `.ui-btn-primary` (accent fill), `.ui-ghost` (borderless), or `<Button variant="none">` (caller-styled).
+Use `<Button>` from `@/shared/components/ui`. Defaults to `type="button"` so it
+never submits forms.
+
+**Variants:**
+- `solid` (default) — dim raised control
+- `primary` — accent fill, the "do this" button
+- `ghost` — text-only with hover tint
+- `subtle` — borderless inline text action (e.g. "Stage all", "← back")
+- `danger` — red signal for destructive actions (uses `--err` token; max one per
+  surface; pair irreversible ones with a confirm step)
+- `none` — no kit chrome, caller provides everything
+
+**Sizes:** `sm` (dense toolbars), `md` (default), `lg` (emphasis — max one per
+surface, icon scales 12/13/16px at sm/md/lg), `icon` (square hit-target).
+
+**State:** `loading` (auto-disables, sets `aria-busy`; label stays caller-owned),
+`disabled` (explicit; merges with `loading`).
 
 <Canvas of={ButtonStories.AllVariants} />
 
