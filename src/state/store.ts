@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ChangedFile, Commit, DiffFile, RefInfo } from "@/shared/types/git";
+import type { ChangedFile, Commit, DiffFile, GitErrorPayload, RefInfo } from "@/shared/types/git";
 import { layout, type LayoutResult } from "@/features/commit-graph/layout";
 import {
   fetchLog,
@@ -72,6 +72,22 @@ interface RepoState {
   openRepo: (path: string) => Promise<void>;
   refresh: () => Promise<void>;
   /**
+   * Refresh just the refs (and the derived `refsByCommit` + graph
+   * `layout`). Used after push, where only remote tracking refs change
+   * and the commit list itself is unchanged. Much lighter than
+   * `refresh()` — one IPC instead of four, no log/status/headBranch
+   * re-fetch, and the commit list isn't replaced (so the canvas doesn't
+   * re-measure and the virtualized list keeps its scroll position).
+   */
+  refreshRefs: () => Promise<void>;
+  /**
+   * Refresh the log + refs + headBranch (and the derived layout).
+   * Used after a non-ff pull where new commits arrived; status is
+   * unchanged so we skip it. Avoids the `git status` IPC and the
+   * stagedPaths recomputation that `refresh()` would do.
+   */
+  refreshLog: () => Promise<void>;
+  /**
    * Switch HEAD to a branch. For local branches, passes the name
    * straight to `git checkout`. For remote-tracking refs (`origin/feature`),
    * creates a local branch with the same name tracking the upstream
@@ -79,6 +95,14 @@ interface RepoState {
    * may need to move HEAD).
    */
   checkout: (branch: string, kind?: "branch" | "remoteBranch") => Promise<void>;
+  /**
+   * Switch onto an existing local branch and fast-forward-pull its
+   * upstream. Used by the "refresh this branch" gesture on a ref-badge
+   * group (dblclick on a `main` + `origin/main` group pulls `main`).
+   * If the branches have diverged, surfaces an error pointing the user
+   * at the toolbar's pull menu (which offers rebase/merge modes).
+   */
+  pullLocalBranch: (branch: string) => Promise<void>;
   refreshStatus: () => Promise<void>;
   select: (hash: string | null) => void;
   loadCommitFiles: (hash: string) => Promise<void>;
@@ -101,6 +125,37 @@ interface RepoState {
 
 function computeLayout(commits: Commit[]): LayoutResult {
   return layout(commits.map((c) => ({ hash: c.hash, parents: c.parents, isStash: c.isStash })));
+}
+
+/**
+ * Join refs onto commits for badge display and the graph layout.
+ * Shared by `refresh()` (full) and the lightweight `refreshRefs()` /
+ * `refreshLog()` (post push/pull) so they all produce identical
+ * `tagged` / `refsByCommit` shapes without duplicating the merge logic.
+ */
+function mergeRefsIntoCommits(commits: Commit[], refs: RefInfo[]) {
+  const refByCommit = new Map<string, RefInfo[]>();
+  for (const r of refs) {
+    const list = refByCommit.get(r.commit) ?? [];
+    list.push(r);
+    refByCommit.set(r.commit, list);
+  }
+  const refsByCommit: Record<string, RefInfo[]> = {};
+  for (const [hash, list] of refByCommit) refsByCommit[hash] = list;
+  const withRefs = commits.map((c) => ({
+    ...c,
+    refs: (refByCommit.get(c.hash) ?? []).map((r) => r.name),
+  }));
+  // A stash entry is the commit pointed at by `refs/stash` (the WIP
+  // commit; the `index on <branch>` pseudo-commit is filtered out by the
+  // backend and has no ref). Detection is ref-based so it doesn't depend
+  // on git's subject formatting.
+  const tagged = withRefs.map((c) => {
+    const commitRefs = refByCommit.get(c.hash) ?? [];
+    const isStash = commitRefs.some((r) => r.fullName === "refs/stash");
+    return { ...c, isStash };
+  });
+  return { tagged, refByCommit, refsByCommit };
 }
 
 export const useRepoStore = create<RepoState>((set, get) => ({
@@ -146,28 +201,7 @@ export const useRepoStore = create<RepoState>((set, get) => ({
         fetchStatus(repoPath).catch(() => ""),
         fetchHeadBranch(repoPath).catch(() => null),
       ]);
-      // Join refs onto commits for badge display.
-      const refByCommit = new Map<string, RefInfo[]>();
-      for (const r of refs) {
-        const list = refByCommit.get(r.commit) ?? [];
-        list.push(r);
-        refByCommit.set(r.commit, list);
-      }
-      const refsByCommit: Record<string, RefInfo[]> = {};
-      for (const [hash, list] of refByCommit) refsByCommit[hash] = list;
-      const withRefs = commits.map((c) => ({
-        ...c,
-        refs: (refByCommit.get(c.hash) ?? []).map((r) => r.name),
-      }));
-      // A stash entry is the commit pointed at by `refs/stash` (the WIP
-      // commit; the `index on <branch>` pseudo-commit is filtered out by the
-      // backend and has no ref). Detection is ref-based so it doesn't depend
-      // on git's subject formatting.
-      const tagged = withRefs.map((c) => {
-        const commitRefs = refByCommit.get(c.hash) ?? [];
-        const isStash = commitRefs.some((r) => r.fullName === "refs/stash");
-        return { ...c, isStash };
-      });
+      const { tagged, refsByCommit } = mergeRefsIntoCommits(commits, refs);
       const statusEntries = parsePorcelain(status);
       set({
         commits: tagged,
@@ -186,6 +220,46 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       set({ error: message });
     } finally {
       set({ loading: false });
+    }
+  },
+
+  async refreshRefs() {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    try {
+      const refs = await fetchRefs(repoPath);
+      // Build refsByCommit from the existing commits + new refs. Don't
+      // touch `commits` or `layout` — a push only moves remote tracking
+      // refs, so the commit list and the lane assignments are unchanged.
+      // Keeping the existing `layout` reference is what avoids the
+      // `GraphCanvas` `useEffect([layout])` redraw, which is the main
+      // contributor to the post-click freeze the user reported.
+      const { refsByCommit } = mergeRefsIntoCommits(get().commits, refs);
+      set({ refs, refsByCommit });
+    } catch (e) {
+      console.error("refreshRefs", errorMessage(e));
+    }
+  },
+
+  async refreshLog() {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    try {
+      const [commits, refs, headBranch] = await Promise.all([
+        fetchLog(repoPath),
+        fetchRefs(repoPath),
+        fetchHeadBranch(repoPath).catch(() => null),
+      ]);
+      const { tagged, refsByCommit } = mergeRefsIntoCommits(commits, refs);
+      set({
+        commits: tagged,
+        refs,
+        refsByCommit,
+        layout: computeLayout(tagged),
+        headBranch,
+      });
+    } catch (e) {
+      console.error("refreshLog", errorMessage(e));
     }
   },
 
@@ -227,6 +301,47 @@ export const useRepoStore = create<RepoState>((set, get) => ({
       throw e;
     } finally {
       set({ loading: false });
+    }
+  },
+
+  async pullLocalBranch(branch: string) {
+    const { repoPath } = get();
+    if (!repoPath) return;
+    set({ pulling: true });
+    try {
+      // First move onto the local branch (so the subsequent pull updates
+      // *its* working copy, not whatever HEAD was on). Uses the same
+      // smart-switch flow as a regular checkout, including stash push/pop
+      // if the tree is dirty.
+      await get().checkout(branch, "branch");
+      // Then fast-forward pull. If the branches have diverged, the
+      // backend returns a Conflict GitError — surface it with a hint
+      // pointing the user at the toolbar's pull menu (which offers
+      // rebase/merge).
+      const result = await pullBranch(repoPath, "ffOnly");
+      await get().refresh();
+      toastSuccess(
+        "Pull complete",
+        result.summary || `Pulled ${result.branch} from ${result.remote}`,
+      );
+    } catch (e) {
+      // The backend's GitErrorPayload carries a `kind` discriminator
+      // that's set to "conflict" for non-fast-forward rejections, so
+      // we can surface a tailored message pointing the user at the
+      // toolbar's pull menu.
+      const payload = e as Partial<GitErrorPayload> | undefined;
+      const message = payload?.message ?? errorMessage(e);
+      if (payload?.kind === "conflict") {
+        toastError(
+          `Pull into ${branch} failed (diverged)`,
+          `${message}\nUse the toolbar Pull menu to rebase or merge.`,
+        );
+      } else {
+        toastError("Pull failed", message);
+      }
+      throw e;
+    } finally {
+      set({ pulling: false });
     }
   },
 
@@ -368,8 +483,13 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     set({ pushing: true });
     try {
       const result = await pushBranch(repoPath);
-      // Refresh refs so the remote branch badge updates after a successful push.
-      await get().refresh();
+      // Push only moves remote tracking refs — the commit list, status
+      // and HEAD are unchanged. A full `refresh()` here would re-run
+      // four git subprocesses and re-measure the graph canvas, which
+      // shows up as a noticeable freeze right when the user clicks
+      // push. `refreshRefs` keeps the remote badges accurate without
+      // that cost.
+      await get().refreshRefs();
       const detail = result.summary || `${result.branch} → ${result.remote}`;
       toastSuccess("Push complete", `Pushed ${result.branch} to ${result.remote} — ${detail}`);
     } catch (e) {
@@ -402,7 +522,11 @@ export const useRepoStore = create<RepoState>((set, get) => ({
     set({ pulling: true });
     try {
       const result = await pullBranch(repoPath, mode);
-      await get().refresh();
+      // A non-ff pull can add new commits (ff/fast-forward moves HEAD
+      // without adding), so the log and HEAD may have changed. Status
+      // is unchanged, so skip it. Same reasoning as `push`: avoid the
+      // full `refresh()` cascade to keep the click-to-toast path snappy.
+      await get().refreshLog();
       toastSuccess(
         "Pull complete",
         result.summary || `Pulled ${result.branch} from ${result.remote}`,

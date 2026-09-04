@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
@@ -23,17 +23,20 @@ pub struct PushResult {
 /// and branch to the UI), then runs the push. Errors from git (non-fast-
 /// forward, no upstream, no remote configured) bubble up as `GitError`.
 #[tauri::command]
-pub fn git_push(repo_path: String) -> Result<PushResult, GitError> {
+pub async fn git_push(repo_path: String) -> Result<PushResult, GitError> {
     let repo = PathBuf::from(&repo_path);
-    let (remote, branch) = upstream(&repo).unwrap_or_else(|| {
-        // No upstream configured — fall back to the default `git push` would
-        // pick, which is `origin` + the current branch. The actual `push`
-        // call will fail with a useful error if either is missing.
-        let branch = git_head_branch_local(&repo).unwrap_or_default();
-        ("origin".to_string(), branch)
-    });
+    let (remote, branch) = match upstream(&repo).await {
+        Some(u) => u,
+        None => {
+            // No upstream configured — fall back to the default `git push` would
+            // pick, which is `origin` + the current branch. The actual `push`
+            // call will fail with a useful error if either is missing.
+            let branch = git_head_branch_local(&repo).await.unwrap_or_default();
+            ("origin".to_string(), branch)
+        }
+    };
 
-    let out = git::run(&repo, &["push"])?;
+    let out = git::run(&repo, &["push"]).await?;
     if !out.status.success() {
         return Err(push_failure(&out));
     }
@@ -48,8 +51,10 @@ pub fn git_push(repo_path: String) -> Result<PushResult, GitError> {
 
 /// Resolve the upstream tracking ref as `remote/branch`. Returns `None` when
 /// the current branch has no upstream or HEAD is detached.
-fn upstream(repo: &PathBuf) -> Option<(String, String)> {
-    let out = git::run_ok(repo, &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]).ok()?;
+async fn upstream(repo: &Path) -> Option<(String, String)> {
+    let out = git::run_ok(repo, &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
+        .await
+        .ok()?;
     let full = out.stdout.trim();
     if full.is_empty() {
         return None;
@@ -59,8 +64,8 @@ fn upstream(repo: &PathBuf) -> Option<(String, String)> {
 }
 
 /// Local branch name HEAD is on, or empty if detached.
-fn git_head_branch_local(repo: &PathBuf) -> Option<String> {
-    let out = git::run_ok(repo, &["symbolic-ref", "--short", "HEAD"]).ok()?;
+async fn git_head_branch_local(repo: &Path) -> Option<String> {
+    let out = git::run_ok(repo, &["symbolic-ref", "--short", "HEAD"]).await.ok()?;
     let name = out.stdout.trim().to_string();
     if name.is_empty() {
         None
@@ -168,23 +173,23 @@ mod tests {
         (remote, repo)
     }
 
-    #[test]
-    fn push_with_upstream_succeeds() {
+    #[tokio::test]
+    async fn push_with_upstream_succeeds() {
         let (_remote, repo) = clone_with_upstream();
         // First push sets the upstream. The initial branch name depends on
         // the git default (often `master`); we don't pin it because the test
         // contract is "the push works and reports the actual current branch".
-        let r = git_push(repo.to_string_lossy().into_owned()).unwrap();
+        let r = git_push(repo.to_string_lossy().into_owned()).await.unwrap();
         assert_eq!(r.remote, "origin");
         assert!(!r.branch.is_empty(), "branch should be reported");
         assert!(!r.summary.is_empty(), "summary should be populated");
     }
 
-    #[test]
-    fn push_twice_is_idempotent() {
+    #[tokio::test]
+    async fn push_twice_is_idempotent() {
         let (_remote, repo) = clone_with_upstream();
-        git_push(repo.to_string_lossy().into_owned()).unwrap();
-        let r = git_push(repo.to_string_lossy().into_owned()).unwrap();
+        git_push(repo.to_string_lossy().into_owned()).await.unwrap();
+        let r = git_push(repo.to_string_lossy().into_owned()).await.unwrap();
         // Second push should still succeed and report "Everything up-to-date".
         assert!(
             r.summary.to_lowercase().contains("up-to-date")
@@ -195,8 +200,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn push_without_remote_errors() {
+    #[tokio::test]
+    async fn push_without_remote_errors() {
         // Local repo with no remote at all.
         let suffix = nanos();
         let dir = std::env::temp_dir().join(format!("gitako-push-noremote-{suffix}"));
@@ -210,18 +215,18 @@ mod tests {
         ] {
             Command::new("git").args(args).current_dir(&dir).output().unwrap();
         }
-        let r = git_push(dir.to_string_lossy().into_owned());
+        let r = git_push(dir.to_string_lossy().into_owned()).await;
         assert!(r.is_err(), "push should fail when no remote is configured");
     }
 
-    #[test]
-    fn push_non_fast_forward_returns_conflict() {
+    #[tokio::test]
+    async fn push_non_fast_forward_returns_conflict() {
         // Set up: bare remote, clone, push A. Then use a donor repo to push
         // B to the remote. The original clone (still at A) makes a divergent
         // commit C and tries to push — should be rejected as non-fast-forward.
         let (_remote, repo) = clone_with_upstream();
         // First push from the clone to seed the upstream.
-        git_push(repo.to_string_lossy().into_owned()).unwrap();
+        git_push(repo.to_string_lossy().into_owned()).await.unwrap();
 
         // Use a separate "donor" repo pointing at the same remote to advance it.
         let suffix = nanos();
@@ -261,7 +266,7 @@ mod tests {
             .current_dir(&repo)
             .output()
             .unwrap();
-        let r = git_push(repo.to_string_lossy().into_owned());
+        let r = git_push(repo.to_string_lossy().into_owned()).await;
         assert!(r.is_err(), "push should fail when remote is ahead");
     }
 }

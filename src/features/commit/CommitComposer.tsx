@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ZapIcon } from "@primer/octicons-react";
+import { useShallow } from "zustand/react/shallow";
+import { PencilAiIcon } from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
 import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
@@ -32,7 +33,19 @@ export function CommitComposer() {
     commit,
     openDiff,
     refreshStatus,
-  } = useRepoStore();
+  } = useRepoStore(
+    useShallow((st) => ({
+      repoPath: st.repoPath,
+      statusEntries: st.statusEntries,
+      stagedPaths: st.stagedPaths,
+      toggleStage: st.toggleStage,
+      stageAll: st.stageAll,
+      unstageAll: st.unstageAll,
+      commit: st.commit,
+      openDiff: st.openDiff,
+      refreshStatus: st.refreshStatus,
+    })),
+  );
 
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
@@ -183,7 +196,7 @@ export function CommitComposer() {
             aria-label={aiBusy ? "Generating commit message" : "Generate commit message"}
             title={generateTooltip}
           >
-            <ZapIcon size={14} aria-hidden />
+            <PencilAiIcon size={14} aria-hidden />
           </button>
         </div>
         <Textarea

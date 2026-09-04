@@ -5,7 +5,7 @@ use crate::git;
 /// Stage (`git add`) or unstage (`git restore --staged`) the given paths.
 /// `staged: true` stages; `staged: false` unstages.
 #[tauri::command]
-pub fn git_stage(
+pub async fn git_stage(
     repo_path: String,
     paths: Vec<String>,
     staged: bool,
@@ -23,13 +23,13 @@ pub fn git_stage(
     };
     args.extend(paths);
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    git::run_ok(&repo, &args)?;
+    git::run_ok(&repo, &args).await?;
     Ok(())
 }
 
 /// Commit the staged changes. Returns the new HEAD hash.
 #[tauri::command]
-pub fn git_commit(
+pub async fn git_commit(
     repo_path: String,
     subject: String,
     description: String,
@@ -40,8 +40,8 @@ pub fn git_commit(
         args.push("-m");
         args.push(&description);
     }
-    git::run_ok(&repo, &args)?;
+    git::run_ok(&repo, &args).await?;
     // Resolve the new HEAD so the store can refresh with certainty.
-    let out = git::run_ok(&repo, &["rev-parse", "HEAD"])?;
+    let out = git::run_ok(&repo, &["rev-parse", "HEAD"]).await?;
     Ok(out.stdout.trim().to_string())
 }

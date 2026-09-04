@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import { ScrollArea } from "@base-ui/react/scroll-area";
 import {
   ChevronRightIcon,
   FileDirectoryIcon,
@@ -11,7 +10,7 @@ import {
 import { collectDirPaths, type FileTreeNode } from "@/shared/utils/fileTree";
 import { statusLabel } from "@/shared/utils/status";
 import { StatusIcon } from "@/shared/components/StatusIcon";
-import { Button } from "@/shared/components/ui";
+import { Button, ScrollArea } from "@/shared/components/ui";
 import s from "./fileTree.module.css";
 
 interface FileTreeProps {
@@ -129,19 +128,63 @@ export function FileTree({
   const dirPaths = useMemo(() => collectDirPaths(root), [root]);
 
   // Top-level directories start expanded; deeper ones collapsed.
-  const topLevelDirs = useMemo(
-    () => root.children.filter((c) => !c.isFile).map((c) => c.path),
-    [root],
-  );
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(topLevelDirs));
+  // Also auto-expand any directory on a "singleton chain" — a directory whose
+  // only child is another single-child directory — so the user doesn't have to
+  // click through a nesting like src/components/foo/bar/baz.tsx.
+  const initialExpanded = useMemo(() => {
+    const set = new Set<string>();
+    for (const child of root.children) {
+      if (!child.isFile) set.add(child.path);
+    }
+    const walk = (n: FileTreeNode) => {
+      if (n.isFile || n.children.length !== 1) return;
+      const only = n.children[0];
+      if (only.isFile) return;
+      set.add(only.path);
+      walk(only);
+    };
+    for (const child of root.children) {
+      if (!child.isFile) walk(child);
+    }
+    return set;
+  }, [root]);
+  const [expanded, setExpanded] = useState<Set<string>>(() => initialExpanded);
+
+  // Walk down a singleton chain from `path`: a directory whose only child is
+  // another single-child directory. Used to auto-open the chain when the user
+  // expands a folder, so they don't have to click through every nested
+  // single-folder level.
+  const findNode = (path: string): FileTreeNode | null => {
+    const walk = (n: FileTreeNode): FileTreeNode | null => {
+      if (n.path === path) return n;
+      for (const c of n.children) {
+        const found = walk(c);
+        if (found) return found;
+      }
+      return null;
+    };
+    return walk(root);
+  };
 
   const toggle = (path: string) =>
     setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(path)) {
         next.delete(path);
-      } else {
-        next.add(path);
+        return next;
+      }
+      next.add(path);
+      // Cascade open through any nested single-folder chain beneath `path`.
+      const node = findNode(path);
+      if (node && !node.isFile) {
+        const walk = (n: FileTreeNode) => {
+          if (n.isFile || n.children.length !== 1) return;
+          const only = n.children[0];
+          if (only.isFile) return;
+          next.add(only.path);
+          walk(only);
+        };
+        walk(node);
       }
       return next;
     });
@@ -187,8 +230,8 @@ export function FileTree({
             ))}
           </ScrollArea.Content>
         </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
-          <ScrollArea.Thumb className="scrollbarThumb" />
+        <ScrollArea.Scrollbar orientation="vertical">
+          <ScrollArea.Thumb />
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
     </div>

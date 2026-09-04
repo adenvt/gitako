@@ -10,7 +10,7 @@ use crate::git;
 /// would be overwritten, or the branch already exists locally) bubble up
 /// as `GitError`.
 #[tauri::command]
-pub fn git_checkout_track(
+pub async fn git_checkout_track(
     repo_path: String,
     remote_branch: String,
 ) -> Result<String, crate::error::GitError> {
@@ -24,7 +24,7 @@ pub fn git_checkout_track(
         .to_string();
     // --track wants the form "origin/feature". git itself accepts both
     // "origin/feature" and refs/heads/feature; we use the short form.
-    git::run_ok(&repo, &["checkout", "--track", &cleaned])?;
+    git::run_ok(&repo, &["checkout", "--track", &cleaned]).await?;
     // Return the local branch name (== the rightmost segment of the input).
     let local = cleaned.rsplit('/').next().unwrap_or(&cleaned).to_string();
     Ok(local)
@@ -112,13 +112,14 @@ mod tests {
         (dir, bare.to_string_lossy().into_owned())
     }
 
-    #[test]
-    fn checkout_track_creates_local_branch_from_remote() {
+    #[tokio::test]
+    async fn checkout_track_creates_local_branch_from_remote() {
         let (dir, _bare) = tmp_repo_with_origin();
         let local = git_checkout_track(
             dir.to_string_lossy().into_owned(),
             "origin/feature".into(),
         )
+        .await
         .unwrap();
         assert_eq!(local, "feature");
         // The new local branch should track origin/feature.
@@ -130,19 +131,20 @@ mod tests {
         assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "origin");
     }
 
-    #[test]
-    fn checkout_track_strips_refs_prefix() {
+    #[tokio::test]
+    async fn checkout_track_strips_refs_prefix() {
         let (dir, _bare) = tmp_repo_with_origin();
         let local = git_checkout_track(
             dir.to_string_lossy().into_owned(),
             "refs/remotes/origin/feature".into(),
         )
+        .await
         .unwrap();
         assert_eq!(local, "feature");
     }
 
-    #[test]
-    fn checkout_track_existing_local_branch_errors() {
+    #[tokio::test]
+    async fn checkout_track_existing_local_branch_errors() {
         let (dir, _bare) = tmp_repo_with_origin();
         // origin/main already exists locally; checking it out via --track
         // would mean a force-reset. We use --track with a name that DOES
@@ -150,7 +152,8 @@ mod tests {
         let res = git_checkout_track(
             dir.to_string_lossy().into_owned(),
             "origin/main".into(),
-        );
+        )
+        .await;
         assert!(res.is_err());
     }
 }

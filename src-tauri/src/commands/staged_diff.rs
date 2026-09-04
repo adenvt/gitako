@@ -12,9 +12,9 @@ use crate::git::run_tolerate;
 const MAX_BYTES: usize = 16 * 1024;
 
 #[tauri::command]
-pub fn git_staged_diff(repo_path: String) -> Result<String, crate::error::GitError> {
+pub async fn git_staged_diff(repo_path: String) -> Result<String, crate::error::GitError> {
     let repo = PathBuf::from(&repo_path);
-    let out = run_tolerate(&repo, &["diff", "--staged", "--no-color", "--no-ext-diff"])?;
+    let out = run_tolerate(&repo, &["diff", "--staged", "--no-color", "--no-ext-diff"]).await?;
 
     // `git diff --staged` exits 0 even with no staged changes; the empty
     // stdout is the signal here. We don't fail on non-zero exit because

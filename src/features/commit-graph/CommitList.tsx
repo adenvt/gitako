@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import clsx from "clsx";
 import {
   FileAddedIcon,
@@ -6,7 +7,6 @@ import {
   FileRemovedIcon,
   GitBranchIcon,
 } from "@primer/octicons-react";
-import { ScrollArea } from "@base-ui/react/scroll-area";
 import {
   GraphCanvas,
   ROW_HEIGHT,
@@ -16,10 +16,11 @@ import {
   MIN_GRAPH_BAND,
 } from "./GraphCanvas";
 import { laneColor } from "./colors";
-import { RefBadge, RefBadgeGroup } from "./refBadge";
+import { RefBadge, RefBadgeGroup, RefOverflowBadge, type CheckoutAction } from "./refBadge";
 import { useRepoStore } from "@/state/store";
 import { timeAgo } from "@/shared/utils/time";
 import { countByKind } from "@/shared/utils/status";
+import { ScrollArea } from "@/shared/components/ui";
 import type { RefInfo } from "@/shared/types/git";
 import s from "./commitList.module.css";
 
@@ -62,7 +63,22 @@ export function CommitList() {
     graphWidth,
     setGraphWidth,
     checkout,
-  } = useRepoStore();
+  } = useRepoStore(
+    useShallow((st) => ({
+      commits: st.commits,
+      layout: st.layout,
+      selectedHash: st.selectedHash,
+      select: st.select,
+      statusEntries: st.statusEntries,
+      openComposer: st.openComposer,
+      workingSelected: st.workingSelected,
+      setWorkingSelected: st.setWorkingSelected,
+      refsByCommit: st.refsByCommit,
+      graphWidth: st.graphWidth,
+      setGraphWidth: st.setGraphWidth,
+      checkout: st.checkout,
+    })),
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
   const [range, setRange] = useState({ start: 0, end: 50 });
   /** True while the graph-band resize drag is in progress. */
@@ -104,18 +120,27 @@ export function CommitList() {
     [setGraphWidth],
   );
 
-  // Double-clicking a ref badge checks out the ref. The badge
-  // component gates by `kind`, but remote-tracking refs also need to
-  // resolve to their full name (`origin/feature`) so the store can
-  // route them through `git checkout --track` instead of plain
-  // `git checkout`.
+  // Double-clicking a ref badge takes one of two actions, decided by
+  // the badge component based on what refs are visible in the group:
+  //   - `checkout`  — switch to the local branch (or create a local
+  //     tracking branch for a remote-only ref).
+  //   - `pull`      — fast-forward the local branch into its upstream
+  //     (only fires from a group badge that has BOTH a local and a
+  //     remote for the same name, e.g. `main` + `origin/main`).
+  const pullLocalBranch = useRepoStore((st) => st.pullLocalBranch);
   const onCheckout = useCallback(
-    (name: string, kind: "branch" | "remoteBranch") => {
-      void checkout(name, kind).catch(() => {
+    (action: CheckoutAction) => {
+      if (action.kind === "pull") {
+        void pullLocalBranch(action.branch).catch(() => {
+          // store already toasted the error; nothing to do.
+        });
+        return;
+      }
+      void checkout(action.name, action.refKind).catch(() => {
         // store already set `error`; nothing to do.
       });
     },
-    [checkout],
+    [checkout, pullLocalBranch],
   );
 
   const counts = countByKind(statusEntries);
@@ -167,13 +192,15 @@ export function CommitList() {
     setFocusIndex(selectedIndex);
   }, [selectedIndex]);
 
-  // Give the scroll viewport focus on mount so arrow keys work immediately,
-  // and refocus it whenever the working row is selected by keyboard (it holds
-  // no focusable element of its own).
+  // Give the scroll viewport focus on mount so arrow keys work immediately.
   useEffect(() => {
     const el = scrollRef.current;
     if (el && document.activeElement === document.body) el.focus();
-  });
+    // Run once on mount; the working-row focus is handled by the effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Refocus the scroll viewport when the working row is selected by keyboard
+  // (it holds no focusable element of its own).
   useEffect(() => {
     if (workingSelected) scrollRef.current?.focus();
   }, [workingSelected]);
@@ -249,6 +276,17 @@ export function CommitList() {
     ],
   );
 
+  // Hooks must run unconditionally on every render. The gutter depends on
+  // `layout.maxLane`, which is undefined before the first refresh resolves;
+  // treat the empty case as zero lanes so this effect stays safe pre-layout.
+  const gutter = graphGutter(layout?.maxLane);
+  // Keep the ref in sync without mutating it during render — useLayoutEffect
+  // runs after the render commit, so the ref is always up to date when
+  // `onPointerDown` reads it.
+  useLayoutEffect(() => {
+    maxGraphBandRef.current = gutter;
+  }, [gutter]);
+
   if (!layout || layout.commits.length === 0) {
     return (
       <div className={clsx(s.commitList, s.empty)}>
@@ -261,8 +299,6 @@ export function CommitList() {
 
   const totalHeight = (layout.commits.length + offset) * ROW_HEIGHT;
   // The graph band is resizable: use the user-set width, else the auto gutter.
-  const gutter = graphGutter(layout.maxLane);
-  maxGraphBandRef.current = gutter;
   const graphBand = Math.min(
     Math.max(graphWidth > 0 ? graphWidth : gutter, MIN_GRAPH_BAND),
     gutter,
@@ -357,26 +393,42 @@ export function CommitList() {
                       {hasVisibleRefs && (
                         <div
                           className={clsx(s.commitTagCell, isSelected && s.selected)}
-                          style={{ top, height: ROW_HEIGHT, width: TAG_WIDTH }}
+                          style={{
+                            top,
+                            height: ROW_HEIGHT,
+                            ["--tag-width" as string]: `${TAG_WIDTH}px`,
+                          }}
                           onClick={() => select(c.hash)}
                         >
-                          {groups.map((group) =>
-                            group.length > 1 ? (
-                              <RefBadgeGroup
-                                key={group[0].fullName}
-                                refs={group}
-                                color={badgeColor}
-                                onCheckout={onCheckout}
-                              />
-                            ) : (
-                              <RefBadge
-                                key={group[0].fullName}
-                                refInfo={group[0]}
-                                color={badgeColor}
-                                onCheckout={onCheckout}
-                              />
-                            ),
-                          )}
+                          {(() => {
+                            const MAX_VISIBLE = 1;
+                            const visible = groups.slice(0, MAX_VISIBLE);
+                            const hidden = groups.slice(MAX_VISIBLE);
+                            return (
+                              <>
+                                {visible.map((group) =>
+                                  group.length > 1 ? (
+                                    <RefBadgeGroup
+                                      key={group[0].fullName}
+                                      refs={group}
+                                      color={badgeColor}
+                                      onCheckout={onCheckout}
+                                    />
+                                  ) : (
+                                    <RefBadge
+                                      key={group[0].fullName}
+                                      refInfo={group[0]}
+                                      color={badgeColor}
+                                      onCheckout={onCheckout}
+                                    />
+                                  ),
+                                )}
+                                {hidden.length > 0 && (
+                                  <RefOverflowBadge hiddenGroups={hidden} color={badgeColor} />
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       )}
                       <div
@@ -405,8 +457,8 @@ export function CommitList() {
             </div>
           </ScrollArea.Content>
         </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
-          <ScrollArea.Thumb className="scrollbarThumb" />
+        <ScrollArea.Scrollbar orientation="vertical">
+          <ScrollArea.Thumb />
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
     </div>

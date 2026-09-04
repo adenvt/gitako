@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useRepoStore } from "@/state/store";
 import { formatDate } from "@/shared/utils/time";
 import { shortHash } from "@/shared/utils/hash";
@@ -23,7 +24,17 @@ export function fileStatusCounts(files: ChangedFile[]): Record<string, number> {
 
 export function CommitDetail() {
   const { commits, layout, selectedHash, filesByCommit, loadCommitFiles, openDiff, refsByCommit } =
-    useRepoStore();
+    useRepoStore(
+      useShallow((st) => ({
+        commits: st.commits,
+        layout: st.layout,
+        selectedHash: st.selectedHash,
+        filesByCommit: st.filesByCommit,
+        loadCommitFiles: st.loadCommitFiles,
+        openDiff: st.openDiff,
+        refsByCommit: st.refsByCommit,
+      })),
+    );
 
   const commit = commits.find((c) => c.hash === selectedHash);
   const files = commit ? filesByCommit[commit.hash] : undefined;
@@ -31,12 +42,15 @@ export function CommitDetail() {
   // a local branch and its remote tracking ref share a `name` (e.g. `main`
   // + `origin/main`) and we need a unique React key.
   const refInfos = commit ? (refsByCommit[commit.hash] ?? []) : [];
-  // Match ref badge color to the commit's graph node (lane color).
-  const badgeColor = (() => {
+  // Match ref badge color to the commit's graph node (lane color). Use a
+  // Map so this stays O(1) per render even for repos with thousands of
+  // commits — the alternative (layout.commits.findIndex) was O(n) and
+  // ran on every re-render.
+  const badgeColor = useMemo(() => {
     if (!commit || !layout) return undefined;
-    const idx = layout.commits.findIndex((lc) => lc.hash === commit.hash);
-    return idx >= 0 ? laneColor(layout.commits[idx].lane) : undefined;
-  })();
+    const idx = new Map(layout.commits.map((lc, i) => [lc.hash, i])).get(commit.hash);
+    return idx !== undefined ? laneColor(layout.commits[idx].lane) : undefined;
+  }, [commit, layout]);
 
   // Hooks must be called unconditionally (Rules of Hooks) — before any
   // early return — so the hook order stays stable across renders.

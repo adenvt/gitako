@@ -14,6 +14,7 @@
   padding: 0 4px;
   white-space: nowrap;
   max-width: 100%;
+  min-width: 0;
   line-height: 1.6;
 }
 
@@ -33,6 +34,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 96px;
+  /* min-width: 0 lets the name shrink below its content size when the
+     tag cell overflows — the badge chrome + the +N chip need the room. */
+  min-width: 0;
 }
 
 /* Grouped badge: shared name + multiple icons, dropdown on hover. */
@@ -51,39 +55,58 @@
   display: block;
 }
 
-.refDropdown {
-  display: none;
-  position: absolute;
-  top: calc(100% + 1px);
-  left: 0;
-  z-index: 20;
+/* Dropdown rendered into document.body via portal. Position is set inline
+   from the badge's bounding rect; we only own the chrome here. */
+.refDropdownPortal {
+  position: fixed;
+  z-index: 1000;
   min-width: 140px;
   background: var(--bg-raised);
   border: 1px solid var(--border-strong);
   border-radius: 0;
   padding: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-.refBadgeGroup:hover .refDropdown {
-  display: block;
-}
-
-.refDropdownItem {
+/* Dropdown row: mirrors the badge chrome (name on the left, icons on the
+   right) and uses the same lane-tinted fill as the active ref badge so
+   the dropdown reads as a list of badges, not a menu. */
+.refDropdownRow {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 8px;
+  padding: 1px 6px;
   font-size: var(--fs-xs);
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
+  background: color-mix(in srgb, var(--badge-color, var(--border)) 38%, var(--bg));
+  border: 1px solid var(--badge-color, var(--border));
 }
 
-.refDropdownItem:hover {
-  background: var(--bg-hover);
+.refDropdownRow + .refDropdownRow {
+  margin-top: 2px;
+}
+
+.refDropdownRow:hover {
+  background: color-mix(in srgb, var(--badge-color, var(--border)) 55%, var(--bg));
 }
 
 .refDropdownName {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Overflow chip: muted variant of the badge chrome used to hide additional
+   refs behind a `+N` count. Carries the same lane tint as the active-ref
+   fill (at lower opacity) so the row stays color-coded to its lane, while
+   regular --text keeps the count readable on any lane color. Hover
+   reveals the same .refDropdown used by grouped badges. */
+.refOverflowBadge {
+  position: relative;
+  cursor: default;
+  color: var(--text);
+  border-color: var(--badge-color, var(--border));
+  background: color-mix(in srgb, var(--badge-color, var(--border)) 20%, var(--bg));
+  flex-shrink: 0;
 }

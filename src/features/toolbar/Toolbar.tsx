@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { ArrowUpIcon, ArchiveIcon, GearIcon } from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
 import { countChanges } from "@/shared/utils/status";
@@ -22,7 +23,16 @@ export function Toolbar() {
     push: pushAction,
     statusEntries,
     openOverlay,
-  } = useRepoStore();
+  } = useRepoStore(
+    useShallow((st) => ({
+      repoPath: st.repoPath,
+      loading: st.loading,
+      pushing: st.pushing,
+      push: st.push,
+      statusEntries: st.statusEntries,
+      openOverlay: st.openOverlay,
+    })),
+  );
   const [notice, setNotice] = useState<string | null>(null);
 
   const head = useRepoStore((st) => st.commits[0]);

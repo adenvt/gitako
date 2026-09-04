@@ -5,12 +5,11 @@ import {
   SearchIcon,
   XIcon,
 } from "@primer/octicons-react";
-import { ScrollArea } from "@base-ui/react/scroll-area";
 import { open } from "@tauri-apps/plugin-dialog";
 import { homeDir } from "@tauri-apps/api/path";
 import { useRepoStore } from "@/state/store";
 import { repoRoot } from "@/state/git";
-import { Button, Input } from "@/shared/components/ui";
+import { Button, Input, ScrollArea } from "@/shared/components/ui";
 import {
   addRecentRepo,
   loadRecentRepos,
@@ -171,8 +170,8 @@ export function OpenRepo() {
               </ul>
             </ScrollArea.Content>
           </ScrollArea.Viewport>
-          <ScrollArea.Scrollbar orientation="vertical" className="scrollbarTrack" keepMounted>
-            <ScrollArea.Thumb className="scrollbarThumb" />
+          <ScrollArea.Scrollbar orientation="vertical">
+            <ScrollArea.Thumb />
           </ScrollArea.Scrollbar>
         </ScrollArea.Root>
       ) : (

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChangedFile, Commit, DiffFile, RefInfo } from "@/shared/types/git";
+import type { StatusEntry } from "@/shared/utils/status";
 
 // Hoisted mocks for the backend invoke wrappers. The store is the unit under
 // test; the backend is a network boundary we want to control fully.
@@ -12,6 +13,13 @@ vi.mock("./git", () => ({
   stageFiles: vi.fn(),
   commitChanges: vi.fn(),
   fetchHeadBranch: vi.fn().mockResolvedValue("main"),
+  checkoutBranch: vi.fn().mockResolvedValue(""),
+  checkoutTrack: vi.fn().mockResolvedValue(""),
+  stashSave: vi.fn().mockResolvedValue(""),
+  stashPop: vi.fn().mockResolvedValue(undefined),
+  pushBranch: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "Everything up-to-date" }),
+  fetchAll: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "" }),
+  pullBranch: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "" }),
 }));
 
 // Importing the store AFTER vi.mock so the mock is in place. `act` is
@@ -19,13 +27,20 @@ vi.mock("./git", () => ({
 import { useRepoStore } from "./store";
 import {
   commitChanges,
+  checkoutBranch,
+  checkoutTrack,
+  fetchAll,
   fetchDiff,
   fetchHeadBranch,
   fetchLog,
   fetchRefs,
   fetchShowFiles,
   fetchStatus,
+  pullBranch,
+  pushBranch,
   stageFiles,
+  stashPop,
+  stashSave,
 } from "./git";
 
 const mockFetchLog = vi.mocked(fetchLog);
@@ -36,6 +51,13 @@ const mockFetchDiff = vi.mocked(fetchDiff);
 const mockStageFiles = vi.mocked(stageFiles);
 const mockCommitChanges = vi.mocked(commitChanges);
 const mockFetchHeadBranch = vi.mocked(fetchHeadBranch);
+const mockCheckoutBranch = vi.mocked(checkoutBranch);
+const mockCheckoutTrack = vi.mocked(checkoutTrack);
+const mockStashSave = vi.mocked(stashSave);
+const mockStashPop = vi.mocked(stashPop);
+const mockPushBranch = vi.mocked(pushBranch);
+const mockFetchAll = vi.mocked(fetchAll);
+const mockPullBranch = vi.mocked(pullBranch);
 
 function makeCommit(hash: string, parents: string[] = [], subject = "x"): Commit {
   return {
@@ -63,6 +85,10 @@ function makeRef(name: string, commit: string, kind: RefInfo["kind"] = "branch")
 
 function makeFile(path: string, status = "M"): ChangedFile {
   return { status, path, oldPath: null };
+}
+
+function makeStatusEntry(path: string, index = "M", worktree = " "): StatusEntry {
+  return { index, worktree, path, oldPath: null };
 }
 
 function makeDiff(path: string): DiffFile {
@@ -268,6 +294,89 @@ describe("select", () => {
   it("accepts null to deselect without re-opening anything", () => {
     useRepoStore.getState().select(null);
     expect(useRepoStore.getState().selectedHash).toBeNull();
+  });
+});
+
+describe("pullLocalBranch", () => {
+  // The "refresh this branch" gesture: dblclick on a ref-badge group
+  // that has BOTH a local and a remote for the same name fires
+  // `pullLocalBranch(branch)`, which must (1) checkout the local
+  // branch, (2) run `git pull --ff-only`, (3) refresh, (4) toast.
+  beforeEach(() => {
+    // The checkout() call inside pullLocalBranch kicks off its own
+    // refresh (mockFetchLog + mockFetchRefs). Queue responses so they
+    // resolve to no-op values.
+    mockFetchLog.mockResolvedValue([]);
+    mockFetchRefs.mockResolvedValue([]);
+    mockFetchStatus.mockResolvedValue("");
+  });
+
+  it("checks out the local branch and then pulls with --ff-only", async () => {
+    useRepoStore.setState({ repoPath: "/r" });
+    mockCheckoutBranch.mockResolvedValueOnce("");
+    mockPullBranch.mockResolvedValueOnce({
+      remote: "origin",
+      branch: "main",
+      summary: "Fast-forward",
+    });
+
+    await useRepoStore.getState().pullLocalBranch("main");
+
+    expect(mockCheckoutBranch).toHaveBeenCalledWith("/r", "main");
+    expect(mockPullBranch).toHaveBeenCalledWith("/r", "ffOnly");
+    // pulling flag must be reset in finally.
+    expect(useRepoStore.getState().pulling).toBe(false);
+  });
+
+  it("does not call gitStashSave when the working tree is clean", async () => {
+    useRepoStore.setState({ repoPath: "/r", statusEntries: [] });
+    mockCheckoutBranch.mockResolvedValueOnce("");
+    mockPullBranch.mockResolvedValueOnce({ remote: "origin", branch: "main", summary: "" });
+
+    await useRepoStore.getState().pullLocalBranch("main");
+
+    expect(mockStashSave).not.toHaveBeenCalled();
+  });
+
+  it("stashes a dirty working tree before checkout, then pops after success", async () => {
+    useRepoStore.setState({
+      repoPath: "/r",
+      statusEntries: [makeStatusEntry("a.ts")],
+    });
+    mockStashSave.mockResolvedValueOnce("stash@{0}");
+    mockCheckoutBranch.mockResolvedValueOnce("");
+    mockPullBranch.mockResolvedValueOnce({ remote: "origin", branch: "main", summary: "" });
+
+    await useRepoStore.getState().pullLocalBranch("main");
+
+    expect(mockStashSave).toHaveBeenCalledWith("/r", "auto: pre-checkout main");
+    expect(mockCheckoutBranch).toHaveBeenCalled();
+    expect(mockStashPop).toHaveBeenCalledWith("/r", "stash@{0}");
+  });
+
+  it("surfaces a diverged-branches error with a hint to use the toolbar pull menu", async () => {
+    // The backend returns a typed `GitErrorPayload` with kind: "conflict"
+    // for non-fast-forward rejections. The store must surface that
+    // distinctly from a generic failure.
+    useRepoStore.setState({ repoPath: "/r" });
+    mockCheckoutBranch.mockResolvedValueOnce("");
+    mockPullBranch.mockRejectedValueOnce({
+      kind: "conflict",
+      message: "Not possible to fast-forward, aborting.",
+      code: null,
+    });
+
+    await expect(useRepoStore.getState().pullLocalBranch("main")).rejects.toMatchObject({
+      kind: "conflict",
+    });
+    // pulling flag still reset.
+    expect(useRepoStore.getState().pulling).toBe(false);
+  });
+
+  it("does nothing without a repo path", async () => {
+    await useRepoStore.getState().pullLocalBranch("main");
+    expect(mockCheckoutBranch).not.toHaveBeenCalled();
+    expect(mockPullBranch).not.toHaveBeenCalled();
   });
 });
 
@@ -565,5 +674,225 @@ describe("setGraphWidth", () => {
   it("updates the graphWidth value (0 means auto from lane count)", () => {
     useRepoStore.getState().setGraphWidth(200);
     expect(useRepoStore.getState().graphWidth).toBe(200);
+  });
+});
+
+describe("checkout (smart switch)", () => {
+  beforeEach(() => {
+    useRepoStore.setState({ repoPath: "/r" });
+    // refresh() (called after a successful checkout) needs these to resolve.
+    mockFetchLog.mockResolvedValue([]);
+    mockFetchRefs.mockResolvedValue([]);
+    mockFetchStatus.mockResolvedValue("");
+  });
+
+  it("does nothing without a repo path", async () => {
+    useRepoStore.setState({ repoPath: null });
+    await useRepoStore.getState().checkout("feature");
+    expect(mockCheckoutBranch).not.toHaveBeenCalled();
+    expect(mockCheckoutTrack).not.toHaveBeenCalled();
+  });
+
+  it("checks out a local branch when the working tree is clean", async () => {
+    useRepoStore.setState({ statusEntries: [] });
+    await useRepoStore.getState().checkout("feature", "branch");
+    expect(mockStashSave).not.toHaveBeenCalled();
+    expect(mockCheckoutBranch).toHaveBeenCalledWith("/r", "feature");
+    expect(mockStashPop).not.toHaveBeenCalled();
+  });
+
+  it("uses checkoutTrack for a remote-tracking ref and skips the stash dance when clean", async () => {
+    useRepoStore.setState({ statusEntries: [] });
+    await useRepoStore.getState().checkout("origin/feature", "remoteBranch");
+    expect(mockCheckoutTrack).toHaveBeenCalledWith("/r", "origin/feature");
+    expect(mockCheckoutBranch).not.toHaveBeenCalled();
+  });
+
+  it("stashes a dirty tree before checkout, then pops after success", async () => {
+    useRepoStore.setState({ statusEntries: [makeStatusEntry("a.ts")] });
+    mockStashSave.mockResolvedValueOnce("stash@{0}");
+    await useRepoStore.getState().checkout("main", "branch");
+    expect(mockStashSave).toHaveBeenCalledWith("/r", "auto: pre-checkout main");
+    expect(mockCheckoutBranch).toHaveBeenCalledWith("/r", "main");
+    expect(mockStashPop).toHaveBeenCalledWith("/r", "stash@{0}");
+  });
+
+  it("toasts (and continues) when the stash pop has a conflict", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    useRepoStore.setState({ statusEntries: [makeStatusEntry("a.ts")] });
+    mockStashSave.mockResolvedValueOnce("stash@{0}");
+    mockStashPop.mockRejectedValueOnce(new Error("conflict"));
+    await useRepoStore.getState().checkout("main", "branch");
+    // The catch is silent (toast only); checkout itself is still considered
+    // successful and the post-checkout refresh runs.
+    expect(mockFetchLog).toHaveBeenCalled();
+    expect(errSpy).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a checkout failure via `error` and rethrows", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    useRepoStore.setState({ statusEntries: [] });
+    mockCheckoutBranch.mockRejectedValueOnce(new Error("would overwrite"));
+    await expect(useRepoStore.getState().checkout("main")).rejects.toThrow("would overwrite");
+    expect(useRepoStore.getState().error).toBe("would overwrite");
+    expect(errSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("push / fetch / pull", () => {
+  beforeEach(() => {
+    useRepoStore.setState({ repoPath: "/r" });
+    mockFetchLog.mockResolvedValue([]);
+    mockFetchRefs.mockResolvedValue([]);
+    mockFetchStatus.mockResolvedValue("");
+  });
+
+  it("push: invokes pushBranch, refreshes refs only (not the full repo), and clears pushing", async () => {
+    await useRepoStore.getState().push();
+    expect(mockPushBranch).toHaveBeenCalledWith("/r");
+    // refreshRefs is what the store calls (not refresh), so log should not be hit.
+    expect(mockFetchLog).not.toHaveBeenCalled();
+    expect(mockFetchRefs).toHaveBeenCalledTimes(1);
+    expect(useRepoStore.getState().pushing).toBe(false);
+  });
+
+  it("push: toasts an error and still clears the pushing flag on failure", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockPushBranch.mockRejectedValueOnce(new Error("auth failed"));
+    await useRepoStore.getState().push();
+    expect(useRepoStore.getState().pushing).toBe(false);
+    expect(errSpy).not.toHaveBeenCalled();
+  });
+
+  it("push: is a no-op without a repo path", async () => {
+    useRepoStore.setState({ repoPath: null });
+    await useRepoStore.getState().push();
+    expect(mockPushBranch).not.toHaveBeenCalled();
+  });
+
+  it("fetch: invokes fetchAll and runs a full refresh, then clears pulling", async () => {
+    mockFetchAll.mockResolvedValueOnce({ remote: "origin", branch: "main", summary: "Fetched" });
+    await useRepoStore.getState().fetch();
+    expect(mockFetchAll).toHaveBeenCalledWith("/r");
+    // full refresh → log + refs + status + headBranch
+    expect(mockFetchLog).toHaveBeenCalled();
+    expect(mockFetchRefs).toHaveBeenCalled();
+    expect(mockFetchStatus).toHaveBeenCalled();
+    expect(useRepoStore.getState().pulling).toBe(false);
+  });
+
+  it("fetch: toasts an error and clears pulling on failure", async () => {
+    mockFetchAll.mockRejectedValueOnce(new Error("network"));
+    await useRepoStore.getState().fetch();
+    expect(useRepoStore.getState().pulling).toBe(false);
+  });
+
+  it("pull: invokes pullBranch with the chosen mode and refreshes the log only", async () => {
+    await useRepoStore.getState().pull("rebase");
+    expect(mockPullBranch).toHaveBeenCalledWith("/r", "rebase");
+    // refreshLog → log + refs + headBranch, but no status
+    expect(mockFetchLog).toHaveBeenCalled();
+    expect(mockFetchStatus).not.toHaveBeenCalled();
+    expect(useRepoStore.getState().pulling).toBe(false);
+  });
+
+  it("pull: toasts an error and clears pulling on failure", async () => {
+    mockPullBranch.mockRejectedValueOnce(new Error("conflict"));
+    await useRepoStore.getState().pull("ff");
+    expect(useRepoStore.getState().pulling).toBe(false);
+  });
+});
+
+describe("refreshStatus / refreshRefs / refreshLog", () => {
+  beforeEach(() => {
+    useRepoStore.setState({ repoPath: "/r" });
+  });
+
+  it("refreshStatus re-parses porcelain and rebuilds stagedPaths from the index", async () => {
+    // Pre-existing optimistic state is replaced by the real index — the test
+    // confirms that `stagedPaths` mirrors `isStaged` (index != "." and not A/A).
+    useRepoStore.setState({
+      statusEntries: [makeStatusEntry("old.ts")],
+      stagedPaths: new Set(["old.ts"]),
+    });
+    // Porcelain v1: each line is `<XY><sp><sp><path>` for changed files
+    // and `<XY><sp><path>` for untracked. `parsePorcelain` reads the XY
+    // pair at cols 0-1, drops col 2, and keeps col 3+ as the path.
+    //  - "M  a.ts" : staged modification (index=M, worktree=.) → staged
+    //  - " M b.ts" : unstaged modification (index=., worktree=M) → not staged
+    //  - "?? c.ts" : untracked → not staged
+    //  - "MM d.ts" : staged AND further modified in worktree → staged
+    mockFetchStatus.mockResolvedValueOnce("M  a.ts\n M b.ts\n?? c.ts\nMM d.ts");
+    await useRepoStore.getState().refreshStatus();
+    const s = useRepoStore.getState();
+    expect(s.statusEntries.map((e) => e.path)).toEqual(["a.ts", "b.ts", "c.ts", "d.ts"]);
+    // Only the index-side changes count as staged. Worktree-only changes
+    // (M b.ts, ?? c.ts) are NOT staged. MM d.ts is index-staged.
+    expect([...s.stagedPaths].sort()).toEqual(["a.ts", "d.ts"]);
+  });
+
+  it("refreshStatus swallows errors and leaves the state alone", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockFetchStatus.mockRejectedValueOnce(new Error("boom"));
+    await useRepoStore.getState().refreshStatus();
+    expect(errSpy).toHaveBeenCalled();
+  });
+
+  it("refreshStatus is a no-op without a repo path", async () => {
+    useRepoStore.setState({ repoPath: null });
+    await useRepoStore.getState().refreshStatus();
+    expect(mockFetchStatus).not.toHaveBeenCalled();
+  });
+
+  it("refreshRefs re-fetches refs and updates refsByCommit without touching commits or layout", async () => {
+    useRepoStore.setState({
+      commits: [makeCommit("c1", [], "feat")],
+      layout: { commits: [], edges: [], maxLane: 0 },
+    });
+    const beforeCommits = useRepoStore.getState().commits;
+    const beforeLayout = useRepoStore.getState().layout;
+    mockFetchRefs.mockResolvedValueOnce([makeRef("main", "c1")]);
+    await useRepoStore.getState().refreshRefs();
+    const s = useRepoStore.getState();
+    expect(s.refsByCommit["c1"]?.[0]?.name).toBe("main");
+    // The layout and the commit list are intentionally NOT replaced so the
+    // canvas doesn't re-measure after a push.
+    expect(s.commits).toBe(beforeCommits);
+    expect(s.layout).toBe(beforeLayout);
+  });
+
+  it("refreshRefs swallows errors (post-push is best-effort)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockFetchRefs.mockRejectedValueOnce(new Error("boom"));
+    await useRepoStore.getState().refreshRefs();
+    expect(errSpy).toHaveBeenCalled();
+  });
+
+  it("refreshLog re-fetches log + refs + headBranch and recomputes the layout", async () => {
+    mockFetchLog.mockResolvedValueOnce([makeCommit("c1")]);
+    mockFetchRefs.mockResolvedValueOnce([]);
+    mockFetchHeadBranch.mockResolvedValueOnce("feature");
+    await useRepoStore.getState().refreshLog();
+    const s = useRepoStore.getState();
+    expect(s.commits).toHaveLength(1);
+    expect(s.headBranch).toBe("feature");
+    expect(s.layout).not.toBeNull();
+  });
+
+  it("refreshLog swallows errors", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockFetchLog.mockRejectedValueOnce(new Error("boom"));
+    await useRepoStore.getState().refreshLog();
+    expect(errSpy).toHaveBeenCalled();
+  });
+});
+
+describe("overlay", () => {
+  it("openOverlay sets the overlay and closeOverlay clears it", () => {
+    expect(useRepoStore.getState().overlay).toBeNull();
+    useRepoStore.getState().openOverlay("ai-settings");
+    expect(useRepoStore.getState().overlay).toBe("ai-settings");
+    useRepoStore.getState().closeOverlay();
+    expect(useRepoStore.getState().overlay).toBeNull();
   });
 });
