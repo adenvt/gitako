@@ -27,6 +27,9 @@ export interface ButtonProps extends ComponentProps<typeof BaseButton> {
   /** Control size; "md" is the default look, "lg" is the emphasis size
       (max one per surface), "icon" is a square hit-target. */
   size?: Size;
+  /** Busy state: disables the button and exposes aria-busy. Label
+      (e.g. "Saving…") stays caller-owned. */
+  loading?: boolean;
 }
 
 /**
@@ -34,6 +37,22 @@ export interface ButtonProps extends ComponentProps<typeof BaseButton> {
  * Wraps @base-ui/react/button — use this instead of raw <button> so
  * disabled/keyboard handling stays consistent app-wide.
  */
-export function Button({ variant = "solid", size = "md", type = "button", className, ...props }: ButtonProps) {
-  return <BaseButton type={type} className={clsx(variantClass[variant], sizeClass[size], className)} {...props} />;
+export function Button({
+  variant = "solid",
+  size = "md",
+  type = "button",
+  loading = false,
+  disabled,
+  className,
+  ...props
+}: ButtonProps) {
+  return (
+    <BaseButton
+      type={type}
+      disabled={loading || disabled}
+      aria-busy={loading || undefined}
+      className={clsx(variantClass[variant], sizeClass[size], className)}
+      {...props}
+    />
+  );
 }

@@ -50,7 +50,14 @@ describe("Button (kit)", () => {
     expect(screen.getByRole("button", { name: "Stage all" }).className).toMatch(/ui-btn-subtle/);
   });
 
-  it('maps size="sm", size="lg" and size="icon"', () => {
+  it("loading disables the button and exposes aria-busy", () => {
+    render(<Button loading>Push</Button>);
+    const el = screen.getByRole("button", { name: "Push" }) as HTMLButtonElement;
+    expect(el.disabled).toBe(true);
+    expect(el.getAttribute("aria-busy")).toBe("true");
+  });
+
+  it("maps size=\"sm\", size=\"lg\" and size=\"icon\"", () => {
     render(
       <>
         <Button size="sm">Small</Button>

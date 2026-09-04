@@ -210,6 +210,7 @@ export function CommitComposer() {
           variant="primary"
           className={s.composerCommit}
           disabled={!canCommit}
+          loading={busy}
           onClick={() => void handleCommit()}
         >
           {busy ? "Committing…" : "Commit"}
