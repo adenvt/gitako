@@ -188,6 +188,28 @@ body {
   justify-content: center;
 }
 
+/* Spinner rendered inside a loading button. Inline SVG; currentColor so it
+   inherits the button text color. Spins at 800ms — slow enough to read as
+   "waiting" without being distracting. */
+.ui-btn-spinner {
+  flex-shrink: 0;
+  animation: ui-btn-spin 800ms linear infinite;
+  color: currentColor;
+  opacity: 0.85;
+}
+
+@keyframes ui-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-btn-spinner {
+    animation-duration: 3s;
+  }
+}
+
 /* Primary button — green fill, dark text. The "do this" button. */
 .ui-btn-primary {
   background: var(--accent);

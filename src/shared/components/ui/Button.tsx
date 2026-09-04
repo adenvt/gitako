@@ -1,6 +1,7 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import clsx from "clsx";
 import { Button as BaseButton } from "@base-ui/react/button";
+import { ButtonSpinner } from "./ButtonSpinner";
 
 type Variant = "solid" | "primary" | "ghost" | "subtle" | "danger" | "none";
 
@@ -45,6 +46,7 @@ export function Button({
   loading = false,
   disabled,
   className,
+  children,
   ...props
 }: ButtonProps) {
   return (
@@ -54,6 +56,15 @@ export function Button({
       aria-busy={loading || undefined}
       className={clsx(variantClass[variant], sizeClass[size], className)}
       {...props}
-    />
+    >
+      {loading ? (
+        <>
+          <ButtonSpinner size={size} />
+          {children as ReactNode}
+        </>
+      ) : (
+        children
+      )}
+    </BaseButton>
   );
 }

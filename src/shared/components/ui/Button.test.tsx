@@ -57,6 +57,21 @@ describe("Button (kit)", () => {
     expect(el.getAttribute("aria-busy")).toBe("true");
   });
 
+  it("loading renders a spinner alongside children", () => {
+    const { container } = render(<Button loading>Push</Button>);
+    const btn = screen.getByRole("button", { name: "Push" });
+    expect(btn.textContent).toMatch(/Push/);
+    // Spinner is an <svg> with the spinner class (kit renders before children).
+    const spinner = container.querySelector("svg.ui-btn-spinner");
+    expect(spinner).toBeInTheDocument();
+    expect(spinner?.tagName.toLowerCase()).toBe("svg");
+  });
+
+  it("loading spinner is hidden when not loading", () => {
+    const { container } = render(<Button>Save</Button>);
+    expect(container.querySelector("svg.ui-btn-spinner")).not.toBeInTheDocument();
+  });
+
   it("maps danger to ui-btn + ui-btn-danger", () => {
     render(<Button variant="danger">Delete branch</Button>);
     const cls = screen.getByRole("button", { name: "Delete branch" }).className;

@@ -78,6 +78,21 @@ export const Loading: Story = {
   args: { loading: true, children: "Push" },
 };
 
+export const LoadingSizes: Story = {
+  render: () => (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      <Button size="sm" loading>
+        sm
+      </Button>
+      <Button loading>md</Button>
+      <Button size="lg" loading>
+        lg
+      </Button>
+      <Button size="icon" aria-label="Loading" loading />
+    </div>
+  ),
+};
+
 export const Disabled: Story = {
   args: { disabled: true, children: "Disabled" },
 };
