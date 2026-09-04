@@ -85,19 +85,13 @@ export const Icons: Story = {
 };
 
 export const Group: Story = {
-  render: () => (
-    <RefBadgeGroup refs={[head, localBranch]} color="#7ec07c" />
-  ),
+  render: () => <RefBadgeGroup refs={[head, localBranch]} color="#7ec07c" />,
 };
 
 export const Overflow: Story = {
   render: () => (
     <RefOverflowBadge
-      hiddenGroups={[
-        [remoteBranch],
-        [tag],
-        [{ ...tag, name: "v1.0.1" }],
-      ]}
+      hiddenGroups={[[remoteBranch], [tag], [{ ...tag, name: "v1.0.1" }]]}
       color="#999"
     />
   ),

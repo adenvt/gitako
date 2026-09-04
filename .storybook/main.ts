@@ -5,11 +5,7 @@ import autoprefixer from "autoprefixer";
 const config: StorybookConfig = {
   framework: "@storybook/react-vite",
   stories: ["../src/**/*.stories.@(ts|tsx)"],
-  addons: [
-    "@storybook/addon-docs",
-    "@storybook/addon-a11y",
-    "@storybook/addon-themes",
-  ],
+  addons: ["@storybook/addon-docs", "@storybook/addon-a11y", "@storybook/addon-themes"],
   staticDirs: ["../assets"],
   // Storybook 10's framework preset (@storybook/react-vite) already wires up
   // @vitejs/plugin-react for Fast Refresh. vite-plus 0.3.0 ALSO injects its own

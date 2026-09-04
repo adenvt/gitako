@@ -1,6 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Toast } from "@base-ui/react/toast";
-import { Toaster, toastManager, toastSuccess, toastError, toastLoading, toastClose } from "./Toaster";
+import {
+  Toaster,
+  toastManager,
+  toastSuccess,
+  toastError,
+  toastLoading,
+  toastClose,
+} from "./Toaster";
 
 function WithProvider({ children }: { children: React.ReactNode }) {
   return (

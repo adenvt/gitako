@@ -82,14 +82,11 @@ type CommitMessageReply = z.infer<typeof commitMessageSchema>;
  * - `$schema` (a document-level annotation, not part of the schema),
  * - `default`, added for the `.catch()`/missing-key fallbacks above.
  */
-const { $schema: _unused, ...COMMIT_MESSAGE_JSON_SCHEMA } = z.toJSONSchema(
-  commitMessageSchema,
-  {
-    override: (ctx) => {
-      delete (ctx.jsonSchema as { default?: unknown }).default;
-    },
+const { $schema: _unused, ...COMMIT_MESSAGE_JSON_SCHEMA } = z.toJSONSchema(commitMessageSchema, {
+  override: (ctx) => {
+    delete (ctx.jsonSchema as { default?: unknown }).default;
   },
-);
+});
 
 export const COMMIT_MESSAGE_RESPONSE_FORMAT = {
   type: "json_schema",
@@ -132,7 +129,9 @@ function describeReplyError(error: z.ZodError): Error {
       issue.input === undefined ||
       (typeof issue.input === "string" && issue.input.trim() === "");
     return new Error(
-      empty ? "AI reply is missing a non-empty subject." : `AI reply has invalid subject: ${received}`,
+      empty
+        ? "AI reply is missing a non-empty subject."
+        : `AI reply has invalid subject: ${received}`,
     );
   }
   return new Error(`AI reply has invalid field ${field}: ${received}`);
@@ -149,7 +148,9 @@ function assembleCommitMessage(reply: CommitMessageReply): ParsedCommitMessage {
   // `type[(scope)]:` from `subject` if present so we never
   // double-prefix when we rebuild.
   const subjectText = stripConventionalPrefix(reply.subject, reply.type);
-  const subject = scope ? `${reply.type}(${scope}): ${subjectText}` : `${reply.type}: ${subjectText}`;
+  const subject = scope
+    ? `${reply.type}(${scope}): ${subjectText}`
+    : `${reply.type}: ${subjectText}`;
   return { subject, description: reply.description.trim() };
 }
 

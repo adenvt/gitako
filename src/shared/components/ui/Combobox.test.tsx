@@ -25,11 +25,7 @@ describe("Combobox (kit) - bare form", () => {
 
   it("wraps the Input in a bordered ui-input-group shell", () => {
     const { container } = render(
-      <Combobox
-        variant="input"
-        options={[{ value: "a", label: "A" }]}
-        placeholder="Pick one"
-      />,
+      <Combobox variant="input" options={[{ value: "a", label: "A" }]} placeholder="Pick one" />,
     );
     const group = container.querySelector('[class*="ui-input-group"]');
     expect(group).not.toBeNull();

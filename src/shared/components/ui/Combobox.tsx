@@ -99,10 +99,7 @@ function ComboboxWrapper({
         <Combobox.Positioner sideOffset={4}>
           <Combobox.Popup>
             {variant === "trigger" && (
-              <Combobox.Input
-                placeholder={placeholder ?? "Filter…"}
-                aria-label="Filter options"
-              />
+              <Combobox.Input placeholder={placeholder ?? "Filter…"} aria-label="Filter options" />
             )}
             <ScrollArea style={{ flex: "1 1 auto", minHeight: 0 }}>
               <ScrollArea.Viewport>

@@ -49,7 +49,10 @@ export const LongText: Story = {
   render: () => (
     <ScrollArea>
       <pre style={{ margin: 0, padding: 12, fontFamily: "var(--font-mono)", fontSize: 13 }}>
-        {Array.from({ length: 80 }, (_, i) => `Line ${String(i + 1).padStart(2, "0")}: lorem ipsum dolor sit amet`).join("\n")}
+        {Array.from(
+          { length: 80 },
+          (_, i) => `Line ${String(i + 1).padStart(2, "0")}: lorem ipsum dolor sit amet`,
+        ).join("\n")}
       </pre>
     </ScrollArea>
   ),
@@ -172,8 +175,8 @@ export const CompoundForm: Story = {
       <ScrollArea.Viewport>
         <ScrollArea.Content>
           <p style={{ margin: 0, padding: 12 }}>
-            Custom markup between the parts. The kit adds the `ui-scrollarea` class to Root
-            and `scrollbarTrack` / `scrollbarThumb` to the Scrollbar / Thumb automatically.
+            Custom markup between the parts. The kit adds the `ui-scrollarea` class to Root and
+            `scrollbarTrack` / `scrollbarThumb` to the Scrollbar / Thumb automatically.
           </p>
           <p style={{ margin: 0, padding: 12, color: "var(--text-dim)" }}>
             Scroll the container to see the custom scrollbar chrome in action.
@@ -208,9 +211,9 @@ export const BothAxes: Story = {
         <ScrollArea.Content>
           <div style={{ width: 1200, padding: 12 }}>
             <p style={{ marginTop: 0 }}>
-              This block is intentionally 1200px wide so the horizontal scrollbar appears.
-              Use both arrow keys / trackpad to scroll in any direction. The corner between
-              the two scrollbars is filled with `--bg-inset` so they meet cleanly.
+              This block is intentionally 1200px wide so the horizontal scrollbar appears. Use both
+              arrow keys / trackpad to scroll in any direction. The corner between the two
+              scrollbars is filled with `--bg-inset` so they meet cleanly.
             </p>
             <p>
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor

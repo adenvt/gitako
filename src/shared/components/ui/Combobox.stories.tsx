@@ -21,7 +21,8 @@ const meta: Meta<typeof Combobox> = {
     variant: {
       control: { type: "select" },
       options: ["trigger", "input"],
-      description: "'trigger' = bare caret (BranchSwitcher). 'input' = bordered input-group (AiSettingsPage).",
+      description:
+        "'trigger' = bare caret (BranchSwitcher). 'input' = bordered input-group (AiSettingsPage).",
     },
     placeholder: { control: "text" },
     disabled: { control: "boolean" },

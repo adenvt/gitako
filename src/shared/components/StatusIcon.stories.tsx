@@ -8,7 +8,8 @@ const meta: Meta<typeof StatusIcon> = {
     status: {
       control: { type: "select" },
       options: ["A", "D", "R", "C", "M", "?"],
-      description: "Git status letter. A=added, D=deleted, R=renamed, C=copied, M=modified, ?=unknown.",
+      description:
+        "Git status letter. A=added, D=deleted, R=renamed, C=copied, M=modified, ?=unknown.",
     },
   },
   args: { status: "A" },
