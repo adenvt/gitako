@@ -73,6 +73,17 @@
   transition: background var(--dur-fast) var(--ease);
 }
 
+/* Keyboard focus: same hover tint + accent outline for visibility. */
+.treeRow:focus {
+  outline: none;
+}
+
+.treeRow:focus-visible {
+  background: var(--bg-hover);
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .treeDir:hover {
   background: var(--bg-hover);
 }

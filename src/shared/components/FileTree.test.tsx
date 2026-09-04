@@ -176,4 +176,72 @@ describe("FileTree", () => {
     // The toolbar still shows the 'Expand all' button (some dir is collapsed).
     expect(screen.getByRole("button", { name: /expand all/i })).toBeInTheDocument();
   });
+
+  it("exposes a single tab stop (roving tabindex: first row is 0, rest are -1)", () => {
+    render(<FileTree root={tree(["src/a.ts", "M"], ["src/b.ts", "M"])} />);
+    const rows = document.querySelectorAll("[data-tree-row]");
+    expect(rows.length).toBeGreaterThan(0);
+    const tabIndexes = [...rows].map((r) => (r as HTMLElement).tabIndex);
+    // Exactly one tab stop before any interaction.
+    expect(tabIndexes.filter((t) => t === 0)).toHaveLength(1);
+    expect((rows[0] as HTMLElement).tabIndex).toBe(0);
+  });
+
+  it("moves focus with ArrowDown / ArrowUp through visible rows", async () => {
+    const user = userEvent.setup();
+    render(<FileTree root={flat("a.ts", "b.ts")} />);
+    // Tab into the tree — lands on the first row.
+    await user.tab();
+    expect(document.activeElement?.textContent).toMatch(/a\.ts/);
+    await user.keyboard("{ArrowDown}");
+    expect(document.activeElement?.textContent).toMatch(/b\.ts/);
+    await user.keyboard("{ArrowUp}");
+    expect(document.activeElement?.textContent).toMatch(/a\.ts/);
+  });
+
+  it("expands a collapsed dir with ArrowRight and collapses with ArrowLeft", async () => {
+    const user = userEvent.setup();
+    render(<FileTree root={tree(["src/lib/a.ts", "M"], ["src/c.ts", "M"])} />);
+    // `lib` starts collapsed; focus it via Tab order: src -> c.ts -> lib?
+    // Simpler: click `lib` to focus, then collapse it first via click.
+    const libBtn = screen.getByRole("button", { name: /lib/ });
+    libBtn.focus();
+    // lib is collapsed initially (a.ts hidden).
+    expect(screen.queryByText("a.ts")).toBeNull();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByText("a.ts")).toBeVisible();
+    await user.keyboard("{ArrowLeft}");
+    expect(screen.queryByText("a.ts")).toBeNull();
+  });
+
+  it("moves focus to parent with ArrowLeft on a file", async () => {
+    const user = userEvent.setup();
+    render(<FileTree root={tree(["src/a.ts", "M"])} />);
+    // Focus the file *row* (not the inner span) then ArrowLeft -> parent dir.
+    const fileRow = document.querySelector('[data-path="src/a.ts"]') as HTMLElement;
+    fileRow.focus();
+    expect(document.activeElement?.textContent).toMatch(/a\.ts/);
+    await user.keyboard("{ArrowLeft}");
+    expect(document.activeElement?.textContent).toMatch(/src/);
+  });
+
+  it("opens a file with Enter when onFileOpen is provided", async () => {
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+    render(<FileTree root={flat("a.ts", "b.ts")} onFileOpen={onOpen} />);
+    (document.querySelector('[data-path="a.ts"]') as HTMLElement).focus();
+    await user.keyboard("{Enter}");
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen.mock.calls[0]?.[0]?.path).toBe("a.ts");
+  });
+
+  it("jumps to first/last row with Home/End", async () => {
+    const user = userEvent.setup();
+    render(<FileTree root={flat("a.ts", "b.ts", "c.ts")} />);
+    (document.querySelector('[data-path="a.ts"]') as HTMLElement).focus();
+    await user.keyboard("{End}");
+    expect(document.activeElement?.textContent).toMatch(/c\.ts/);
+    await user.keyboard("{Home}");
+    expect(document.activeElement?.textContent).toMatch(/a\.ts/);
+  });
 });
