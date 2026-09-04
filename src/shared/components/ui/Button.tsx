@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 import clsx from "clsx";
 import { Button as BaseButton } from "@base-ui/react/button";
 
-type Variant = "solid" | "primary" | "ghost" | "subtle" | "none";
+type Variant = "solid" | "primary" | "ghost" | "subtle" | "danger" | "none";
 
 type Size = "sm" | "md" | "lg" | "icon";
 
@@ -11,6 +11,7 @@ const variantClass: Record<Variant, string | undefined> = {
   primary: "ui-btn ui-btn-primary",
   ghost: "ui-ghost",
   subtle: "ui-btn-subtle",
+  danger: "ui-btn ui-btn-danger",
   none: undefined,
 };
 

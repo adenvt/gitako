@@ -201,6 +201,21 @@ body {
   border-color: var(--accent-strong);
 }
 
+/* Danger button — red signal for destructive actions. Uses the semantic
+   --err token (not a second accent). Only one per surface. Irreversible
+   actions pair it with a confirm step, never single-click destroy. */
+.ui-btn-danger {
+  background: none;
+  border: 1px solid var(--err);
+  color: var(--err);
+}
+
+.ui-btn-danger:hover:not(:disabled):not([data-disabled]) {
+  background: var(--err);
+  border-color: var(--err);
+  color: var(--on-accent);
+}
+
 /* Text input — flat panel with hairline border, monospace font for that
    terminal-prompt feel. */
 .ui-input {

@@ -57,6 +57,13 @@ describe("Button (kit)", () => {
     expect(el.getAttribute("aria-busy")).toBe("true");
   });
 
+  it("maps danger to ui-btn + ui-btn-danger", () => {
+    render(<Button variant="danger">Delete branch</Button>);
+    const cls = screen.getByRole("button", { name: "Delete branch" }).className;
+    expect(cls).toMatch(/ui-btn /);
+    expect(cls).toMatch(/ui-btn-danger/);
+  });
+
   it("maps size=\"sm\", size=\"lg\" and size=\"icon\"", () => {
     render(
       <>
