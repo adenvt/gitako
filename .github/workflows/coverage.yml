@@ -1,0 +1,159 @@
+name: Coverage
+
+# Per-PR coverage reporting for the frontend vitest suite.
+#
+#   1. test-base job (push to main / development only):
+#        - Runs vitest with coverage on the base branch and uploads
+#          `coverage-base` (coverage-summary.json + coverage-final.json).
+#   2. test-pr job (pull_request only):
+#        - Runs vitest with coverage on the PR head and uploads
+#          `coverage-pr` with the same files.
+#   3. report job (pull_request only):
+#        - Downloads both artifacts and posts a PR comment via
+#          davelosert/vitest-coverage-report-action@v2 with a coverage
+#          trend (PR head vs. base) and a file-level breakdown of the
+#          files this PR touched.
+#
+# The existing CI workflow (.github/workflows/ci.yml) is untouched — this
+# is a separate workflow that only adds coverage visibility.
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-base:
+    name: vitest (base branch)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # On push, `github.ref` is the branch ref (refs/heads/main etc.).
+          # On dispatch, fall back to the workflow's default branch.
+          ref: ${{ github.event.push.ref || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # GitHub Actions sets NODE_ENV=production by default, which makes
+      # `npm ci` skip devDependencies. Force development so the
+      # @vitest/coverage-v8 devDep actually installs. The vitest
+      # config also forces NODE_ENV=development at test time so React
+      # loads its development build (act() needs it).
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+        run: npm ci
+
+      # The vitest config (vite.config.ts) already declares the
+      # `text` + `json-summary` + `json` + `lcov` reporters, so the
+      # bare `--coverage` flag is enough — output lands in
+      # coverage/{coverage-summary,coverage-final,lcov.info}.json.
+      - name: Run tests with coverage
+        run: npm test -- --coverage
+
+      - name: Upload base-branch coverage
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-base
+          path: |
+            coverage/coverage-summary.json
+            coverage/coverage-final.json
+            coverage/lcov.info
+          retention-days: 14
+          if-no-files-found: ignore
+
+  test-pr:
+    name: vitest (PR head)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # PR head SHA so coverage line numbers map to the actual
+          # diff the reviewer sees, not the merge commit.
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm test -- --coverage
+
+      - name: Upload PR-head coverage
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-pr
+          path: |
+            coverage/coverage-summary.json
+            coverage/coverage-final.json
+            coverage/lcov.info
+          retention-days: 14
+          if-no-files-found: ignore
+
+  report:
+    name: PR coverage report
+    needs: [test-pr]
+    # Don't `need: test-base` — on the first PR after this workflow is
+    # added, there's no `coverage-base` artifact yet, and we still want
+    # the PR comment to land (without the trend indicator). Instead,
+    # download the base artifact best-effort below.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download base-branch coverage (best effort)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-base
+          path: coverage-base
+          if-no-files-found: ignore
+
+      - name: Download PR-head coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-pr
+          path: coverage-pr
+
+      # davelosert/vitest-coverage-report-action consumes the
+      # json-summary of the PR head and (optionally) the base branch
+      # to render the trend indicator. file-coverage-mode: changes
+      # shows only files the PR touched — the right scope for a
+      # raise/fall signal.
+      - name: Comment PR with coverage report
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          json-summary-path: coverage-pr/coverage-summary.json
+          json-final-path: coverage-pr/coverage-final.json
+          # Only compare against base when the artifact actually
+          # exists. The action handles a missing compare-path by
+          # skipping the trend indicator; the file-coverage report
+          # still works.
+          json-summary-compare-path: ${{ hashFiles('coverage-base/coverage-summary.json') != '' && 'coverage-base/coverage-summary.json' || '' }}
+          file-coverage-mode: changes
+          file-coverage-expanded: true
+          sort-by: statements-asc

@@ -37,6 +37,15 @@ export default defineConfig({
       // CSS modules and barrel re-exports can't be meaningfully tested.
       // Exclude them so the coverage % reflects the actual code surface.
       exclude: ["**/*.module.css", "**/index.ts"],
+      // GitHub Actions uses the json-summary + json reporters to render
+      // a per-PR coverage comment and trend line
+      // (davelosert/vitest-coverage-report-action). The `text` reporter
+      // gives the local terminal the same table the user is used to
+      // seeing from `npm run coverage`. `reportOnFailure` lets the
+      // reporter emit even if a test fails, so the PR comment is
+      // still posted on red.
+      reporter: ["text", "json-summary", "json", "lcov"],
+      reportOnFailure: true,
     },
   },
 });
