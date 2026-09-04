@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { AiMessage } from "../providers/types";
 
 /**
@@ -41,28 +42,61 @@ Rules:
 - Output ONLY the structured fields requested. No preamble, no labels, no code fences.`;
 
 /**
- * OpenAI Structured Outputs schema for commit messages. The schema is
- * standard JSON Schema so any OpenAI-compatible provider that supports
+ * Single source of truth for the structured commit-message reply. It
+ * plays two roles:
+ *
+ * 1. Parsing — `parseCommitMessageJson` validates the model's reply
+ *    against this schema before rebuilding the final subject.
+ * 2. JSON Schema — `z.toJSONSchema` derives the `response_format`
+ *    schema below from it, so the contract we send the model and the
+ *    one we enforce locally can never drift apart.
+ *
+ * The leniencies are deliberate and mirror real model behavior that
+ * the generated JSON Schema cannot express (the schema can only say
+ * `description` is a string, not "or tolerate garbage"):
+ * - A missing or non-string `description` falls back to `""`.
+ * - A non-string `scope` falls back to `null` (no scope). An
+ *   empty/whitespace-only string scope is normalized away later, in
+ *   `assembleCommitMessage`.
+ * - `subject` is trimmed and must be non-empty (≤ 72 chars).
+ */
+const commitMessageSchema = z.object({
+  type: z.enum(CONVENTIONAL_TYPES),
+  scope: z.nullable(z.string()).optional().catch(null),
+  subject: z.string().trim().min(1).max(72),
+  description: z.string().catch(""),
+});
+
+type CommitMessageReply = z.infer<typeof commitMessageSchema>;
+
+/**
+ * OpenAI Structured Outputs schema for commit messages, derived from
+ * `commitMessageSchema` via `z.toJSONSchema`. The result is standard
+ * JSON Schema, so any OpenAI-compatible provider that supports
  * `response_format.json_schema` (OpenRouter, Groq, Together, etc.) can
  * use it as-is. Providers that don't support `response_format` will
  * ignore the directive; the caller falls back to text parsing.
+ *
+ * `z.toJSONSchema` emits two things OpenAI's strict mode rejects, so
+ * they are removed here:
+ * - `$schema` (a document-level annotation, not part of the schema),
+ * - `default`, added for the `.catch()`/missing-key fallbacks above.
  */
+const { $schema: _unused, ...COMMIT_MESSAGE_JSON_SCHEMA } = z.toJSONSchema(
+  commitMessageSchema,
+  {
+    override: (ctx) => {
+      delete (ctx.jsonSchema as { default?: unknown }).default;
+    },
+  },
+);
+
 export const COMMIT_MESSAGE_RESPONSE_FORMAT = {
   type: "json_schema",
   json_schema: {
     name: "commit_message",
     strict: true,
-    schema: {
-      type: "object",
-      properties: {
-        type: { type: "string", enum: [...CONVENTIONAL_TYPES] },
-        scope: { type: ["string", "null"] },
-        subject: { type: "string", maxLength: 72 },
-        description: { type: "string" },
-      },
-      required: ["type", "subject", "description"],
-      additionalProperties: false,
-    },
+    schema: COMMIT_MESSAGE_JSON_SCHEMA,
   },
 } as const;
 
@@ -83,41 +117,56 @@ export interface ParsedCommitMessage {
   description: string;
 }
 
-interface RawCommitMessageJson {
-  type?: unknown;
-  scope?: unknown;
-  subject?: unknown;
-  description?: unknown;
+/** Turn a zod rejection into the error thrown by `parseCommitMessageJson`
+ *  (whose caller falls back to `parseCommitMessage` on any throw). */
+function describeReplyError(error: z.ZodError): Error {
+  const issue = error.issues[0];
+  const field = String(issue.path[0] ?? "");
+  const received = JSON.stringify(issue.input);
+  if (field === "type") {
+    return new Error(`AI reply has invalid type: ${received}`);
+  }
+  if (field === "subject") {
+    const empty =
+      issue.code === "too_small" ||
+      issue.input === undefined ||
+      (typeof issue.input === "string" && issue.input.trim() === "");
+    return new Error(
+      empty ? "AI reply is missing a non-empty subject." : `AI reply has invalid subject: ${received}`,
+    );
+  }
+  return new Error(`AI reply has invalid field ${field}: ${received}`);
 }
 
-function isConventionalType(value: unknown): value is (typeof CONVENTIONAL_TYPES)[number] {
-  return typeof value === "string" && (CONVENTIONAL_TYPES as readonly string[]).includes(value);
+/** Rebuild the final subject as `type(scope): description` and drop the
+ *  raw structured fields. */
+function assembleCommitMessage(reply: CommitMessageReply): ParsedCommitMessage {
+  // Missing / null / empty / whitespace-only scope all mean "no scope".
+  const scope =
+    typeof reply.scope === "string" && reply.scope.trim() !== "" ? reply.scope.trim() : null;
+  // The schema already trimmed the subject. Some models strip the
+  // `type` prefix from `subject`; some include it. Strip a leading
+  // `type[(scope)]:` from `subject` if present so we never
+  // double-prefix when we rebuild.
+  const subjectText = stripConventionalPrefix(reply.subject, reply.type);
+  const subject = scope ? `${reply.type}(${scope}): ${subjectText}` : `${reply.type}: ${subjectText}`;
+  return { subject, description: reply.description.trim() };
 }
 
 /** Parse a Structured-Outputs reply. Throws on malformed input — the
  *  caller is expected to fall back to `parseCommitMessage` (text). */
 export function parseCommitMessageJson(reply: string): ParsedCommitMessage {
-  let raw: RawCommitMessageJson;
+  let raw: unknown;
   try {
-    raw = JSON.parse(reply) as RawCommitMessageJson;
+    raw = JSON.parse(reply);
   } catch {
     throw new Error("AI reply was not valid JSON.");
   }
-  if (!isConventionalType(raw.type)) {
-    throw new Error(`AI reply has invalid type: ${String(raw.type)}`);
+  const parsed = commitMessageSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw describeReplyError(parsed.error);
   }
-  if (typeof raw.subject !== "string" || raw.subject.trim() === "") {
-    throw new Error("AI reply is missing a non-empty subject.");
-  }
-  // Some models strip the `type` prefix from `subject`; some include
-  // it. Strip a leading `type[(scope)]:` from `subject` if present so
-  // we never double-prefix when we rebuild.
-  const subjectRaw = raw.subject.trim();
-  const subjectText = stripConventionalPrefix(subjectRaw, raw.type);
-  const scope = typeof raw.scope === "string" && raw.scope.trim() !== "" ? raw.scope.trim() : null;
-  const subject = scope ? `${raw.type}(${scope}): ${subjectText}` : `${raw.type}: ${subjectText}`;
-  const description = typeof raw.description === "string" ? raw.description.trim() : "";
-  return { subject, description };
+  return assembleCommitMessage(parsed.data);
 }
 
 /** If `text` begins with `<type>:` or `<type>(<scope>):`, drop that

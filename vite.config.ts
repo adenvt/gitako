@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite-plus";
 import react from "@vitejs/plugin-react";
+import autoprefixer from "autoprefixer";
 
 // Tauri expects a fixed port and no clearing of the terminal.
 export default defineConfig({
@@ -47,5 +48,13 @@ export default defineConfig({
       reporter: ["text", "json-summary", "json", "lcov"],
       reportOnFailure: true,
     },
+  },
+  css: {
+    postcss: {
+      plugins: [autoprefixer()],
+    },
+  },
+  staged: {
+    "*.{js,ts,tsx,vue,svelte}": "vp check --fix",
   },
 });

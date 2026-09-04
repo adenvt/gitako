@@ -1,0 +1,62 @@
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as ButtonStories from "@/shared/components/ui/Button.stories";
+import * as InputStories from "@/shared/components/ui/Input.stories";
+import * as TextareaStories from "@/shared/components/ui/Textarea.stories";
+import * as SelectStories from "@/shared/components/ui/Select.stories";
+import * as ComboboxStories from "@/shared/components/ui/Combobox.stories";
+import * as ScrollAreaStories from "@/shared/components/ui/ScrollArea.stories";
+
+<Meta title="Design System/UI Kit" />
+
+# UI Kit
+
+The shared control kit lives in `src/shared/components/ui/`. Each control
+is a className-injecting wrapper over a **Base UI** primitive, applying one
+of the `ui-*` classes from `base.css`. Use these instead of raw HTML so the
+control chrome stays consistent app-wide.
+
+## Buttons
+
+`.ui-btn` (default "solid"), `.ui-btn-primary` (accent fill), `.ui-ghost` (borderless), or `<Button variant="none">` (caller-styled).
+
+<Canvas of={ButtonStories.AllVariants} />
+
+## Inputs
+
+`.ui-input` for text fields. The wrapper is `<Input>` from `@/shared/components/ui`.
+
+<Canvas of={InputStories.Default} />
+<Canvas of={InputStories.Invalid} />
+
+## Textareas
+
+`.ui-textarea` for multi-line text. Same focus border as `.ui-input`.
+
+<Canvas of={TextareaStories.Default} />
+
+## Selects
+
+`.ui-trigger-select` is the trigger; the popup uses `.ui-positioner` + `.ui-popup` + `.ui-item`.
+
+<Canvas of={SelectStories.Default} />
+<Canvas of={SelectStories.LongList} />
+
+## Comboboxes
+
+Two anatomies — `variant="trigger"` (bare caret, used by `BranchSwitcher`) or
+`variant="input"` (bordered input + caret shell, used by `AiSettingsPage`).
+The trigger inside the input-group shell gets its chrome from the descendant
+rule `.ui-input-group > button` in `base.css`.
+
+<Canvas of={ComboboxStories.TriggerDefault} />
+<Canvas of={ComboboxStories.InputDefault} />
+
+## ScrollArea
+
+`.ui-scrollarea` for the root, plus custom `.scrollbarTrack` / `.scrollbarThumb`
+chrome that matches the TUI palette. Use `<ScrollArea>{content}</ScrollArea>` for
+the common case, or `<ScrollArea.Root>…</ScrollArea.Root>` for advanced cases
+(custom scrollbar children, viewport measurement).
+
+<Canvas of={ScrollAreaStories.Default} />
+<Canvas of={ScrollAreaStories.WithList} />

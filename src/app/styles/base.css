@@ -500,8 +500,13 @@ body {
 
 /* Defined AFTER .ui-input so its `border: none` overrides the base input
    border. The transparent background merges the input visually with the
-   bordered .ui-input-group shell. */
-.ui-input-flat {
+   bordered .ui-input-group shell. The `:focus-visible` override is
+   required too — without it, focusing the input would re-paint a 1px
+   accent border on the input itself, producing a double border (the
+   shell's border + the input's). The focus ring belongs to the shell. */
+.ui-input-flat,
+.ui-input-flat:focus,
+.ui-input-flat:focus-visible {
   flex: 1 1 auto;
   min-width: 0;
   background: transparent;

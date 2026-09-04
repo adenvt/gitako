@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DiffRow } from "./align";
 import s from "./diff.module.css";
 
+/** Fixed row height in px — matches `line-height: 1.5` × `var(--fs-sm)` in
+ *  `diff.module.css`. Exported so `DiffPane`'s row virtualizer uses the same
+ *  value, keeping scroll geometry consistent. */
+export const ROW_HEIGHT = 19.5;
+
 /**
  * Change markers drawn inside a pane's vertical scrollbar track (the
  * minimap). Each pane shows only the changes on its own side: the OLD pane
@@ -65,9 +70,8 @@ export function DiffMinimap({
   const contentHeight = Math.max(0, metrics.scrollHeight - PADDING_BOTTOM);
   const noOverflow = contentHeight <= metrics.clientHeight;
 
-  // Rows share one fixed line-height (19.5px); bar geometry is expressed in
+  // Rows share one fixed line-height; bar geometry is expressed in
   // percent of the scrollable content so the strip mirrors the file exactly.
-  const ROW_HEIGHT = 19.5;
   const barPercent = contentHeight > 0 ? (ROW_HEIGHT / contentHeight) * 100 : 0;
 
   if (noOverflow) return null;

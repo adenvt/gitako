@@ -101,8 +101,8 @@ export function OpenRepo() {
   return (
     <div className={s.welcome}>
       <div className={s.welcomeBrand}>
-        <GitBranchIcon size={18} className={s.welcomeBrandIcon} aria-hidden />
-        <span className={s.welcomeBrandName}>GiTako</span>
+        <GitBranchIcon size={36} className={s.welcomeBrandIcon} aria-hidden />
+        <span className={s.welcomeBrandName}>GITako</span>
       </div>
 
       <div className={s.welcomeHeader}>

@@ -6,6 +6,26 @@ import {
   parseCommitMessageJson,
 } from "./commitMessage";
 
+/** Typed view of the generated wire schema. `z.toJSONSchema` returns a
+ *  deliberately loose `JSONSchema` union, so tests pin the shape they
+ *  assert on. The schema is derived from the zod schema in
+ *  `commitMessage.ts` — see `COMMIT_MESSAGE_RESPONSE_FORMAT`. */
+interface WireCommitMessageSchema {
+  type: "object";
+  properties: {
+    type: { type: "string"; enum: readonly string[] };
+    scope: { type: readonly ["string", "null"] };
+    subject: { type: "string"; minLength: number; maxLength: number };
+    description: { type: "string" };
+  };
+  required: readonly string[];
+  additionalProperties: false;
+}
+
+function wireSchema(): WireCommitMessageSchema {
+  return COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.schema as unknown as WireCommitMessageSchema;
+}
+
 describe("parseCommitMessage", () => {
   it("splits on the first blank line into subject + description", () => {
     const reply =
@@ -83,7 +103,7 @@ describe("COMMIT_MESSAGE_RESPONSE_FORMAT", () => {
   });
 
   it("requires the conventional-commit fields and forbids extras", () => {
-    const schema = COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.schema;
+    const schema = wireSchema();
     expect(schema.required).toEqual(["type", "subject", "description"]);
     expect(schema.additionalProperties).toBe(false);
     expect(schema.properties).toHaveProperty("type");
@@ -93,7 +113,7 @@ describe("COMMIT_MESSAGE_RESPONSE_FORMAT", () => {
   });
 
   it("restricts the type field to the Conventional Commits allowlist", () => {
-    const typeProp = COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.schema.properties.type;
+    const typeProp = wireSchema().properties.type;
     expect(typeProp.enum).toEqual([
       "feat",
       "fix",
@@ -110,13 +130,17 @@ describe("COMMIT_MESSAGE_RESPONSE_FORMAT", () => {
   });
 
   it("allows the scope to be null or a string", () => {
-    const scopeProp = COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.schema.properties.scope;
+    const scopeProp = wireSchema().properties.scope;
     expect(scopeProp.type).toEqual(["string", "null"]);
   });
 
-  it("caps the subject at 72 characters", () => {
-    const subjectProp = COMMIT_MESSAGE_RESPONSE_FORMAT.json_schema.schema.properties.subject;
+  it("constrains the subject to 1-72 characters", () => {
+    const subjectProp = wireSchema().properties.subject;
     expect(subjectProp.type).toBe("string");
+    // minLength comes from the zod schema's `.min(1)` — the single
+    // source of truth doubles as the reply parser, which rejects empty
+    // subjects.
+    expect(subjectProp.minLength).toBe(1);
     expect(subjectProp.maxLength).toBe(72);
   });
 });

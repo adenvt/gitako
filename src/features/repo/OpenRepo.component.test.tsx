@@ -33,7 +33,7 @@ beforeEach(() => {
 describe("OpenRepo", () => {
   it("renders the welcome brand and header", () => {
     render(<OpenRepo />);
-    expect(screen.getByText("GiTako")).toBeInTheDocument();
+    expect(screen.getByText("GITako")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /open/i })).toBeInTheDocument();
   });
 

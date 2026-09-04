@@ -1,10 +1,13 @@
+import { memo, useMemo } from "react";
 import clsx from "clsx";
 import type { Line } from "@/shared/utils/highlight";
 import { diffWords } from "./wordDiff";
 import s from "./diff.module.css";
 
-/** Render one cell's text, tokenized when highlight data is available. */
-export function Cell({
+/** Render one cell's text, tokenized when highlight data is available.
+ *  Memoized: for a 300-row diff, every parent re-render would otherwise
+ *  re-tokenize every cell even when the inputs are identical. */
+export const Cell = memo(function Cell({
   text,
   num,
   tokens,
@@ -29,7 +32,7 @@ export function Cell({
         : text}
     </span>
   );
-}
+});
 
 /**
  * Cell for a changed (added/removed) line that has a counterpart on the other
@@ -38,7 +41,7 @@ export function Cell({
  * change emphasis show together. Fully added/removed lines (no counterpart)
  * skip word diffing and get a left-edge bar marker instead.
  */
-export function ChangeCell({
+export const ChangeCell = memo(function ChangeCell({
   text,
   num,
   kind,
@@ -51,41 +54,43 @@ export function ChangeCell({
   other: string;
   tokens: Line[] | null;
 }) {
-  const segments = kind === "add" ? diffWords(other, text).newSegs : diffWords(other, text).oldSegs;
-  const line = num != null && tokens ? tokens[num - 1] : undefined;
-  const colors = line ?? [{ text, color: undefined }];
-  const out: { t: string; color?: string; changed: boolean }[] = [];
-  // Merge the word-diff segments with the shiki token partition of the
-  // same line. Both split the same string; walk them by character
-  // position so each output span carries a token color AND a changed
-  // flag.
-  let si = 0; // offset within the current segment
-  let ci = 0; // offset within the current color token
-  let segIdx = 0;
-  let colIdx = 0;
-  while (segIdx < segments.length && colIdx < colors.length) {
-    const seg = segments[segIdx];
-    const col = colors[colIdx];
-    const take = Math.min(seg.text.length - si, col.text.length - ci);
-    const t = seg.text.slice(si, si + take);
-    if (t.length > 0) out.push({ t, color: col.color, changed: seg.changed });
-    si += take;
-    ci += take;
-    if (si >= seg.text.length) {
-      segIdx++;
-      si = 0;
+  // The merge of word-diff segments × shiki tokens is O(n) in the line
+  // length. Memoize so it only re-runs when the line content or the
+  // highlight for this line actually changes.
+  const out = useMemo(() => {
+    const segments =
+      kind === "add" ? diffWords(other, text).newSegs : diffWords(other, text).oldSegs;
+    const line = num != null && tokens ? tokens[num - 1] : undefined;
+    const colors = line ?? [{ text, color: undefined }];
+    const result: { t: string; color?: string; changed: boolean }[] = [];
+    let si = 0;
+    let ci = 0;
+    let segIdx = 0;
+    let colIdx = 0;
+    while (segIdx < segments.length && colIdx < colors.length) {
+      const seg = segments[segIdx];
+      const col = colors[colIdx];
+      const take = Math.min(seg.text.length - si, col.text.length - ci);
+      const t = seg.text.slice(si, si + take);
+      if (t.length > 0) result.push({ t, color: col.color, changed: seg.changed });
+      si += take;
+      ci += take;
+      if (si >= seg.text.length) {
+        segIdx++;
+        si = 0;
+      }
+      if (ci >= col.text.length) {
+        colIdx++;
+        ci = 0;
+      }
     }
-    if (ci >= col.text.length) {
-      colIdx++;
-      ci = 0;
+    if (segIdx < segments.length) {
+      const seg = segments[segIdx];
+      const rest = seg.text.slice(si);
+      if (rest.length > 0) result.push({ t: rest, changed: seg.changed });
     }
-  }
-  // Leftover (shouldn't happen — same source text), render defensively.
-  if (segIdx < segments.length) {
-    const seg = segments[segIdx];
-    const rest = seg.text.slice(si);
-    if (rest.length > 0) out.push({ t: rest, changed: seg.changed });
-  }
+    return result;
+  }, [text, num, kind, other, tokens]);
 
   return (
     <span className={s.diffCell}>
@@ -100,4 +105,4 @@ export function ChangeCell({
       ))}
     </span>
   );
-}
+});

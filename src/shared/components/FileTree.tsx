@@ -61,7 +61,11 @@ interface TreeRowProps {
   onFocusRow: (path: string) => void;
 }
 
-function tabIndexForPath(focusedPath: string | null, visibleIndex: Map<string, number>, path: string): number {
+function tabIndexForPath(
+  focusedPath: string | null,
+  visibleIndex: Map<string, number>,
+  path: string,
+): number {
   const idx = visibleIndex.get(path);
   if (focusedPath) return focusedPath === path ? 0 : -1;
   return idx === 0 ? 0 : -1;
@@ -136,7 +140,12 @@ function TreeRow({
 
   return (
     <div
-      className={clsx(s.treeRow, s.treeFile, onFileOpen && s.clickable, focused && s.treeRowFocused)}
+      className={clsx(
+        s.treeRow,
+        s.treeFile,
+        onFileOpen && s.clickable,
+        focused && s.treeRowFocused,
+      )}
       style={{ paddingLeft: 6 + depth * 14 }}
       title={`${statusLabel(node.status)}: ${node.path}`}
       onClick={

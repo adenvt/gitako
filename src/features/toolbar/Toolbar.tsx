@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { ArrowUpIcon, ArchiveIcon, GearIcon } from "@primer/octicons-react";
+import { ArrowUpIcon, ArchiveIcon, BookIcon, GearIcon } from "@primer/octicons-react";
 import { useRepoStore } from "@/state/store";
 import { countChanges } from "@/shared/utils/status";
 import { Button } from "@/shared/components/ui";
+import { toastManager } from "@/shared/components/Toaster";
 import { BranchSwitcher } from "./BranchSwitcher";
 import { PullMenu } from "./PullMenu";
 import s from "./workspace.module.css";
@@ -48,6 +49,21 @@ export function Toolbar() {
     void pushAction();
   };
 
+  // Dev-only shortcut to the Storybook dev server. import.meta.env.DEV is
+  // statically replaced with `false` in production builds, so the whole branch
+  // is dead-code-eliminated from the production bundle.
+  const handleOpenStorybook = () => {
+    const url = "http://localhost:6006";
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (win === null) {
+      toastManager.add({
+        type: "error",
+        title: "Popup blocked",
+        description: `Open Storybook manually: ${url}`,
+      });
+    }
+  };
+
   return (
     <div className={s.toolbar}>
       <div className={s.toolbarLeft}>
@@ -82,6 +98,17 @@ export function Toolbar() {
           <GearIcon size={13} aria-hidden />
           settings
         </Button>
+        {import.meta.env.DEV && (
+          <Button
+            variant="solid"
+            className={s.toolbarBtn}
+            onClick={handleOpenStorybook}
+            title="Open Storybook in browser"
+          >
+            <BookIcon size={13} aria-hidden />
+            storybook
+          </Button>
+        )}
       </div>
 
       <div className={s.toolbarRight}>

@@ -1,0 +1,9 @@
+:root[data-theme="hc"] {
+  --bg: #000;
+  --bg-raised: #0a0a0a;
+  --bg-inset: #000;
+  --text: #fff;
+  --text-dim: #c8c8c8;
+  --border: #fff;
+  --border-strong: #fff;
+}

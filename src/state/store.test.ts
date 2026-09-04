@@ -17,7 +17,9 @@ vi.mock("./git", () => ({
   checkoutTrack: vi.fn().mockResolvedValue(""),
   stashSave: vi.fn().mockResolvedValue(""),
   stashPop: vi.fn().mockResolvedValue(undefined),
-  pushBranch: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "Everything up-to-date" }),
+  pushBranch: vi
+    .fn()
+    .mockResolvedValue({ remote: "origin", branch: "main", summary: "Everything up-to-date" }),
   fetchAll: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "" }),
   pullBranch: vi.fn().mockResolvedValue({ remote: "origin", branch: "main", summary: "" }),
 }));

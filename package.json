@@ -10,6 +10,8 @@
     "tauri": "tauri",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
     "dev:desktop": "PATH=$HOME/.cargo/bin:$PATH WEBKIT_DISABLE_DMABUF_RENDERER=1 tauri dev"
   },
   "dependencies": {
@@ -22,9 +24,14 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "shiki": "^4.4.3",
+    "zod": "^4.5.4",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^10.0.0",
+    "@storybook/addon-docs": "^10.0.0",
+    "@storybook/addon-themes": "^10.0.0",
+    "@storybook/react-vite": "^10.6.0",
     "@tauri-apps/cli": "^2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -35,7 +42,9 @@
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^4.1.11",
     "@voidzero-dev/vite-plus-core": "^0.3.0",
+    "autoprefixer": "^10.5.4",
     "happy-dom": "^20.11.15",
+    "storybook": "^10.0.0",
     "typescript": "^5.6.3",
     "vite-plus": "^0.3.0"
   },

@@ -181,4 +181,35 @@ describe("DiffView", () => {
     const marked = Array.from(rows).filter((el) => el.className.includes("diffFull"));
     expect(marked.length).toBe(1);
   });
+
+  it("windows rows: a 500-line diff does not mount all 500 row elements", () => {
+    // Build a 500-line diff with one hunk covering the whole file. Each line
+    // is unchanged so the minimap + virtualizer paths are simple.
+    const lineCount = 500;
+    const lines = Array.from({ length: lineCount }, (_, i) => `line ${i + 1}`);
+    const diff = makeDiff({
+      oldLines: lines,
+      newLines: lines,
+      hunks: [
+        {
+          oldStart: 1,
+          newStart: 1,
+          oldLines: lineCount,
+          newLines: lineCount,
+          lines: lines.map((t) => ({ kind: "context" as const, text: t })),
+        },
+      ],
+    });
+    useRepoStore.setState({
+      activeDiff: { hash: "c1", path: "big.ts", staged: false },
+      diffCache: { "c1|big.ts|w": diff },
+    });
+    const { container } = render(<DiffView />);
+    // happy-dom gives the viewport a 0×0 client size, so the windowed
+    // range collapses to start=0, end=0. We assert the upper bound only
+    // (no row is mounted at all) — the real win shows up in a real
+    // browser where the window is e.g. 40 rows tall.
+    const rows = container.querySelectorAll("[class*='diffLine']");
+    expect(rows.length).toBeLessThan(lineCount);
+  });
 });

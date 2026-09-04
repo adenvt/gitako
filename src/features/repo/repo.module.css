@@ -15,11 +15,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--border);
+  padding: 36px 24px 16px;
   font-family: var(--font-display);
-  text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--accent);
 }
@@ -29,7 +26,7 @@
 }
 
 .welcomeBrandName {
-  font-size: var(--fs-sm);
+  font-size: 3rem;
   font-weight: 700;
   color: var(--accent);
 }
@@ -75,7 +72,7 @@
 
 .welcomeSearchInput {
   width: 100%;
-  padding: 6px 30px 6px 28px;
+  padding: 6px 30px 6px 28px !important;
   font-size: var(--fs-sm);
 }
 
