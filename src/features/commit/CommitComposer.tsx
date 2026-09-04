@@ -188,8 +188,8 @@ export function CommitComposer() {
               }
             }}
           />
-          <button
-            type="button"
+          <Button
+            variant="none"
             className={s.aiIconBtn}
             disabled={!canGenerate}
             onClick={() => void handleGenerate()}
@@ -197,7 +197,7 @@ export function CommitComposer() {
             title={generateTooltip}
           >
             <PencilAiIcon size={14} aria-hidden />
-          </button>
+          </Button>
         </div>
         <Textarea
           className={s.composerDescription}
@@ -207,7 +207,7 @@ export function CommitComposer() {
           onChange={(e) => setDescription(e.target.value)}
         />
         <Button
-          variant="none"
+          variant="primary"
           className={s.composerCommit}
           disabled={!canCommit}
           onClick={() => void handleCommit()}

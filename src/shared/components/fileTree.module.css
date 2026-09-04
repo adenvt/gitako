@@ -18,28 +18,6 @@
   background: var(--bg-raised);
 }
 
-.treeToolbarBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: none;
-  border: 1px solid transparent;
-  color: var(--text-dim);
-  font-size: var(--fs-xs);
-  font-family: inherit;
-  padding: 1px 6px;
-  cursor: pointer;
-  text-transform: lowercase;
-  transition:
-    background var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
-}
-
-.treeToolbarBtn:hover:not(:disabled):not([data-disabled]) {
-  background: var(--bg-hover);
-  color: var(--text);
-}
-
 .fileTreeRows {
   flex: 1;
   min-height: 0;
