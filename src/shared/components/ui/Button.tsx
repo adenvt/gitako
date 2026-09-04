@@ -21,6 +21,6 @@ export interface ButtonProps extends ComponentProps<typeof BaseButton> {
  * Wraps @base-ui/react/button — use this instead of raw <button> so
  * disabled/keyboard handling stays consistent app-wide.
  */
-export function Button({ variant = "solid", className, ...props }: ButtonProps) {
-  return <BaseButton className={clsx(variantClass[variant], className)} {...props} />;
+export function Button({ variant = "solid", type = "button", className, ...props }: ButtonProps) {
+  return <BaseButton type={type} className={clsx(variantClass[variant], className)} {...props} />;
 }

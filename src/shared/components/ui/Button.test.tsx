@@ -28,4 +28,14 @@ describe("Button (kit)", () => {
     expect(el.className).toMatch(/my-bespoke/);
     expect(el.className).not.toMatch(/ui-btn|ui-ghost/);
   });
+
+  it('defaults type to "button" so it never submits forms', () => {
+    render(<Button>Save</Button>);
+    expect(screen.getByRole("button", { name: "Save" }).getAttribute("type")).toBe("button");
+  });
+
+  it("respects an explicit type override", () => {
+    render(<Button type="submit">Submit</Button>);
+    expect(screen.getByRole("button", { name: "Submit" }).getAttribute("type")).toBe("submit");
+  });
 });
