@@ -244,4 +244,18 @@ describe("FileTree", () => {
     await user.keyboard("{Home}");
     expect(document.activeElement?.textContent).toMatch(/a\.ts/);
   });
+
+  it("shows a persistent navigate indicator on the focused row", async () => {
+    const user = userEvent.setup();
+    render(<FileTree root={flat("a.ts", "b.ts")} />);
+    // No cursor before any focus.
+    expect(document.querySelector("[data-path]")?.className).not.toMatch(/treeRowFocused/);
+    await user.tab();
+    // First row carries the indicator once focused.
+    expect(document.querySelector('[data-path="a.ts"]')?.className).toMatch(/treeRowFocused/);
+    await user.keyboard("{ArrowDown}");
+    // Indicator follows the keyboard cursor.
+    expect(document.querySelector('[data-path="b.ts"]')?.className).toMatch(/treeRowFocused/);
+    expect(document.querySelector('[data-path="a.ts"]')?.className).not.toMatch(/treeRowFocused/);
+  });
 });

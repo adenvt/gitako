@@ -88,7 +88,7 @@ function TreeRow({
       <>
         <Button
           variant="none"
-          className={clsx(s.treeRow, s.treeDir)}
+          className={clsx(s.treeRow, s.treeDir, focused && s.treeRowFocused)}
           style={{ paddingLeft: 6 + depth * 14 }}
           onClick={() => onToggle(node.path)}
           aria-expanded={open}
@@ -136,7 +136,7 @@ function TreeRow({
 
   return (
     <div
-      className={clsx(s.treeRow, s.treeFile, onFileOpen && s.clickable)}
+      className={clsx(s.treeRow, s.treeFile, onFileOpen && s.clickable, focused && s.treeRowFocused)}
       style={{ paddingLeft: 6 + depth * 14 }}
       title={`${statusLabel(node.status)}: ${node.path}`}
       onClick={

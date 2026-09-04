@@ -84,6 +84,14 @@
   outline-offset: -1px;
 }
 
+/* Navigate indicator: persistent cursor on the focused row. Stays visible
+   even when :focus-visible heuristics hide the ring (e.g. focus moved
+   programmatically by ArrowUp/Down). Left accent bar + hover tint. */
+.treeRowFocused {
+  background: var(--bg-hover);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
 .treeDir:hover {
   background: var(--bg-hover);
 }
