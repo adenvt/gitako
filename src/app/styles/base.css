@@ -165,6 +165,29 @@ body {
   cursor: not-allowed;
 }
 
+/* Button sizes. `md` is the default single-line control; `sm` fits dense
+   toolbars; `lg` is the emphasis size for welcome screens and primary
+   CTAs (max one per surface, short labels only); `icon` is a square
+   hit-target for icon-only buttons. Icons scale with size: ~12px at sm,
+   ~13px at md, ~16px at lg — callers pass the matching icon size. */
+.ui-btn-sm {
+  padding: 2px 8px;
+  font-size: var(--fs-xs);
+}
+
+.ui-btn-lg {
+  padding: 10px 20px;
+  font-size: var(--fs-lg);
+  gap: 8px;
+}
+
+.ui-btn-icon {
+  padding: 4px;
+  min-width: 24px;
+  min-height: 24px;
+  justify-content: center;
+}
+
 /* Primary button — green fill, dark text. The "do this" button. */
 .ui-btn-primary {
   background: var(--accent);

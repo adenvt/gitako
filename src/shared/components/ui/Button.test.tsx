@@ -38,4 +38,25 @@ describe("Button (kit)", () => {
     render(<Button type="submit">Submit</Button>);
     expect(screen.getByRole("button", { name: "Submit" }).getAttribute("type")).toBe("submit");
   });
+
+  it('defaults to md (no size class)', () => {
+    render(<Button>Save</Button>);
+    const cls = screen.getByRole("button", { name: "Save" }).className;
+    expect(cls).not.toMatch(/ui-btn-sm|ui-btn-lg|ui-btn-icon/);
+  });
+
+  it('maps size="sm", size="lg" and size="icon"', () => {
+    render(
+      <>
+        <Button size="sm">Small</Button>
+        <Button size="lg">Get started</Button>
+        <Button size="icon" aria-label="Close">
+          ×
+        </Button>
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Small" }).className).toMatch(/ui-btn-sm/);
+    expect(screen.getByRole("button", { name: "Get started" }).className).toMatch(/ui-btn-lg/);
+    expect(screen.getByRole("button", { name: "Close" }).className).toMatch(/ui-btn-icon/);
+  });
 });
