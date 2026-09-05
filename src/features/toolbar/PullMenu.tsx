@@ -26,7 +26,7 @@ export function PullMenu() {
         variant="solid"
         className={s.main}
         onClick={() => void pullAction("ff")}
-        disabled={busy}
+        loading={busy}
         title={pulling ? "Pulling…" : "Pull (fast-forward if possible)"}
       >
         <ArrowDownIcon size={13} aria-hidden />
