@@ -23,16 +23,37 @@ control chrome stays consistent app-wide.
 
 ## Inputs
 
-`.ui-input` for text fields. The wrapper is `<Input>` from `@/shared/components/ui`.
+Use `<Input>` from `@/shared/components/ui`. Defaults to `size="md"`.
 
-<Canvas of={InputStories.Default} />
-<Canvas of={InputStories.Invalid} />
+**Sizes:** `sm` (dense, `--fs-sm`), `md` (default), `lg` (emphasis, `--fs-lg`).
+
+**State** (`loading` | `success` | `invalid`): mutually exclusive, single prop.
+`loading` disables the input and renders a trailing spinner; `success` shows a
+green check; `invalid` shows a red alert icon, applies a red border, and sets
+`aria-invalid="true"`.
+
+**Affixes:** `prepend` and `append` accept `ReactNode` and render in the same
+flex shell as the input. The shell carries the border; the input inside is
+borderless so the affix sits flush. Affix content has `pointer-events: none` —
+clicks pass through to the input.
+
+**Clearable:** when `clearable` and the value is non-empty (and not
+loading/disabled), renders a `×` button. Clicking fires `onChange` with an
+empty value so controlled-input consumers see the change.
+
+<Canvas of={InputStories.AllVariants} />
 
 ## Textareas
 
-`.ui-textarea` for multi-line text. Same focus border as `.ui-input`.
+Use `<Textarea>` from `@/shared/components/ui`. Matches `<Input>` for sizing
+and `state="invalid"`. **No `loading`/`success` state** (no real estate for a
+trailing icon — select-all + delete is the multi-line equivalent).
+
+**Clearable:** when `clearable` and the value is non-empty, renders a `×`
+button top-right.
 
 <Canvas of={TextareaStories.Default} />
+<Canvas of={TextareaStories.Clearable} />
 
 ## Selects
 

@@ -5,31 +5,25 @@ const meta: Meta<typeof Textarea> = {
   title: "UI Kit/Textarea",
   component: Textarea,
   argTypes: {
-    placeholder: { control: "text" },
+    size: { control: { type: "select" }, options: ["sm", "md", "lg"] },
+    state: { control: { type: "select" }, options: [undefined, "invalid"] },
+    clearable: { control: "boolean" },
     disabled: { control: "boolean" },
-    defaultValue: { control: "text" },
-    rows: { control: { type: "number", min: 1, max: 20 } },
+    rows: { control: "number" },
+    placeholder: { control: "text" },
   },
-  args: {
-    placeholder: "Write a commit message…",
-    rows: 4,
-  },
+  args: { size: "md", rows: 4, placeholder: "Description…" },
 };
-
 export default meta;
-
 type Story = StoryObj<typeof Textarea>;
 
 export const Default: Story = {};
-
-export const WithContent: Story = {
-  args: { defaultValue: "feat(commit-graph): color-row left bars" },
+export const Small: Story = { args: { size: "sm" } };
+export const Large: Story = { args: { size: "lg" } };
+export const Disabled: Story = { args: { disabled: true } };
+export const Invalid: Story = {
+  args: { state: "invalid", defaultValue: "invalid input" },
 };
-
-export const Resized: Story = {
-  args: { defaultValue: "This textarea is taller.", rows: 8 },
-};
-
-export const Disabled: Story = {
-  args: { disabled: true, defaultValue: "can't edit me" },
+export const Clearable: Story = {
+  args: { clearable: true, defaultValue: "clear me" },
 };
