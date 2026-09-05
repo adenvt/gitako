@@ -14,7 +14,7 @@ import {
   writeModelCache,
 } from "@/features/ai/providers/modelCache";
 import { testAiConnection } from "@/features/ai";
-import { Button, Input as InputEl, Select, Combobox, ScrollArea } from "@/shared/components/ui";
+import { Button, Input, Select, Combobox, ScrollArea } from "@/shared/components/ui";
 import { errorMessage } from "@/shared/utils/error";
 import { toastError, toastSuccess } from "@/shared/components/Toaster";
 import { AiError } from "@/features/ai/providers/types";
@@ -177,7 +177,7 @@ export function AiSettingsPage({ onBack }: { onBack?: () => void }) {
         <label className={s.fieldLabel} htmlFor="ai-baseurl">
           API host (base URL)
         </label>
-        <InputEl
+        <Input
           id="ai-baseurl"
           type="text"
           value={form.baseUrl}
@@ -192,7 +192,7 @@ export function AiSettingsPage({ onBack }: { onBack?: () => void }) {
         </label>
         <div className={s.fieldRow}>
           <div className={s.inputWrap}>
-            <InputEl
+            <Input
               id="ai-apikey"
               type={showKey ? "text" : "password"}
               value={form.apiKey}
