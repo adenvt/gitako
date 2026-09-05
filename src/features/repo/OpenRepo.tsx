@@ -121,6 +121,7 @@ export function OpenRepo() {
         <SearchIcon size={14} className={s.welcomeSearchIcon} aria-hidden />
         <Input
           type="text"
+          size="sm"
           className={s.welcomeSearchInput}
           placeholder="Search repositories"
           value={query}

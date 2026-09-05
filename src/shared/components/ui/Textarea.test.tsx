@@ -35,4 +35,19 @@ describe("Textarea (kit)", () => {
     render(<Textarea value="hello" onChange={() => {}} />);
     expect(screen.getByDisplayValue("hello")).toBeInTheDocument();
   });
+
+  it("applies ui-textarea-sm when size='sm'", () => {
+    render(<Textarea placeholder="x" size="sm" />);
+    expect(screen.getByPlaceholderText("x").className).toMatch(/ui-textarea-sm/);
+  });
+
+  it("applies ui-textarea-lg when size='lg'", () => {
+    render(<Textarea placeholder="x" size="lg" />);
+    expect(screen.getByPlaceholderText("x").className).toMatch(/ui-textarea-lg/);
+  });
+
+  it("omits size class when size='md' (default)", () => {
+    render(<Textarea placeholder="x" />);
+    expect(screen.getByPlaceholderText("x").className).not.toMatch(/ui-textarea-(sm|lg)/);
+  });
 });

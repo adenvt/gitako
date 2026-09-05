@@ -134,31 +134,19 @@
 /* Subject input shares the .ui-input shape via the shared kit, but we
    still want monospaced, denser styling. Override a few knobs. */
 .composerSubject {
+  /* Override the default --bg-raised to match the composer's deeper --bg. */
   background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 6px 10px;
-  font-size: var(--fs-sm);
-  font-family: inherit;
 }
 
-.composerSubject:focus-visible,
 .composerDescription:focus-visible {
   outline: none;
   border-color: var(--accent-border);
 }
 
 .composerDescription {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 6px 10px;
-  font-size: var(--fs-sm);
-  font-family: inherit;
-  resize: vertical;
+  /* Textarea-specific sizing on top of .ui-textarea chrome. */
   min-height: 48px;
   max-height: 96px;
-  line-height: 1.5;
 }
 
 /* Icon-only Generate button, styled to match the .composerSubject row

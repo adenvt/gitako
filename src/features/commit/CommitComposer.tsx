@@ -177,6 +177,7 @@ export function CommitComposer() {
         <div className={s.subjectRow}>
           <Input
             type="text"
+            size="sm"
             className={s.composerSubject}
             placeholder="Subject (required)"
             value={subject}
