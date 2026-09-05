@@ -300,6 +300,28 @@ body {
   pointer-events: none;
 }
 
+/* Shared loading spinner used by Button (loading prop) and Input
+   (state="loading"). currentColor so it inherits the surrounding text
+   color. 800ms spin, slowed to 3s under prefers-reduced-motion. */
+.ui-spinner {
+  flex-shrink: 0;
+  animation: ui-spin 800ms linear infinite;
+  color: currentColor;
+  opacity: 0.85;
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-spinner {
+    animation-duration: 3s;
+  }
+}
+
 .ui-input-shell.ui-input-sm .ui-input-affix {
   padding: 0 4px;
 }

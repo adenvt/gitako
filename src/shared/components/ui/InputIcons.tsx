@@ -1,11 +1,5 @@
-/**
- * Loading spinner sized to the input. Inline SVG; currentColor so it
- * inherits the input's text color. 800ms spin, slowed to 3s under
- * prefers-reduced-motion.
- *
- * NOTE: This is duplicated from ButtonSpinner (fe/commit/button-upgrade).
- * Once that PR merges into design-system, replace this with a re-export.
- */
+import { Spinner } from "./Spinner";
+
 type IconSize = 12 | 13 | 16;
 
 const SIZE_MAP: Record<"sm" | "md" | "lg", IconSize> = {
@@ -14,33 +8,9 @@ const SIZE_MAP: Record<"sm" | "md" | "lg", IconSize> = {
   lg: 16,
 };
 
+/** Loading spinner (delegates to the shared Spinner). */
 export function InputSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const px = SIZE_MAP[size];
-  return (
-    <svg
-      className="ui-btn-spinner"
-      width={px}
-      height={px}
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden
-    >
-      <circle
-        cx="8"
-        cy="8"
-        r="6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeOpacity="0.25"
-      />
-      <path
-        d="M14 8a6 6 0 0 0-6-6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+  return <Spinner size={size} />;
 }
 
 /** Check icon, green, for state="success". */
