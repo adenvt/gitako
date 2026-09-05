@@ -308,6 +308,48 @@ body {
   padding: 0 10px;
 }
 
+/* Clear button inside the input shell. Override size=icon's 24x24 to 20x20
+   so it fits the input's vertical rhythm. */
+.ui-input-clear {
+  margin: 0 4px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--text-faint);
+}
+
+.ui-input-clear:hover {
+  color: var(--text);
+}
+
+/* Textarea shell — wraps the textarea when clearable is set; the clear
+   button sits absolutely top-right. */
+.ui-textarea-shell {
+  display: inline-block;
+  position: relative;
+  width: 100%;
+}
+
+.ui-textarea-shell .ui-textarea {
+  width: 100%;
+  display: block;
+  padding-right: 28px;
+}
+
+.ui-textarea-clear {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--text-faint);
+}
+
+.ui-textarea-clear:hover {
+  color: var(--text);
+}
+
 /* Multi-line input. */
 .ui-textarea {
   background: var(--bg-raised);
