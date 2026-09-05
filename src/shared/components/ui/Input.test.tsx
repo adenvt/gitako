@@ -62,7 +62,7 @@ describe("Input (kit)", () => {
   it("state='loading' renders a spinner inside the shell", () => {
     const { container } = render(<Input placeholder="x" state="loading" />);
     expect(container.querySelector(".ui-input-shell")).toBeInTheDocument();
-    expect(container.querySelector("svg.ui-btn-spinner")).toBeInTheDocument();
+    expect(container.querySelector("svg.ui-spinner")).toBeInTheDocument();
   });
 
   it("state='success' renders a check icon inside the shell", () => {
