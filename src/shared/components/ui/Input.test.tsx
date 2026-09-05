@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { userEvent } from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { Input } from "./Input";
 
 describe("Input (kit)", () => {
@@ -81,5 +82,83 @@ describe("Input (kit)", () => {
     const { container } = render(<Input placeholder="x" />);
     expect(container.querySelector(".ui-input-shell")).not.toBeInTheDocument();
     expect(container.querySelector(".ui-input-icon")).not.toBeInTheDocument();
+  });
+
+  it("renders a prepend in the shell", () => {
+    const { container } = render(
+      <Input placeholder="x" prepend={<span data-testid="prefix">P</span>} />,
+    );
+    expect(container.querySelector(".ui-input-shell")).toBeInTheDocument();
+    expect(container.querySelector(".ui-input-affix-prepend")).toBeInTheDocument();
+    expect(screen.getByTestId("prefix")).toBeInTheDocument();
+  });
+
+  it("renders an append in the shell", () => {
+    const { container } = render(
+      <Input placeholder="x" append={<span data-testid="suffix">S</span>} />,
+    );
+    expect(container.querySelector(".ui-input-affix-append")).toBeInTheDocument();
+    expect(screen.getByTestId("suffix")).toBeInTheDocument();
+  });
+
+  it("clearable shows the clear button when value is non-empty", () => {
+    const { container } = render(
+      <Input placeholder="x" value="abc" clearable onChange={() => {}} />,
+    );
+    expect(container.querySelector(".ui-input-clear")).toBeInTheDocument();
+  });
+
+  it("clearable hides the clear button when value is empty", () => {
+    const { container } = render(
+      <Input placeholder="x" value="" clearable onChange={() => {}} />,
+    );
+    expect(container.querySelector(".ui-input-clear")).not.toBeInTheDocument();
+  });
+
+  it("clearable hides the clear button when disabled", () => {
+    const { container } = render(
+      <Input placeholder="x" value="abc" clearable disabled onChange={() => {}} />,
+    );
+    expect(container.querySelector(".ui-input-clear")).not.toBeInTheDocument();
+  });
+
+  it("clearable hides the clear button when state='loading'", () => {
+    const { container } = render(
+      <Input
+        placeholder="x"
+        value="abc"
+        clearable
+        state="loading"
+        onChange={() => {}}
+      />,
+    );
+    expect(container.querySelector(".ui-input-clear")).not.toBeInTheDocument();
+  });
+
+  it("clearable click fires onChange with empty value", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    const { container } = render(
+      <Input placeholder="x" value="abc" clearable onChange={onChange} />,
+    );
+    await user.click(container.querySelector(".ui-input-clear")!);
+    expect(onChange).toHaveBeenCalled();
+    expect(onChange.mock.calls[0][0].target.value).toBe("");
+  });
+
+  it("prepend + state icon + clear all coexist", () => {
+    const { container } = render(
+      <Input
+        placeholder="x"
+        prepend={<span data-testid="prefix">P</span>}
+        state="invalid"
+        value="abc"
+        clearable
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByTestId("prefix")).toBeInTheDocument();
+    expect(container.querySelector(".ui-input-icon-err")).toBeInTheDocument();
+    expect(container.querySelector(".ui-input-clear")).toBeInTheDocument();
   });
 });

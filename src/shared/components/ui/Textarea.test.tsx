@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { userEvent } from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { Textarea } from "./Textarea";
 
 describe("Textarea (kit)", () => {
@@ -56,5 +57,30 @@ describe("Textarea (kit)", () => {
     const el = screen.getByPlaceholderText("x");
     expect(el.className).toMatch(/ui-textarea-invalid/);
     expect(el).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("clearable shows the clear button when value is non-empty", () => {
+    const { container } = render(
+      <Textarea value="abc" clearable onChange={() => {}} />,
+    );
+    expect(container.querySelector(".ui-textarea-clear")).toBeInTheDocument();
+  });
+
+  it("clearable hides the clear button when value is empty", () => {
+    const { container } = render(
+      <Textarea value="" clearable onChange={() => {}} />,
+    );
+    expect(container.querySelector(".ui-textarea-clear")).not.toBeInTheDocument();
+  });
+
+  it("clearable click fires onChange with empty value", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    const { container } = render(
+      <Textarea value="abc" clearable onChange={onChange} />,
+    );
+    await user.click(container.querySelector(".ui-textarea-clear")!);
+    expect(onChange).toHaveBeenCalled();
+    expect(onChange.mock.calls[0][0].target.value).toBe("");
   });
 });
