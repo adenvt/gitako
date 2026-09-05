@@ -1,0 +1,38 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { Textarea } from "./Textarea";
+
+describe("Textarea (kit)", () => {
+  it("applies the ui-textarea class", () => {
+    render(<Textarea placeholder="x" />);
+    expect(screen.getByPlaceholderText("x").className).toMatch(/ui-textarea/);
+  });
+
+  it("merges a caller className with ui-textarea", () => {
+    render(<Textarea placeholder="x" className="my-class" />);
+    const el = screen.getByPlaceholderText("x");
+    expect(el.className).toMatch(/ui-textarea/);
+    expect(el.className).toMatch(/my-class/);
+  });
+
+  it("renders as a <textarea> element (not <input>)", () => {
+    const { container } = render(<Textarea placeholder="x" />);
+    expect(container.querySelector("textarea")).toBeInTheDocument();
+    expect(container.querySelector("input")).not.toBeInTheDocument();
+  });
+
+  it("forwards disabled", () => {
+    render(<Textarea placeholder="x" disabled />);
+    expect(screen.getByPlaceholderText("x")).toBeDisabled();
+  });
+
+  it("forwards rows", () => {
+    render(<Textarea placeholder="x" rows={6} />);
+    expect(screen.getByPlaceholderText("x")).toHaveAttribute("rows", "6");
+  });
+
+  it("forwards value", () => {
+    render(<Textarea value="hello" onChange={() => {}} />);
+    expect(screen.getByDisplayValue("hello")).toBeInTheDocument();
+  });
+});
