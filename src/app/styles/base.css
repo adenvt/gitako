@@ -221,6 +221,93 @@ body {
   padding: 8px 12px;
 }
 
+/* State icons rendered inside the input shell. Inherit the input's
+   text color so the icon is a visual peer, not a second accent. */
+.ui-input-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-faint);
+  opacity: 0.85;
+}
+
+.ui-input-icon-ok {
+  color: var(--ok);
+}
+
+.ui-input-icon-err {
+  color: var(--err);
+}
+
+/* Invalid state (red border on the input or its shell). */
+.ui-input-invalid,
+.ui-textarea-invalid {
+  border-color: var(--err);
+}
+
+.ui-input-invalid:focus-visible,
+.ui-textarea-invalid:focus-visible {
+  outline-color: var(--err);
+}
+
+/* Shell wrapper for Input when a trailing icon is present. The shell
+   carries the border; the input inside is .ui-input-flat (borderless,
+   see Combobox internals). */
+.ui-input-shell {
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  width: 100%;
+  vertical-align: middle;
+}
+
+.ui-input-shell:focus-within {
+  border-color: var(--accent-border);
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.ui-input-shell .ui-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.ui-input-shell.ui-input-invalid {
+  border-color: var(--err);
+}
+
+.ui-input-shell:focus-within.ui-input-invalid {
+  outline-color: var(--err);
+}
+
+/* Affix slot inside the shell. Click-through to the input. */
+.ui-input-affix {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 6px;
+  color: var(--text-faint);
+  font-size: inherit;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.ui-input-shell.ui-input-sm .ui-input-affix {
+  padding: 0 4px;
+}
+
+.ui-input-shell.ui-input-lg .ui-input-affix {
+  padding: 0 10px;
+}
+
 /* Multi-line input. */
 .ui-textarea {
   background: var(--bg-raised);

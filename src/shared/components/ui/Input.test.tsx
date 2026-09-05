@@ -50,4 +50,36 @@ describe("Input (kit)", () => {
     render(<Input placeholder="x" />);
     expect(screen.getByPlaceholderText("x").className).not.toMatch(/ui-input-(sm|lg)/);
   });
+
+  it("state='loading' disables the input and exposes aria-busy", () => {
+    render(<Input placeholder="x" state="loading" />);
+    const el = screen.getByPlaceholderText("x") as HTMLInputElement;
+    expect(el.disabled).toBe(true);
+    expect(el.getAttribute("aria-busy")).toBe("true");
+  });
+
+  it("state='loading' renders a spinner inside the shell", () => {
+    const { container } = render(<Input placeholder="x" state="loading" />);
+    expect(container.querySelector(".ui-input-shell")).toBeInTheDocument();
+    expect(container.querySelector("svg.ui-btn-spinner")).toBeInTheDocument();
+  });
+
+  it("state='success' renders a check icon inside the shell", () => {
+    const { container } = render(<Input placeholder="x" state="success" />);
+    expect(container.querySelector(".ui-input-shell")).toBeInTheDocument();
+    expect(container.querySelector(".ui-input-icon-ok")).toBeInTheDocument();
+  });
+
+  it("state='invalid' applies ui-input-invalid and aria-invalid", () => {
+    render(<Input placeholder="x" state="invalid" />);
+    const el = screen.getByPlaceholderText("x").closest(".ui-input-shell, input");
+    expect(el?.className).toMatch(/ui-input-invalid/);
+    expect(screen.getByPlaceholderText("x")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("no state: no shell wrapper, no trailing icon", () => {
+    const { container } = render(<Input placeholder="x" />);
+    expect(container.querySelector(".ui-input-shell")).not.toBeInTheDocument();
+    expect(container.querySelector(".ui-input-icon")).not.toBeInTheDocument();
+  });
 });

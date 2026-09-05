@@ -50,4 +50,11 @@ describe("Textarea (kit)", () => {
     render(<Textarea placeholder="x" />);
     expect(screen.getByPlaceholderText("x").className).not.toMatch(/ui-textarea-(sm|lg)/);
   });
+
+  it("state='invalid' applies ui-textarea-invalid and aria-invalid", () => {
+    render(<Textarea placeholder="x" state="invalid" />);
+    const el = screen.getByPlaceholderText("x");
+    expect(el.className).toMatch(/ui-textarea-invalid/);
+    expect(el).toHaveAttribute("aria-invalid", "true");
+  });
 });
