@@ -73,7 +73,6 @@
 .welcomeSearchInput {
   width: 100%;
   padding: 6px 30px 6px 28px !important;
-  font-size: var(--fs-sm);
 }
 
 .welcomeClear {

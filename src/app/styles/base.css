@@ -207,6 +207,20 @@ body {
   cursor: not-allowed;
 }
 
+/* Size variants — sm matches the original caller shims (--fs-sm 13px),
+   lg bumps to --fs-lg 15px for emphasis fields. */
+.ui-input-sm,
+.ui-textarea-sm {
+  font-size: var(--fs-sm);
+  padding: 4px 8px;
+}
+
+.ui-input-lg,
+.ui-textarea-lg {
+  font-size: var(--fs-lg);
+  padding: 8px 12px;
+}
+
 /* Multi-line input. */
 .ui-textarea {
   background: var(--bg-raised);

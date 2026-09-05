@@ -35,4 +35,19 @@ describe("Input (kit)", () => {
     render(<Input placeholder="x" aria-invalid="true" />);
     expect(screen.getByPlaceholderText("x")).toHaveAttribute("aria-invalid", "true");
   });
+
+  it("applies ui-input-sm when size='sm'", () => {
+    render(<Input placeholder="x" size="sm" />);
+    expect(screen.getByPlaceholderText("x").className).toMatch(/ui-input-sm/);
+  });
+
+  it("applies ui-input-lg when size='lg'", () => {
+    render(<Input placeholder="x" size="lg" />);
+    expect(screen.getByPlaceholderText("x").className).toMatch(/ui-input-lg/);
+  });
+
+  it("omits size class when size='md' (default)", () => {
+    render(<Input placeholder="x" />);
+    expect(screen.getByPlaceholderText("x").className).not.toMatch(/ui-input-(sm|lg)/);
+  });
 });
