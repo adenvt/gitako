@@ -1,19 +1,37 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import clsx from "clsx";
 import { Button as BaseButton } from "@base-ui/react/button";
+import { ButtonSpinner } from "./ButtonSpinner";
 
-type Variant = "solid" | "primary" | "ghost" | "none";
+type Variant = "solid" | "primary" | "ghost" | "subtle" | "danger" | "none";
+
+type Size = "sm" | "md" | "lg" | "icon";
 
 const variantClass: Record<Variant, string | undefined> = {
   solid: "ui-btn",
   primary: "ui-btn ui-btn-primary",
   ghost: "ui-ghost",
+  subtle: "ui-btn-subtle",
+  danger: "ui-btn ui-btn-danger",
   none: undefined,
+};
+
+const sizeClass: Record<Size, string | undefined> = {
+  sm: "ui-btn-sm",
+  md: undefined,
+  lg: "ui-btn-lg",
+  icon: "ui-btn-icon",
 };
 
 export interface ButtonProps extends ComponentProps<typeof BaseButton> {
   /** Visual style; "none" keeps only caller classes (fully bespoke buttons). */
   variant?: Variant;
+  /** Control size; "md" is the default look, "lg" is the emphasis size
+      (max one per surface), "icon" is a square hit-target. */
+  size?: Size;
+  /** Busy state: disables the button and exposes aria-busy. Label
+      (e.g. "Saving…") stays caller-owned. */
+  loading?: boolean;
 }
 
 /**
@@ -21,6 +39,32 @@ export interface ButtonProps extends ComponentProps<typeof BaseButton> {
  * Wraps @base-ui/react/button — use this instead of raw <button> so
  * disabled/keyboard handling stays consistent app-wide.
  */
-export function Button({ variant = "solid", className, ...props }: ButtonProps) {
-  return <BaseButton className={clsx(variantClass[variant], className)} {...props} />;
+export function Button({
+  variant = "solid",
+  size = "md",
+  type = "button",
+  loading = false,
+  disabled,
+  className,
+  children,
+  ...props
+}: ButtonProps) {
+  return (
+    <BaseButton
+      type={type}
+      disabled={loading || disabled}
+      aria-busy={loading || undefined}
+      className={clsx(variantClass[variant], sizeClass[size], className)}
+      {...props}
+    >
+      {loading ? (
+        <>
+          <ButtonSpinner size={size} />
+          {children as ReactNode}
+        </>
+      ) : (
+        children
+      )}
+    </BaseButton>
+  );
 }

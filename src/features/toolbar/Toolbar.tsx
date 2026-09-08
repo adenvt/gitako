@@ -80,7 +80,8 @@ export function Toolbar() {
           variant="solid"
           className={s.toolbarBtn}
           onClick={handlePush}
-          disabled={pushing || loading}
+          loading={pushing}
+          disabled={loading}
           title={pushing ? "Pushing…" : "Push to remote"}
         >
           <ArrowUpIcon size={13} aria-hidden />

@@ -388,12 +388,12 @@ export function FileTree({
       {dirPaths.length > 0 && (
         <div className={s.fileTreeToolbar}>
           {allExpanded ? (
-            <Button variant="none" className={s.treeToolbarBtn} onClick={collapseAll}>
+            <Button variant="subtle" size="sm" onClick={collapseAll}>
               <ListUnorderedIcon size={13} aria-hidden />
               Collapse all
             </Button>
           ) : (
-            <Button variant="none" className={s.treeToolbarBtn} onClick={expandAll}>
+            <Button variant="subtle" size="sm" onClick={expandAll}>
               <ListOrderedIcon size={13} aria-hidden />
               Expand all
             </Button>

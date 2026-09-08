@@ -111,9 +111,9 @@ export function AiSettingsPage({ onBack }: { onBack?: () => void }) {
   return (
     <div className={s.page}>
       {onBack && (
-        <button className={s.backLink} onClick={onBack} type="button">
+        <Button variant="subtle" onClick={onBack} className={s.backLink}>
           <ArrowLeftIcon size={12} aria-hidden /> back
-        </button>
+        </Button>
       )}
 
       <div className={s.heading}>

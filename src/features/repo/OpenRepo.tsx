@@ -110,8 +110,8 @@ export function OpenRepo() {
           <span style={{ color: "var(--text-faint)" }}>~/repos$</span> open
         </h1>
         <div className={s.welcomeActions}>
-          <Button variant="solid" className={s.welcomeBtn} onClick={() => void handleBrowse()}>
-            <FileDirectoryOpenFillIcon size={13} aria-hidden />
+          <Button variant="solid" size="lg" className={s.welcomeBtn} onClick={() => void handleBrowse()}>
+            <FileDirectoryOpenFillIcon size={16} aria-hidden />
             open
           </Button>
         </div>
