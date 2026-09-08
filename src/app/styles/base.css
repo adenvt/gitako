@@ -796,6 +796,36 @@ body {
   color: var(--text);
 }
 
+/* Combobox size variants — applied to the input-group shell or trigger. */
+.ui-combobox-sm {
+  font-size: var(--fs-sm);
+  padding: 4px 8px;
+}
+
+.ui-combobox-lg {
+  font-size: var(--fs-lg);
+  padding: 8px 12px;
+}
+
+/* Combobox state variants — border color mirrors Select. */
+.ui-combobox-invalid {
+  border-color: var(--err);
+}
+
+.ui-combobox-invalid:focus-within,
+.ui-combobox-invalid:focus-visible {
+  outline-color: var(--err);
+}
+
+.ui-combobox-success {
+  border-color: var(--ok);
+}
+
+.ui-combobox-success:focus-within,
+.ui-combobox-success:focus-visible {
+  outline-color: var(--ok);
+}
+
 /* Filter input rendered at the top of a popup (BranchSwitcher pattern). */
 .ui-popup > input {
   display: block;
