@@ -657,8 +657,32 @@ body {
   display: none;
 }
 
-/* Select trigger — flat panel with caret on the right, mirrors .ui-input. */
-.ui-trigger-select {
+/* Select size + state variants for the trigger. */
+.ui-select-sm {
+  font-size: var(--fs-sm);
+  padding: 4px 8px;
+}
+
+.ui-select-lg {
+  font-size: var(--fs-lg);
+  padding: 8px 12px;
+}
+
+.ui-select-invalid {
+  border-color: var(--err);
+}
+
+.ui-select-invalid:focus-visible {
+  outline-color: var(--err);
+}
+
+.ui-select-success {
+  border-color: var(--ok);
+}
+
+.ui-select-success:focus-visible {
+  outline-color: var(--ok);
+}
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);

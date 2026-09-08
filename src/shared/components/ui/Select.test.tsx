@@ -44,7 +44,6 @@ describe("Select (kit) - bare form", () => {
     const { container } = render(
       <Select options={OPTIONS} placeholder="Pick one" />,
     );
-    // Open the popup
     act(() => {
       const trigger = container.querySelector("button")!;
       fireEvent.click(trigger);
@@ -102,6 +101,95 @@ describe("Select (kit) - bare form", () => {
     });
     const checkIcon = document.body.querySelector("svg");
     expect(checkIcon).not.toBeNull();
+  });
+
+  it("forwards aria-labelledby to the trigger", () => {
+    const { container } = render(
+      <Select options={OPTIONS} placeholder="Pick one" aria-labelledby="my-label" />,
+    );
+    const trigger = container.querySelector("button");
+    expect(trigger!.getAttribute("aria-labelledby")).toBe("my-label");
+  });
+
+  it("forwards className to the trigger", () => {
+    const { container } = render(
+      <Select options={OPTIONS} placeholder="Pick one" className="my-custom" />,
+    );
+    const trigger = container.querySelector("button");
+    expect(trigger!.className).toMatch(/my-custom/);
+  });
+
+  it("disabled prop disables the trigger", () => {
+    const { container } = render(
+      <Select options={OPTIONS} placeholder="Pick one" disabled />,
+    );
+    const trigger = container.querySelector("button") as HTMLButtonElement;
+    expect(trigger.disabled).toBe(true);
+  });
+
+  it("renders Empty fallback when options is empty array", () => {
+    const { container } = render(
+      <Select options={[]} placeholder="No options" />,
+    );
+    act(() => {
+      const trigger = container.querySelector("button")!;
+      fireEvent.click(trigger);
+    });
+    const empty = document.body.querySelector('[class*="ui-empty"]');
+    expect(empty).not.toBeNull();
+    expect(empty!.textContent).toContain("No options");
+  });
+});
+
+describe("Select (kit) - size prop", () => {
+  it("size=\"sm\" applies ui-select-sm to the trigger", () => {
+    const { container } = render(
+      <Select size="sm" options={OPTIONS} placeholder="Small" />,
+    );
+    const trigger = container.querySelector("button");
+    expect(trigger!.className).toMatch(/ui-select-sm/);
+  });
+
+  it("size=\"lg\" applies ui-select-lg to the trigger", () => {
+    const { container } = render(
+      <Select size="lg" options={OPTIONS} placeholder="Large" />,
+    );
+    const trigger = container.querySelector("button");
+    expect(trigger!.className).toMatch(/ui-select-lg/);
+  });
+
+  it("default size (md) does not apply size class", () => {
+    const { container } = render(
+      <Select options={OPTIONS} placeholder="Default" />,
+    );
+    const trigger = container.querySelector("button");
+    expect(trigger!.className).not.toMatch(/ui-select-(sm|lg)/);
+  });
+});
+
+describe("Select (kit) - state prop", () => {
+  it("state=\"invalid\" applies ui-select-invalid to the trigger", () => {
+    const { container } = render(
+      <Select state="invalid" options={OPTIONS} placeholder="Invalid" />,
+    );
+    const trigger = container.querySelector("button");
+    expect(trigger!.className).toMatch(/ui-select-invalid/);
+  });
+
+  it("state=\"success\" applies ui-select-success to the trigger", () => {
+    const { container } = render(
+      <Select state="success" options={OPTIONS} placeholder="Success" />,
+    );
+    const trigger = container.querySelector("button");
+    expect(trigger!.className).toMatch(/ui-select-success/);
+  });
+
+  it("no state does not apply state class", () => {
+    const { container } = render(
+      <Select options={OPTIONS} placeholder="Default" />,
+    );
+    const trigger = container.querySelector("button");
+    expect(trigger!.className).not.toMatch(/ui-select-(invalid|success)/);
   });
 });
 
