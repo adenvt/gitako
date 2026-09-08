@@ -1,5 +1,6 @@
 import { Toast } from "@base-ui/react/toast";
 import { XIcon } from "@primer/octicons-react";
+import { Spinner } from "./ui/Spinner";
 import s from "./toaster.module.css";
 
 /**
@@ -37,6 +38,16 @@ export interface ToastLoadingHandle {
   update: (patch: { title?: string; description?: string; type?: string }) => void;
 }
 
+/** Fire an info toast. */
+export function toastInfo(title: string, description?: string): void {
+  toastManager.add({ type: "info", title, description });
+}
+
+/** Fire a warning toast. */
+export function toastWarning(title: string, description?: string): void {
+  toastManager.add({ type: "warning", title, description });
+}
+
 /** Fire a non-auto-dismissing loading toast and return a handle so the
  *  caller can close it (or flip its state) when the work resolves. The
  *  optional `action` renders a button on the toast — used by the AI
@@ -59,6 +70,35 @@ export function toastLoading(title: string, opts: ToastLoadingOptions = {}): Toa
   };
 }
 
+export interface ToastPromiseOptions {
+  loading: string;
+  success: string;
+  error: string;
+  description?: string;
+}
+
+/** Show a loading toast that auto-flips to success or error when the
+ *  promise settles. The loading toast includes a Cancel action so the
+ *  caller can abort; on settle the toast transitions and auto-dismisses
+ *  after the default timeout. */
+export function toastPromise(
+  promise: Promise<unknown>,
+  opts: ToastPromiseOptions,
+): void {
+  const handle = toastLoading(opts.loading, {
+    description: opts.description,
+  });
+  promise
+    .then(() => {
+      handle.update({ type: "success", title: opts.success });
+      setTimeout(() => handle.close(), 4000);
+    })
+    .catch(() => {
+      handle.update({ type: "error", title: opts.error });
+      setTimeout(() => handle.close(), 6000);
+    });
+}
+
 /** Dismiss a toast by id. Thin wrapper for call sites that don't need
  *  the rest of the loading handle. */
 export function toastClose(id: string): void {
@@ -72,22 +112,28 @@ export function Toaster() {
   return (
     <Toast.Portal>
       <Toast.Viewport className={s.toastViewport}>
-        {toasts.map((toast) => (
-          <Toast.Root key={toast.id} toast={toast} className={s.toastRoot}>
-            <div className={s.toastBody}>
-              {toast.title && <Toast.Title className={s.toastTitle}>{toast.title}</Toast.Title>}
-              {toast.description && (
-                <Toast.Description className={s.toastDescription}>
-                  {toast.description}
-                </Toast.Description>
+        {toasts.map((toast) => {
+          const isLoading = toast.type === "loading";
+          return (
+            <Toast.Root key={toast.id} toast={toast} className={s.toastRoot}>
+              <div className={s.toastBody}>
+                {isLoading && <Spinner size="sm" />}
+                {toast.title && <Toast.Title className={s.toastTitle}>{toast.title}</Toast.Title>}
+                {toast.description && (
+                  <Toast.Description className={s.toastDescription}>
+                    {toast.description}
+                  </Toast.Description>
+                )}
+              </div>
+              {toast.actionProps && <Toast.Action className={s.toastAction} {...toast.actionProps} />}
+              {!isLoading && (
+                <Toast.Close className={s.toastClose} aria-label="Dismiss">
+                  <XIcon size={14} aria-hidden />
+                </Toast.Close>
               )}
-            </div>
-            {toast.actionProps && <Toast.Action className={s.toastAction} {...toast.actionProps} />}
-            <Toast.Close className={s.toastClose} aria-label="Dismiss">
-              <XIcon size={14} aria-hidden />
-            </Toast.Close>
-          </Toast.Root>
-        ))}
+            </Toast.Root>
+          );
+        })}
       </Toast.Viewport>
     </Toast.Portal>
   );
