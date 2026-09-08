@@ -93,4 +93,48 @@ describe("Button (kit)", () => {
     expect(screen.getByRole("button", { name: "Get started" }).className).toMatch(/ui-btn-lg/);
     expect(screen.getByRole("button", { name: "Close" }).className).toMatch(/ui-btn-icon/);
   });
+
+  it("loading with size=\"icon\" renders a small spinner", () => {
+    const { container } = render(
+      <Button loading size="icon" aria-label="Saving">
+        ×
+      </Button>,
+    );
+    const spinner = container.querySelector("svg.ui-spinner");
+    expect(spinner).toBeInTheDocument();
+  });
+
+  it("disabled without loading disables but shows no spinner", () => {
+    const { container } = render(<Button disabled>Save</Button>);
+    const el = screen.getByRole("button", { name: "Save" }) as HTMLButtonElement;
+    expect(el.disabled).toBe(true);
+    expect(el.getAttribute("aria-busy")).toBeNull();
+    expect(container.querySelector("svg.ui-spinner")).not.toBeInTheDocument();
+  });
+
+  it("aria-busy is undefined when not loading", () => {
+    render(<Button>Save</Button>);
+    expect(screen.getByRole("button", { name: "Save" }).getAttribute("aria-busy")).toBeNull();
+  });
+
+  it("spreads extra props onto the BaseButton", () => {
+    render(
+      <Button data-testid="my-btn" aria-label="Custom action">
+        Save
+      </Button>,
+    );
+    const el = screen.getByRole("button", { name: "Custom action" });
+    expect(el.getAttribute("data-testid")).toBe("my-btn");
+  });
+
+  it("loading + disabled together: loading wins for disabled", () => {
+    render(
+      <Button loading disabled>
+        Push
+      </Button>,
+    );
+    const el = screen.getByRole("button", { name: "Push" }) as HTMLButtonElement;
+    expect(el.disabled).toBe(true);
+    expect(el.getAttribute("aria-busy")).toBe("true");
+  });
 });
