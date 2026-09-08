@@ -5,6 +5,7 @@ import * as TextareaStories from "@/shared/components/ui/Textarea.stories";
 import * as SelectStories from "@/shared/components/ui/Select.stories";
 import * as ComboboxStories from "@/shared/components/ui/Combobox.stories";
 import * as ScrollAreaStories from "@/shared/components/ui/ScrollArea.stories";
+import * as ToasterStories from "@/shared/components/Toaster.stories";
 
 <Meta title="Design System/UI Kit" />
 
@@ -98,3 +99,23 @@ the common case, or `<ScrollArea.Root>…</ScrollArea.Root>` for advanced cases
 
 <Canvas of={ScrollAreaStories.Default} />
 <Canvas of={ScrollAreaStories.WithList} />
+
+## Toasts
+
+Use the `toast*` helpers from `@/shared/components/ui` for app-wide feedback.
+The `<Toaster>` viewport mounts once near the app root (see `App.tsx`).
+
+**Types:**
+- `toastSuccess(title, description?)` — green accent, auto-dismisses
+- `toastError(title, description?)` — red accent, auto-dismisses
+- `toastInfo(title, description?)` — blue accent, auto-dismisses
+- `toastWarning(title, description?)` — yellow accent, auto-dismisses
+- `toastLoading(title, { description?, action? })` — blue accent + spinner,
+  **no X button** (so Cancel action isn't ambiguous). Caller closes via the
+  returned handle.
+- `toastPromise(promise, { loading, success, error })` — shows a loading toast,
+  auto-flips to success or error when the promise settles.
+
+<Canvas of={ToasterStories.Success} />
+<Canvas of={ToasterStories.Error} />
+<Canvas of={ToasterStories.Loading} />
