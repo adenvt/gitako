@@ -62,14 +62,14 @@ describe("Button (kit)", () => {
     const btn = screen.getByRole("button", { name: "Push" });
     expect(btn.textContent).toMatch(/Push/);
     // Spinner is an <svg> with the spinner class (kit renders before children).
-    const spinner = container.querySelector("svg.ui-btn-spinner");
+    const spinner = container.querySelector("svg.ui-spinner");
     expect(spinner).toBeInTheDocument();
     expect(spinner?.tagName.toLowerCase()).toBe("svg");
   });
 
   it("loading spinner is hidden when not loading", () => {
     const { container } = render(<Button>Save</Button>);
-    expect(container.querySelector("svg.ui-btn-spinner")).not.toBeInTheDocument();
+    expect(container.querySelector("svg.ui-spinner")).not.toBeInTheDocument();
   });
 
   it("maps danger to ui-btn + ui-btn-danger", () => {

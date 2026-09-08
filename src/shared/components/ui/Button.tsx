@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import clsx from "clsx";
 import { Button as BaseButton } from "@base-ui/react/button";
-import { ButtonSpinner } from "./ButtonSpinner";
+import { Spinner } from "./Spinner";
 
 type Variant = "solid" | "primary" | "ghost" | "subtle" | "danger" | "none";
 
@@ -59,7 +59,7 @@ export function Button({
     >
       {loading ? (
         <>
-          <ButtonSpinner size={size} />
+          <Spinner size={size === "icon" ? "sm" : size} />
           {children as ReactNode}
         </>
       ) : (
