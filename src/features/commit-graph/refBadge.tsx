@@ -5,7 +5,7 @@ import {
   MarkGithubIcon,
   TagIcon,
 } from "@primer/octicons-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import clsx from "clsx";
 import type { RefInfo } from "@/shared/types/git";
@@ -55,6 +55,52 @@ export function RefIcon({ refInfo }: RefIconProps) {
 export function refFullName(refInfo: RefInfo): string {
   const { name, kind, remote } = refInfo;
   return kind === "remoteBranch" && remote ? `${remote}/${name}` : name;
+}
+
+/**
+ * Display name for a ref. For HEAD, parse the branch name from `fullName`
+ * (e.g. "HEAD -> main" → "main"). For all other kinds, return `name`.
+ */
+export function refDisplayName(refInfo: RefInfo): string {
+  if (refInfo.kind === "head") {
+    const match = refInfo.fullName.match(/HEAD -> (.+)$/);
+    if (match) return match[1];
+  }
+  return refInfo.name;
+}
+
+/**
+ * Hook for hover-open/hover-close dropdown scheduling.
+ * Returns `[open, onMouseEnter, onMouseLeave]` — the open state plus
+ * stable event handlers that schedule open/close with a small delay
+ * to prevent flicker when the cursor crosses the 1px gap between
+ * the anchor and the dropdown.
+ */
+export function useHoverDropdown(): [
+  boolean,
+  () => void,
+  () => void,
+] {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<number | null>(null);
+  const scheduleOpen = useCallback(() => {
+    if (closeTimer.current !== null) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setOpen(true);
+  }, []);
+  const scheduleClose = useCallback(() => {
+    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setOpen(false), 100);
+  }, []);
+  useEffect(
+    () => () => {
+      if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+  return [open, scheduleOpen, scheduleClose];
 }
 
 /** What the caller should do on double-click. Discriminated so the
@@ -144,13 +190,13 @@ interface RefBadgeProps {
 
 /** A single ref badge (used when refs have distinct names). */
 export function RefBadge({ refInfo, color, onCheckout }: RefBadgeProps) {
-  const fullName = refFullName(refInfo);
+  const displayName = refDisplayName(refInfo);
   const canCheckout = onCheckout && (refInfo.kind === "branch" || refInfo.kind === "remoteBranch");
   const handleDoubleClick = canCheckout
     ? () => {
         // Remote branches are addressed by their full `origin/feature`
         // name; the store routes them to `checkoutTrack` based on kind.
-        const name = refInfo.kind === "remoteBranch" ? fullName : refInfo.name;
+        const name = refInfo.kind === "remoteBranch" ? refFullName(refInfo) : refInfo.name;
         const refKind = refInfo.kind === "remoteBranch" ? "remoteBranch" : "branch";
         onCheckout({ kind: "checkout", name, refKind });
       }
@@ -158,12 +204,12 @@ export function RefBadge({ refInfo, color, onCheckout }: RefBadgeProps) {
   return (
     <span
       className={clsx(s.commitRefBadge, refInfo.kind === "head" && s.activeRef)}
-      title={fullName}
+      title={refInfo.fullName}
       style={color ? ({ "--badge-color": color } as React.CSSProperties) : undefined}
       onDoubleClick={handleDoubleClick}
     >
       {refInfo.kind === "head" && <CheckIcon size={11} className={s.activeRefCheck} aria-hidden />}
-      <span className={s.refName}>{refInfo.name}</span>
+      <span className={s.refName}>{displayName}</span>
       <RefIcon refInfo={refInfo} />
     </span>
   );
@@ -190,31 +236,13 @@ interface RefBadgeGroupProps {
  * full name and provider.
  */
 export function RefBadgeGroup({ refs, color, onCheckout }: RefBadgeGroupProps) {
-  const name = refs[0]?.name ?? "";
+  const name = refs[0] ? refDisplayName(refs[0]) : "";
   const label = refs.map(refFullName).join(", ");
   const isActive = refs.some((r) => r.kind === "head");
   const localBranch = refs.find((r) => r.kind === "branch");
   const remoteBranch = refs.find((r) => r.kind === "remoteBranch");
   const ref = useRef<HTMLSpanElement>(null);
-  const [open, setOpen] = useState(false);
-  const closeTimer = useRef<number | null>(null);
-  const scheduleOpen = () => {
-    if (closeTimer.current !== null) {
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-    setOpen(true);
-  };
-  const scheduleClose = () => {
-    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-    closeTimer.current = window.setTimeout(() => setOpen(false), 100);
-  };
-  useEffect(
-    () => () => {
-      if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-    },
-    [],
-  );
+  const [open, scheduleOpen, scheduleClose] = useHoverDropdown();
   const handleDoubleClick =
     onCheckout && (localBranch || remoteBranch)
       ? () => {
@@ -310,25 +338,7 @@ export function RefOverflowBadge({ hiddenGroups, color }: RefOverflowBadgeProps)
   const rows = hiddenGroups.flatMap(expandGroupToRows);
   const count = rows.length;
   const ref = useRef<HTMLSpanElement>(null);
-  const [open, setOpen] = useState(false);
-  const closeTimer = useRef<number | null>(null);
-  const scheduleOpen = () => {
-    if (closeTimer.current !== null) {
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-    setOpen(true);
-  };
-  const scheduleClose = () => {
-    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-    closeTimer.current = window.setTimeout(() => setOpen(false), 100);
-  };
-  useEffect(
-    () => () => {
-      if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-    },
-    [],
-  );
+  const [open, scheduleOpen, scheduleClose] = useHoverDropdown();
   return (
     <span
       ref={ref}
