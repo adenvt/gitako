@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { providerFromUrl, refFullName } from "./refBadge";
+import { providerFromUrl, refFullName } from "./RefBadge";
 import type { RefInfo } from "@/shared/types/git";
 
 function makeRef(overrides: Partial<RefInfo>): RefInfo {

@@ -35,6 +35,8 @@ export type ComboboxRootProps = ComponentProps<typeof BaseCombobox.Root>;
  */
 export type ComboboxWrapperProps = Omit<ComboboxRootProps, "children"> & {
   variant?: "trigger" | "input";
+  size?: "sm" | "md" | "lg";
+  state?: "success" | "invalid";
   options?: { value: string; label: string }[];
   placeholder?: string;
   /** className applied to the trigger or input-group shell. */
@@ -56,6 +58,8 @@ function findLabelForValue(
 
 function ComboboxWrapper({
   variant = "input",
+  size = "md",
+  state,
   options,
   value,
   onValueChange,
@@ -64,33 +68,27 @@ function ComboboxWrapper({
   "aria-labelledby": labelledBy,
   ...props
 }: ComboboxWrapperProps) {
+  const sizeClass = size === "sm" ? "ui-combobox-sm" : size === "lg" ? "ui-combobox-lg" : "";
+  const stateClass = state === "invalid" ? "ui-combobox-invalid" : state === "success" ? "ui-combobox-success" : "";
+
   return (
     <BaseCombobox.Root
       value={value}
       onValueChange={onValueChange}
       items={options as never}
-      // Resolve the selected value's label for the visible input. Without
-      // this, Base UI's `stringifyAsLabel` only returns the raw value for
-      // primitive selections, so the input shows "cherry" instead of "Cherry".
-      // For object items Base UI's default `stringifyAsLabel` reads `.label`,
-      // but our `value` is a primitive (the option's `value` field), so we
-      // need this lookup explicitly.
       itemToStringLabel={(item) => {
         if (item == null) return "";
-        if (typeof item === "object" && "label" in (item as Record<string, unknown>)) {
-          return String((item as { label: string }).label);
-        }
         return findLabelForValue(options, item);
       }}
       {...props}
     >
       {variant === "trigger" ? (
-        <Combobox.Trigger aria-labelledby={labelledBy} className={className}>
+        <Combobox.Trigger aria-labelledby={labelledBy} className={clsx(sizeClass, stateClass, className)}>
           <Combobox.Value placeholder={placeholder} />
           <Combobox.Icon>▾</Combobox.Icon>
         </Combobox.Trigger>
       ) : (
-        <Combobox.InputGroup className={className}>
+        <Combobox.InputGroup className={clsx(sizeClass, stateClass, className)}>
           <Combobox.Input placeholder={placeholder} aria-labelledby={labelledBy} />
           <Combobox.Trigger>▾</Combobox.Trigger>
         </Combobox.InputGroup>
@@ -103,9 +101,6 @@ function ComboboxWrapper({
             )}
             <ScrollArea style={{ flex: "1 1 auto", minHeight: 0 }}>
               <ScrollArea.Viewport>
-                {/* Function-child pattern: lets Base UI use the items it has
-                    in context for filtering and label resolution. Plain JSX
-                    children break the filter (see working AiSettingsPage). */}
                 <Combobox.List>
                   {(item: { value: string; label: string }) => (
                     <Combobox.Item key={item.value} value={item.value}>

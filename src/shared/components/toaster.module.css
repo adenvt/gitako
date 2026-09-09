@@ -35,15 +35,40 @@
   color: var(--ok);
 }
 
-/* Loading variant — neutral border + neutral title; the inline
+/* Loading variant — blue border (--info) + spinner; the inline
    .toastAction button is the only "actionable" element. Stays open
-   until the caller closes it. */
+   until the caller closes it. No X button (avoids conflict with Cancel). */
 .toastRoot[data-type="loading"] {
-  border-left-color: var(--accent);
+  border-left-color: var(--info);
 }
 
 .toastRoot[data-type="loading"] .toastTitle {
   color: var(--text);
+}
+
+/* Loading toast: spinner sits beside the title row. */
+.toastRoot[data-type="loading"] .toastBody {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Info variant — blue accent bar + blue title. */
+.toastRoot[data-type="info"] {
+  border-left-color: var(--info);
+}
+
+.toastRoot[data-type="info"] .toastTitle {
+  color: var(--info);
+}
+
+/* Warning variant — yellow accent bar + yellow title. */
+.toastRoot[data-type="warning"] {
+  border-left-color: var(--warn);
+}
+
+.toastRoot[data-type="warning"] .toastTitle {
+  color: var(--warn);
 }
 
 .toastBody {

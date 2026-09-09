@@ -29,6 +29,8 @@ export type SelectRootProps = ComponentProps<typeof BaseSelect.Root>;
  *     out of the bare wrapper.
  */
 export type SelectWrapperProps = Omit<SelectRootProps, "children"> & {
+  size?: "sm" | "md" | "lg";
+  state?: "success" | "invalid";
   options?: { value: string; label: string }[];
   placeholder?: string;
   /** className applied to the trigger. */
@@ -40,6 +42,8 @@ export type SelectWrapperProps = Omit<SelectRootProps, "children"> & {
 };
 
 function SelectWrapper({
+  size = "md",
+  state,
   options,
   value,
   onValueChange,
@@ -49,6 +53,10 @@ function SelectWrapper({
   "aria-labelledby": labelledBy,
   ...props
 }: SelectWrapperProps) {
+  const sizeClass = size === "sm" ? "ui-select-sm" : size === "lg" ? "ui-select-lg" : "";
+  const stateClass = state === "invalid" ? "ui-select-invalid" : state === "success" ? "ui-select-success" : "";
+  const triggerClass = clsx("ui-trigger-select", sizeClass, stateClass, className);
+
   return (
     <BaseSelect.Root
       value={value}
@@ -56,7 +64,7 @@ function SelectWrapper({
       items={options as never}
       {...props}
     >
-      <Select.Trigger aria-labelledby={labelledBy} className={className}>
+      <Select.Trigger aria-labelledby={labelledBy} className={triggerClass}>
         <Select.Value placeholder={placeholder} />
         <Select.Icon>▾</Select.Icon>
       </Select.Trigger>
@@ -79,6 +87,7 @@ function SelectWrapper({
                 <ScrollArea.Thumb />
               </ScrollArea.Scrollbar>
             </ScrollArea>
+            <div className="ui-empty">No options</div>
           </Select.Popup>
         </Select.Positioner>
       </Select.Portal>
