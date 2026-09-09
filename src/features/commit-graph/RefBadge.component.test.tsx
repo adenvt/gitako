@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { RefBadge, RefBadgeGroup, RefIcon, RefOverflowBadge } from "./refBadge";
+import { RefBadge, RefBadgeGroup, RefIcon, RefOverflowBadge } from "./RefBadge";
 import type { RefInfo } from "@/shared/types/git";
 
 function makeRef(overrides: Partial<RefInfo>): RefInfo {

@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { createPortal } from "react-dom";
 import clsx from "clsx";
 import type { RefInfo } from "@/shared/types/git";
-import s from "./refBadge.module.css";
+import s from "./RefBadge.module.css";
 
 /** Detect the hosting provider from a remote URL (https or ssh). */
 export type RefProvider = "github" | "gitlab" | "bitbucket" | null;
@@ -317,15 +317,6 @@ function expandGroupToRows(group: RefInfo[]): RefInfo[][] {
     return [[local, remote]];
   }
   return group.map((r) => [r]);
-}
-
-/** Row label for a dropdown row. A collapsed local+remote pair shares one
- *  base name; any other row is a single ref, labelled by its full name (so a
- *  lone `origin/feature` keeps its remote prefix). */
-function rowLabel(row: RefInfo[]): string {
-  const local = row.find((r) => r.kind === "branch");
-  if (local) return local.name;
-  return row.map(refFullName).join(", ");
 }
 
 /**

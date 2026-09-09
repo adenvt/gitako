@@ -8,7 +8,7 @@ import { buildFileTree } from "@/shared/utils/fileTree";
 import { FileTree } from "@/shared/components/FileTree";
 import { StatusIcon } from "@/shared/components/StatusIcon";
 import { laneColor } from "@/features/commit-graph/colors";
-import badge from "@/features/commit-graph/refBadge.module.css";
+import badge from "@/features/commit-graph/RefBadge.module.css";
 import s from "./detail.module.css";
 import type { ChangedFile } from "@/shared/types/git";
 

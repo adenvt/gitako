@@ -16,7 +16,7 @@ import {
   MIN_GRAPH_BAND,
 } from "./GraphCanvas";
 import { laneColor } from "./colors";
-import { RefBadge, RefBadgeGroup, RefOverflowBadge, type CheckoutAction } from "./refBadge";
+import { RefBadge, RefBadgeGroup, RefOverflowBadge, type CheckoutAction } from "./RefBadge";
 import { useRepoStore } from "@/state/store";
 import { timeAgo } from "@/shared/utils/time";
 import { countByKind } from "@/shared/utils/status";

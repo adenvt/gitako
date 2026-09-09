@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { RefBadge, RefBadgeGroup, RefOverflowBadge, RefIcon } from "./refBadge";
+import { RefBadge, RefBadgeGroup, RefOverflowBadge, RefIcon } from "./RefBadge";
 import type { RefInfo } from "@/shared/types/git";
 
 const localBranch: RefInfo = {
