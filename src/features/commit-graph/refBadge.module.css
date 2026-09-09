@@ -18,6 +18,12 @@
   line-height: 1.6;
 }
 
+/* On hover, expand the name to expose any truncated text.
+   The icon stays visible because it's a separate flex item. */
+.commitRefBadge:hover .refName {
+  max-width: none;
+}
+
 /* Current branch (HEAD): checked icon on the left + a stronger lane-tinted
    fill so the active ref reads as the focused/current one at a glance. */
 .activeRef {
@@ -53,6 +59,17 @@
 
 .refGroupIcons svg {
   display: block;
+}
+
+/* A transparent wrapper for a RefBadge/RefBadgeRefGroup rendered inside
+   a dropdown. No chrome of its own — just a spacer so badges stack
+   vertically in the overflow popup. */
+.refDropdownItem {
+  display: block;
+}
+
+.refDropdownItem + .refDropdownItem {
+  margin-top: 2px;
 }
 
 /* Dropdown rendered into document.body via portal. Position is set inline

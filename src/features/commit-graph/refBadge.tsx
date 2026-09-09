@@ -352,15 +352,16 @@ export function RefOverflowBadge({ hiddenGroups, color }: RefOverflowBadgeProps)
         {rows.map((row, i) => (
           <div
             key={row.map((r) => r.fullName).join("|") || i}
-            className={s.refDropdownRow}
-            title={row.map(refFullName).join(", ")}
+            className={s.refDropdownItem}
           >
-            <span className={s.refDropdownName}>{rowLabel(row)}</span>
-            <span className={s.refGroupIcons}>
-              {row.map((r) => (
-                <RefIcon key={r.fullName} refInfo={r} />
-              ))}
-            </span>
+            {row.length > 1 ? (
+              <RefBadgeGroup
+                refs={row}
+                color={color}
+              />
+            ) : (
+              <RefBadge refInfo={row[0]} color={color} />
+            )}
           </div>
         ))}
       </HoverDropdown>

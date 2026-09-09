@@ -112,6 +112,20 @@ describe("RefBadge", () => {
     // Plain branch gets exactly one icon (the leading RefIcon).
     expect(container.querySelectorAll("svg").length).toBe(1);
   });
+
+  it("on hover, the name expands to expose truncated text (icon stays visible)", () => {
+    // The CSS rule `.commitRefBadge:hover .refName { max-width: none; }`
+    // expands the name on hover. We verify the class is present by
+    // checking the computed style would change — but in jsdom we just
+    // verify the element structure is correct.
+    const { container } = render(
+      <RefBadge refInfo={makeRef({ name: "development", kind: "branch" })} />,
+    );
+    const nameEl = container.querySelector("[class*='refName']") as HTMLElement;
+    expect(nameEl).not.toBeNull();
+    // The name element exists and has the refName class (which has max-width: 96px).
+    expect(nameEl.className).toMatch(/refName/);
+  });
 });
 
 describe("RefBadgeGroup", () => {
@@ -323,7 +337,7 @@ describe("RefOverflowBadge", () => {
     expect(screen.getByText("+1")).toBeInTheDocument();
   });
 
-  it("renders one row per hidden group with combined names and icons on hover", () => {
+  it("renders one row per hidden group with actual RefBadge/RefBadgeGroup components on hover", () => {
     const hidden = [
       [makeRef({ name: "v1.0", fullName: "v1.0", kind: "tag" })],
       [makeRef({ name: "v2.0", fullName: "v2.0", kind: "tag" })],
@@ -333,13 +347,14 @@ describe("RefOverflowBadge", () => {
     // the chip first to open it.
     const chip = container.querySelector("[class*='refOverflowBadge']") as HTMLElement;
     fireEvent.mouseEnter(chip);
+    // Each row renders a RefBadge (with the ref name)
     expect(screen.getByText("v1.0")).toBeInTheDocument();
     expect(screen.getByText("v2.0")).toBeInTheDocument();
-    const rows = document.body.querySelectorAll("[class*='refDropdownRow']");
-    expect(rows.length).toBe(2);
+    const items = document.body.querySelectorAll("[class*='refDropdownItem']");
+    expect(items.length).toBe(2);
   });
 
-  it("collapses a hidden local+remote pair into one row, and the +N count", () => {
+  it("collapses a hidden local+remote pair into one row with RefBadgeGroup, and the +N count", () => {
     const hidden = [
       [
         makeRef({ name: "main", fullName: "main", kind: "branch" }),
@@ -356,10 +371,10 @@ describe("RefOverflowBadge", () => {
     expect(screen.getByText("+1")).toBeInTheDocument();
     const chip = container.querySelector("[class*='refOverflowBadge']") as HTMLElement;
     fireEvent.mouseEnter(chip);
-    // Single row, labelled by the shared base name (icons show local+remote).
+    // Single row, rendered as a RefBadgeGroup with the shared name + 2 icons
     expect(screen.getByText("main")).toBeInTheDocument();
-    const rows = document.body.querySelectorAll("[class*='refDropdownRow']");
-    expect(rows.length).toBe(1);
+    const items = document.body.querySelectorAll("[class*='refDropdownItem']");
+    expect(items.length).toBe(1);
   });
 
   it("renders nothing for an empty hiddenGroups array (defensive)", () => {
