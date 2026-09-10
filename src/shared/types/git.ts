@@ -31,8 +31,10 @@ export interface RefInfo {
   commit: string;
   /** Remote name for remote branches; null otherwise. */
   remote: string | null;
-  /** First remote URL from `git remote get-url`; null when unavailable. */
+  /** First remote URL; null when unavailable. */
   remoteUrl: string | null;
+  /** Upstream tracking ref in fullName form (e.g. "origin/main"). Only for local branches. */
+  upstream?: string | null;
 }
 
 export interface GitErrorPayload {

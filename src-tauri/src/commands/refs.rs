@@ -40,5 +40,21 @@ pub async fn git_refs(repo_path: String) -> Result<Vec<git::refs::RefInfo>, crat
         }
     }
 
+    // Fill upstream tracking info for local branches via git config.
+    for r in &mut refs {
+        if matches!(r.kind, git::refs::RefKind::Branch | git::refs::RefKind::Head) {
+            let remote_out = git::run_tolerate(&repo, &["config", "--get", &format!("branch.{}.remote", r.name)]).await.ok();
+            let merge_out = git::run_tolerate(&repo, &["config", "--get", &format!("branch.{}.merge", r.name)]).await.ok();
+            if let (Some(remote_out), Some(merge_out)) = (remote_out, merge_out) {
+                let remote = remote_out.stdout.trim().to_string();
+                let merge = merge_out.stdout.trim().to_string();
+                if !remote.is_empty() && !merge.is_empty() {
+                    let upstream_name = merge.strip_prefix("refs/heads/").unwrap_or(&merge);
+                    r.upstream = Some(format!("{}/{}", remote, upstream_name));
+                }
+            }
+        }
+    }
+
     Ok(refs)
 }
