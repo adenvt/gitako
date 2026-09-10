@@ -39,33 +39,13 @@ export function groupRefsForBadging(refs: RefInfo[]): RefInfo[][] {
   const visible = refs.filter(
     (r) => !(r.kind === "remoteBranch" && r.name === "HEAD") && r.fullName !== "refs/stash",
   );
-  const grouped = new Set<string>();
-  const groups: RefInfo[][] = [];
-
-  // First pass: pair local branches with their upstream remotes.
+  const groups = new Map<string, RefInfo[]>();
   for (const r of visible) {
-    if (grouped.has(r.fullName)) continue;
-    if ((r.kind === "branch" || r.kind === "head") && r.upstream) {
-      const remote = visible.find(
-        (rr) => rr.kind === "remoteBranch" && rr.fullName === r.upstream,
-      );
-      if (remote) {
-        groups.push([r, remote]);
-        grouped.add(r.fullName);
-        grouped.add(remote.fullName);
-      }
-    }
+    const list = groups.get(r.name) ?? [];
+    list.push(r);
+    groups.set(r.name, list);
   }
-
-  // Second pass: add ungrouped refs as singletons.
-  for (const r of visible) {
-    if (!grouped.has(r.fullName)) {
-      groups.push([r]);
-      grouped.add(r.fullName);
-    }
-  }
-
-  return groups;
+  return [...groups.values()];
 }
 
 /** Virtualized commit list: canvas graph + DOM text labels, one scroll container. */

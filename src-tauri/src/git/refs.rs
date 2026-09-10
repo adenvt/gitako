@@ -14,9 +14,6 @@ pub struct RefInfo {
     pub remote: Option<String>,
     /// First remote URL (from `git remote get-url`); filled in by the command layer.
     pub remote_url: Option<String>,
-    /// Upstream tracking ref in fullName form (e.g. "origin/main").
-    /// Only set for local branches (`kind == Branch` or `Head`).
-    pub upstream: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -72,7 +69,6 @@ pub fn parse_refs(stdout: &str) -> Vec<RefInfo> {
             commit,
             remote,
             remote_url: None,
-            upstream: None,
         });
 
         // Mark the current branch as Head kind when git says so.

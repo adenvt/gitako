@@ -24,7 +24,7 @@ describe("groupRefsForBadging", () => {
     // `main` and `origin/main` should land in the same group so the UI
     // renders them as one badge with two icons.
     const refs = [
-      makeRef({ name: "main", fullName: "main", kind: "branch", upstream: "origin/main" }),
+      makeRef({ name: "main", fullName: "main", kind: "branch" }),
       makeRef({
         name: "main",
         fullName: "origin/main",
@@ -40,7 +40,7 @@ describe("groupRefsForBadging", () => {
 
   it("keeps refs with distinct base names in separate groups", () => {
     const refs = [
-      makeRef({ name: "main", fullName: "main", kind: "branch", upstream: "origin/main" }),
+      makeRef({ name: "main", fullName: "main", kind: "branch" }),
       makeRef({
         name: "main",
         fullName: "origin/main",
@@ -102,7 +102,7 @@ describe("groupRefsForBadging", () => {
 
   it("preserves input order within a group", () => {
     // The component uses index 0 of the group as the badge key, so order
-    // is part of the contract. Local branch comes first, then its upstream.
+    // is part of the contract.
     const refs = [
       makeRef({
         name: "main",
@@ -110,18 +110,15 @@ describe("groupRefsForBadging", () => {
         kind: "remoteBranch",
         remote: "origin",
       }),
-      makeRef({ name: "main", fullName: "main", kind: "branch", upstream: "origin/main" }),
+      makeRef({ name: "main", fullName: "main", kind: "branch" }),
     ];
     const groups = groupRefsForBadging(refs);
-    expect(groups[0]?.map((r) => r.fullName)).toEqual(["main", "origin/main"]);
+    expect(groups[0]?.map((r) => r.fullName)).toEqual(["origin/main", "main"]);
   });
 
-  it("groups a local branch with its upstream remote, leaving non-upstream remotes separate", () => {
-    // When a local branch tracks a specific remote (e.g. origin/main),
-    // only that remote is grouped. Other remotes with the same name
-    // (e.g. upstream/main) remain separate badges.
+  it("groups three refs sharing the same name (e.g. local + 2 remotes)", () => {
     const refs = [
-      makeRef({ name: "main", fullName: "main", kind: "branch", upstream: "origin/main" }),
+      makeRef({ name: "main", fullName: "main", kind: "branch" }),
       makeRef({
         name: "main",
         fullName: "origin/main",
@@ -136,10 +133,7 @@ describe("groupRefsForBadging", () => {
       }),
     ];
     const groups = groupRefsForBadging(refs);
-    expect(groups).toHaveLength(2);
-    expect(groups[0]).toHaveLength(2); // main + origin/main
-    expect(groups[1]).toHaveLength(1); // upstream/main alone
-    expect(groups[0]?.map((r) => r.fullName)).toEqual(["main", "origin/main"]);
-    expect(groups[1]?.map((r) => r.fullName)).toEqual(["upstream/main"]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toHaveLength(3);
   });
 });
